@@ -11,13 +11,16 @@
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
   Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
   you should still have a viable MVP (Minimum Viable Product) that delivers value.
-  
+
   Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
   Think of each story as a standalone slice of functionality that can be:
   - Developed independently
   - Tested independently
   - Deployed independently
   - Demonstrated to users independently
+
+  ⚠️ CONSTITUTION REQUIREMENT: All acceptance scenarios MUST use Gherkin syntax.
+  See constitution principle II. Gherkin User Stories (NON-NEGOTIABLE).
 -->
 
 ### User Story 1 - [Brief Title] (Priority: P1)
@@ -28,10 +31,22 @@
 
 **Independent Test**: [Describe how this can be tested independently - e.g., "Can be fully tested by [specific action] and delivers [specific value]"]
 
-**Acceptance Scenarios**:
+**Acceptance Scenarios** (Gherkin format REQUIRED):
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-2. **Given** [initial state], **When** [action], **Then** [expected outcome]
+```gherkin
+Feature: [Feature name matching user story]
+  Scenario: [Scenario title]
+    Given [initial state/precondition]
+    And [additional precondition if needed]
+    When [action taken]
+    Then [expected outcome]
+    And [additional outcome if needed]
+
+  Scenario: [Another scenario title]
+    Given [initial state/precondition]
+    When [action taken]
+    Then [expected outcome]
+```
 
 ---
 
@@ -43,9 +58,15 @@
 
 **Independent Test**: [Describe how this can be tested independently]
 
-**Acceptance Scenarios**:
+**Acceptance Scenarios** (Gherkin format REQUIRED):
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
+```gherkin
+Feature: [Feature name matching user story]
+  Scenario: [Scenario title]
+    Given [initial state/precondition]
+    When [action taken]
+    Then [expected outcome]
+```
 
 ---
 
@@ -57,9 +78,15 @@
 
 **Independent Test**: [Describe how this can be tested independently]
 
-**Acceptance Scenarios**:
+**Acceptance Scenarios** (Gherkin format REQUIRED):
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
+```gherkin
+Feature: [Feature name matching user story]
+  Scenario: [Scenario title]
+    Given [initial state/precondition]
+    When [action taken]
+    Then [expected outcome]
+```
 
 ---
 
