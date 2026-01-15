@@ -2,8 +2,84 @@
 
 **Feature Branch**: `004-agent-consultation`
 **Created**: 2026-01-14
+**Updated**: 2026-01-14
 **Status**: Draft
 **Input**: User description: "Inter-agent consultation protocol with mandatory and optional patterns"
+
+## Architecture Overview
+
+This feature leverages **AWS Bedrock AgentCore's native A2A (Agent-to-Agent) Protocol** for communication and builds a **custom consultation rules engine** for enforcement.
+
+**What AgentCore Provides (Native):**
+- **A2A Protocol** - Agent-to-agent JSON-RPC 2.0 communication
+- **Agent Discovery** - Agents find each other via Agent Cards at `/.well-known/agent-card.json`
+- **Message Format** - Standardized request/response using JSON-RPC
+- **Observability** - Audit trail of all A2A calls via OpenTelemetry traces
+
+**What We Build (Custom):**
+- **Consultation Rules Engine** - Defines who MUST consult whom (from constitution)
+- **Enforcement Logic** - Blocks agent completion until consultations done
+- **Consultation Workflow** - Request → Response → Resolution tracking
+- **Consultation Status Management** - Pending, approved, concerns-raised, rejected states
+
+### A2A Message Format
+
+Consultations use the A2A protocol's JSON-RPC 2.0 message format:
+
+**Consultation Request (A2A message/send):**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "consultation-req-001",
+  "method": "message/send",
+  "params": {
+    "message": {
+      "role": "user",
+      "parts": [{
+        "kind": "text",
+        "text": "I'm proposing to use serverless architecture with Lambda and Step Functions for the new payment processing workflow. Please review from a security perspective and advise on: 1) Data encryption in transit and at rest, 2) IAM role scoping, 3) Compliance with PCI-DSS requirements."
+      }],
+      "messageId": "msg-uuid-001",
+      "metadata": {
+        "consultationType": "mandatory",
+        "decisionContext": "infrastructure",
+        "requestingAgent": "ArchitectAgent",
+        "consultationId": "consult-uuid-001"
+      }
+    }
+  }
+}
+```
+
+**Consultation Response (A2A result with artifacts):**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "consultation-req-001",
+  "result": {
+    "artifacts": [{
+      "artifactId": "artifact-uuid-001",
+      "name": "security_consultation_response",
+      "parts": [{
+        "kind": "text",
+        "text": "APPROVED with conditions:\n1. Use AWS KMS for encryption at rest with customer-managed keys\n2. Enable CloudTrail logging for all Lambda invocations\n3. Implement least-privilege IAM roles with resource-level permissions\n4. Use VPC endpoints for Step Functions to avoid public internet\n5. Ensure PCI-DSS compliance through AWS Artifact attestations"
+      }],
+      "metadata": {
+        "responseType": "approved",
+        "consultationId": "consult-uuid-001",
+        "conditions": ["kms-encryption", "cloudtrail-logging", "least-privilege-iam", "vpc-endpoints", "pci-compliance"]
+      }
+    }]
+  }
+}
+```
+
+**Key Points:**
+- Consultation requests are A2A `message/send` calls with consultation metadata
+- Responses use A2A `artifacts` to return structured feedback
+- Metadata carries consultation-specific fields (type, status, IDs)
+- AgentCore Observability automatically captures all A2A interactions
+- Our custom rules engine validates mandatory consultations are completed before allowing agent to finalize decisions
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -23,13 +99,19 @@
   See constitution principle II. Gherkin User Stories (NON-NEGOTIABLE).
 -->
 
-### User Story 1 - Initiating Mandatory Consultation (Priority: P1)
+### User Story 1 - Initiating Mandatory Consultation via A2A Protocol (Priority: P1)
 
-As an agent with a mandatory consultation requirement, I need to initiate a consultation request to the required agent so that I can proceed with my decision only after receiving the required input.
+As an agent with a mandatory consultation requirement, I need to send an A2A message to the required agent so that I can proceed with my decision only after receiving the required response.
 
 **Why this priority**: Mandatory consultations are the core compliance mechanism. Without this capability, the platform cannot enforce the constitutional requirements that Architect must consult Security Agent before infrastructure decisions, and Development Agent must consult Review Agent before marking code complete.
 
-**Independent Test**: Can be fully tested by having an Architect agent attempt an infrastructure decision and verifying that a consultation request is automatically created and sent to the Security Agent, delivering the value of enforced compliance with consultation rules.
+**Independent Test**: Can be fully tested by having an Architect agent attempt an infrastructure decision and verifying that an A2A `message/send` request is created with proper consultation metadata and sent to the Security Agent, delivering the value of enforced compliance with consultation rules.
+
+**Technical Implementation**:
+- Agent uses AgentCore's A2A client to send `message/send` to consulted agent's endpoint
+- Message includes consultation metadata (type, context, consultationId)
+- Custom rules engine validates mandatory consultation is initiated
+- Consultation status tracked as "pending" until response received
 
 **Acceptance Scenarios** (Gherkin format REQUIRED):
 
@@ -39,39 +121,53 @@ Feature: Mandatory Consultation Initiation
   I need to initiate consultations with required agents
   So that I comply with platform governance rules
 
-  Scenario: Architect initiates mandatory consultation with Security Agent
+  Scenario: Architect initiates mandatory consultation with Security Agent via A2A
     Given the Architect agent is preparing an infrastructure decision
     And infrastructure decisions require mandatory Security Agent consultation
-    When the Architect agent initiates the consultation request
-    Then a consultation request is created with status "pending"
-    And the Security Agent receives notification of the consultation request
-    And the consultation request includes the decision context and specific questions
+    And the Security Agent is discoverable via Agent Card at /.well-known/agent-card.json
+    When the Architect agent sends an A2A message/send request to Security Agent
+    Then the A2A message includes jsonrpc "2.0" and method "message/send"
+    And the message params include consultation metadata with type "mandatory"
+    And the consultation is tracked with status "pending" in the rules engine
+    And the Security Agent receives the A2A request at their invocation endpoint
+    And AgentCore Observability records the A2A interaction
 
-  Scenario: Development Agent initiates mandatory consultation with Review Agent
+  Scenario: Development Agent initiates mandatory consultation with Review Agent via A2A
     Given the Development Agent has completed code implementation
     And code completion requires mandatory Review Agent consultation
-    When the Development Agent initiates the consultation request
-    Then a consultation request is created with status "pending"
-    And the Review Agent receives notification of the consultation request
+    And the Review Agent endpoint is known via Agent Discovery
+    When the Development Agent sends an A2A message/send request to Review Agent
+    Then the A2A message includes consultation metadata with consultationId
+    And the consultation is tracked with status "pending" in the rules engine
     And the Development Agent cannot mark the code as complete until consultation resolves
+    And the rules engine blocks completion until A2A response received
 
-  Scenario: Architect initiates mandatory consultation with Design Agent
+  Scenario: Architect initiates mandatory consultation with Design Agent via A2A
     Given the Architect agent is proposing architecture changes
     And the proposed changes impact user-facing design elements
-    When the Architect agent initiates the consultation request
-    Then the Design Agent receives notification of the consultation request
-    And the consultation request clearly identifies which design aspects are impacted
+    When the Architect agent sends an A2A message/send request to Design Agent
+    Then the A2A message clearly identifies which design aspects are impacted
+    And the message includes decisionContext metadata field
+    And the Design Agent receives the A2A request
+    And the consultation is tracked as "pending" in the system
 ```
 
 ---
 
-### User Story 2 - Consulted Agent Providing Response (Priority: P2)
+### User Story 2 - Consulted Agent Providing A2A Response (Priority: P2)
 
-As a consulted agent, I need to review consultation requests and provide structured responses so that the requesting agent can incorporate my input into their decision.
+As a consulted agent, I need to receive A2A consultation requests and provide structured responses via A2A artifacts so that the requesting agent can incorporate my input into their decision.
 
 **Why this priority**: Without the ability to respond to consultations, the mandatory consultation process cannot complete. This is the second half of the core consultation workflow and enables the feedback loop essential for collaborative decision-making.
 
-**Independent Test**: Can be fully tested by presenting a Security Agent with a pending consultation request and verifying the agent can submit a structured response with approval, concerns, or rejection, delivering the value of expert input in decision-making.
+**Independent Test**: Can be fully tested by presenting a Security Agent with a pending A2A consultation request and verifying the agent can submit a structured A2A response with artifacts containing approval, concerns, or rejection, delivering the value of expert input in decision-making.
+
+**Technical Implementation**:
+- Consulted agent receives A2A `message/send` request at their invocation endpoint
+- Agent processes consultation and generates response
+- Response returned as A2A `result` with `artifacts` array
+- Artifact metadata includes responseType (approved/concerns-raised/rejected)
+- Custom rules engine updates consultation status based on response metadata
 
 **Acceptance Scenarios** (Gherkin format REQUIRED):
 
@@ -81,36 +177,43 @@ Feature: Consultation Response Submission
   I need to provide structured responses to consultation requests
   So that requesting agents receive actionable feedback
 
-  Scenario: Security Agent approves infrastructure decision
-    Given the Security Agent has received a consultation request from Architect
+  Scenario: Security Agent approves infrastructure decision via A2A response
+    Given the Security Agent has received an A2A message/send consultation from Architect
     And the Security Agent has reviewed the infrastructure decision details
-    When the Security Agent submits an approval response
-    Then the consultation status changes to "approved"
-    And the Architect agent is notified of the approval
-    And the response includes any security recommendations or conditions
+    When the Security Agent returns an A2A result with artifacts
+    Then the artifact metadata includes responseType "approved"
+    And the artifact parts contain security recommendations and conditions
+    And the consultation status changes to "approved" in the rules engine
+    And the Architect agent receives the A2A response
+    And AgentCore Observability records the response interaction
 
-  Scenario: Security Agent raises concerns about infrastructure decision
-    Given the Security Agent has received a consultation request from Architect
+  Scenario: Security Agent raises concerns via A2A response
+    Given the Security Agent has received an A2A message/send consultation from Architect
     And the Security Agent identifies security concerns with the proposal
-    When the Security Agent submits a response with concerns
-    Then the consultation status changes to "concerns-raised"
-    And the Architect agent is notified of the specific concerns
-    And the Architect agent must address concerns before proceeding
+    When the Security Agent returns an A2A result with artifacts
+    Then the artifact metadata includes responseType "concerns-raised"
+    And the artifact parts contain specific security concerns
+    And the consultation status changes to "concerns-raised" in the rules engine
+    And the Architect agent receives the A2A response with concerns
+    And the rules engine requires Architect to address concerns before proceeding
 
-  Scenario: Review Agent rejects code completion
-    Given the Review Agent has received a consultation request from Development Agent
+  Scenario: Review Agent rejects code completion via A2A response
+    Given the Review Agent has received an A2A message/send consultation from Development Agent
     And the Review Agent identifies issues that must be resolved
-    When the Review Agent submits a rejection response
-    Then the consultation status changes to "rejected"
-    And the Development Agent is notified of the rejection reasons
+    When the Review Agent returns an A2A result with artifacts
+    Then the artifact metadata includes responseType "rejected"
+    And the artifact parts contain rejection reasons and required changes
+    And the consultation status changes to "rejected" in the rules engine
+    And the Development Agent receives the A2A response
     And the code cannot be marked complete until issues are addressed
 
-  Scenario: Testing Agent verifies coverage requirements
-    Given the Testing Agent has received a consultation request from Development Agent
+  Scenario: Testing Agent verifies coverage via A2A response
+    Given the Testing Agent has received an A2A message/send consultation from Development Agent
     And the Development Agent is requesting coverage verification
     When the Testing Agent reviews the coverage metrics
-    Then the Testing Agent responds with coverage status and any gaps identified
-    And the response includes specific areas requiring additional coverage if applicable
+    Then the Testing Agent returns an A2A result with artifacts
+    And the artifact parts contain coverage status and any gaps identified
+    And the artifact metadata includes specific areas requiring additional coverage if applicable
 ```
 
 ---
@@ -210,13 +313,20 @@ Feature: Consultation Outcome Documentation
 
 ---
 
-### User Story 5 - Viewing Consultation Audit Trail (Priority: P5)
+### User Story 5 - Viewing Consultation Audit Trail via Observability (Priority: P5)
 
-As a platform administrator or agent, I need to view the complete audit trail of all consultations so that I can review decision-making history, identify patterns, and ensure compliance.
+As a platform administrator or agent, I need to view the complete audit trail of all consultations via AgentCore Observability so that I can review decision-making history, identify patterns, and ensure compliance.
 
 **Why this priority**: The audit trail enables oversight, compliance verification, and process improvement. While not required for day-to-day consultation operations, it is essential for governance, troubleshooting, and demonstrating regulatory compliance.
 
-**Independent Test**: Can be fully tested by querying the consultation audit system for a specific agent, time period, or decision type and verifying that all relevant consultations are returned with complete details, delivering the value of transparency and accountability.
+**Independent Test**: Can be fully tested by querying AgentCore Observability for A2A interactions filtered by consultation metadata and verifying that all relevant consultations are returned with complete details, delivering the value of transparency and accountability.
+
+**Technical Implementation**:
+- All A2A consultation messages automatically captured by AgentCore Observability
+- OpenTelemetry traces include full A2A request/response payloads
+- Custom query layer filters Observability data by consultation metadata
+- Consultation records enriched with status from rules engine
+- Export capability leverages Observability API
 
 **Acceptance Scenarios** (Gherkin format REQUIRED):
 
@@ -226,33 +336,37 @@ Feature: Consultation Audit Trail
   I need to view consultation history
   So that I can review decisions and ensure compliance
 
-  Scenario: View all consultations for a specific agent
+  Scenario: View all consultations for a specific agent via Observability
     Given consultations have occurred involving the Architect agent
-    When an administrator queries consultations for the Architect agent
-    Then all consultations where Architect was requester are displayed
-    And all consultations where Architect was consulted are displayed
-    And each consultation shows status, participants, and outcome
+    When an administrator queries AgentCore Observability for Architect agent traces
+    And filters by consultation metadata in A2A messages
+    Then all A2A interactions where Architect was requester are displayed
+    And all A2A interactions where Architect was consulted are displayed
+    And each consultation shows status from rules engine, participants, and outcome
+    And traces include full A2A request/response payloads
 
-  Scenario: View consultations by time period
+  Scenario: View consultations by time period from Observability
     Given multiple consultations have occurred over several days
-    When an administrator queries consultations for a specific date range
-    Then all consultations within that range are returned
-    And consultations are sorted by date with most recent first
+    When an administrator queries Observability traces for a specific date range
+    And filters by A2A method "message/send" with consultation metadata
+    Then all consultation A2A interactions within that range are returned
+    And consultations are sorted by timestamp with most recent first
     And summary statistics are provided for the period
 
-  Scenario: View consultations by decision type
+  Scenario: View consultations by decision type from metadata
     Given consultations have occurred for various decision types
-    When an administrator filters consultations by "infrastructure decisions"
-    Then only consultations related to infrastructure decisions are displayed
-    And the filter shows how many consultations matched the criteria
-    And the results can be further filtered by status or outcome
+    When an administrator filters Observability traces by decisionContext "infrastructure"
+    Then only A2A consultations related to infrastructure decisions are displayed
+    And the filter shows how many consultation traces matched the criteria
+    And the results can be further filtered by responseType or consultation status
 
-  Scenario: Export consultation audit trail
+  Scenario: Export consultation audit trail from Observability
     Given an administrator needs to provide consultation records for compliance
-    When the administrator requests an export of consultation records
-    Then the system generates a complete export of matching consultations
-    And the export includes all consultation details and outcomes
-    And the export is in a format suitable for compliance reporting
+    When the administrator requests an export via Observability API
+    And specifies consultation metadata filters
+    Then the system generates a complete export of matching consultation traces
+    And the export includes all A2A request/response details and outcomes
+    And the export is in a format suitable for compliance reporting (JSON/CSV)
 ```
 
 ---
@@ -270,41 +384,165 @@ Feature: Consultation Audit Trail
 
 ### Functional Requirements
 
-- **FR-001**: System MUST allow agents to initiate consultation requests to other agents
-- **FR-002**: System MUST distinguish between mandatory and optional consultation patterns
-- **FR-003**: System MUST enforce that Architect agents consult Security Agent before infrastructure decisions
-- **FR-004**: System MUST enforce that Architect agents consult Design Agent when architecture impacts design
-- **FR-005**: System MUST enforce that Development Agent consults Review Agent before marking code complete
-- **FR-006**: System MUST enforce that Development Agent consults Testing Agent for coverage verification
-- **FR-007**: System MUST allow any agent to initiate optional consultations for feasibility checks
-- **FR-008**: System MUST block decision finalization when mandatory consultations are pending or unresolved
-- **FR-009**: System MUST allow consulted agents to respond with approval, concerns, or rejection
-- **FR-010**: System MUST notify requesting agents when consultation responses are submitted
-- **FR-011**: System MUST notify consulted agents when new consultation requests are received
-- **FR-012**: System MUST document all consultation outcomes including request, response, and resolution
-- **FR-013**: System MUST maintain an audit trail of all consultations with timestamps
-- **FR-014**: System MUST provide query capabilities for consultation history by agent, time period, and decision type
-- **FR-015**: System MUST handle consultation timeout scenarios with appropriate escalation
-- **FR-016**: System MUST support consultation response conditions and recommendations
-- **FR-017**: System MUST link related consultations when resubmission occurs after rejection
+#### A2A Protocol Integration (AgentCore Native)
+- **FR-001**: System MUST allow agents to send A2A `message/send` requests to other agents for consultations
+- **FR-002**: System MUST use JSON-RPC 2.0 format for all consultation messages
+- **FR-003**: System MUST support agent discovery via Agent Cards at `/.well-known/agent-card.json`
+- **FR-004**: System MUST automatically capture all A2A consultation interactions in AgentCore Observability
+- **FR-005**: System MUST include consultation metadata (type, context, consultationId) in A2A message params
+- **FR-006**: System MUST return consultation responses as A2A `result` with `artifacts` array
+- **FR-007**: System MUST include responseType metadata (approved/concerns-raised/rejected) in artifacts
+
+#### Custom Consultation Rules Engine
+- **FR-008**: Rules engine MUST distinguish between mandatory and optional consultation patterns from constitution
+- **FR-009**: Rules engine MUST enforce that Architect agents consult Security Agent before infrastructure decisions
+- **FR-010**: Rules engine MUST enforce that Architect agents consult Design Agent when architecture impacts design
+- **FR-011**: Rules engine MUST enforce that Development Agent consults Review Agent before marking code complete
+- **FR-012**: Rules engine MUST enforce that Development Agent consults Testing Agent for coverage verification
+- **FR-013**: Rules engine MUST allow any agent to initiate optional consultations for feasibility checks
+- **FR-014**: Rules engine MUST block decision finalization when mandatory consultations are pending or unresolved
+- **FR-015**: Rules engine MUST track consultation status (pending, approved, concerns-raised, rejected, resolved)
+- **FR-016**: Rules engine MUST validate mandatory consultations are completed before allowing agent completion
+
+#### Consultation Workflow
+- **FR-017**: System MUST handle consultation timeout scenarios with appropriate escalation
+- **FR-018**: System MUST support consultation response conditions and recommendations in artifact parts
+- **FR-019**: System MUST link related consultations when resubmission occurs after rejection
+- **FR-020**: System MUST provide query capabilities for consultation history via Observability API filters
+- **FR-021**: System MUST support export of consultation audit trail in compliance-friendly formats (JSON/CSV)
 
 ### Key Entities
 
-- **Consultation Request**: Represents a request from one agent to another for input on a decision. Key attributes include requesting agent, consulted agent, decision context, consultation type (mandatory/optional), questions or review points, and status.
-- **Consultation Response**: Represents the consulted agent's response to a request. Key attributes include response type (approved/concerns-raised/rejected), response details, conditions or recommendations, and timestamp.
-- **Consultation Record**: The complete documented outcome of a consultation including request, response, resolution, and any follow-up actions. Forms the basis of the audit trail.
-- **Consultation Rule**: Defines the mandatory and optional consultation patterns, including which agent roles must consult which other roles for specific decision types.
-- **Consultation Status**: The current state of a consultation (pending, approved, concerns-raised, rejected, escalated, resolved).
+#### AgentCore Native Entities
+- **A2A Message (Consultation Request)**: JSON-RPC 2.0 `message/send` request from requesting agent to consulted agent. Includes consultation metadata in message params (consultationType, decisionContext, requestingAgent, consultationId).
+- **A2A Response (Consultation Response)**: JSON-RPC 2.0 `result` with artifacts array. Artifact metadata includes responseType (approved/concerns-raised/rejected), consultationId, and optional conditions array. Artifact parts contain the consultation feedback text.
+- **Agent Card**: JSON document at `/.well-known/agent-card.json` defining agent name, description, version, endpoint URL, and skills. Used for agent discovery in consultation workflow.
+- **Observability Trace**: OpenTelemetry trace capturing full A2A request/response payload, timestamps, and consultation metadata. Automatically created by AgentCore for all A2A interactions.
+
+#### Custom Platform Entities
+- **Consultation Rule**: Defines the mandatory and optional consultation patterns from constitution, including which agent roles must consult which other roles for specific decision types. Stored in rules engine configuration.
+- **Consultation Status Record**: Rules engine tracking record linking consultationId to current status (pending, approved, concerns-raised, rejected, escalated, resolved). Updated based on A2A response metadata.
+- **Consultation Enforcement Policy**: Rules engine policy that blocks agent completion actions when mandatory consultations are pending or unresolved. Validates all required consultations completed before allowing finalization.
+
+## Implementation Architecture
+
+### System Components
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    CUSTOM CONSULTATION LAYER                    │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │            Consultation Rules Engine                     │  │
+│  │  - Load rules from constitution                         │  │
+│  │  - Track consultation status (DynamoDB)                 │  │
+│  │  - Validate mandatory consultations completed           │  │
+│  │  - Block agent completion if pending                    │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                              ↕                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │         Consultation Workflow Orchestrator               │  │
+│  │  - Initiate consultations (send A2A messages)           │  │
+│  │  - Process responses (parse A2A artifacts)              │  │
+│  │  - Update status in rules engine                        │  │
+│  │  - Handle timeouts and escalations                      │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                              ↕                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │          Audit Query Service                            │  │
+│  │  - Query Observability API for consultation traces     │  │
+│  │  - Filter by consultation metadata                     │  │
+│  │  - Enrich with status from rules engine                │  │
+│  │  - Export to JSON/CSV for compliance                   │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                              ↕
+┌─────────────────────────────────────────────────────────────────┐
+│              AWS BEDROCK AGENTCORE (NATIVE)                     │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │                A2A Protocol Layer                        │  │
+│  │  - JSON-RPC 2.0 message/send requests                   │  │
+│  │  - Agent discovery via Agent Cards                      │  │
+│  │  - Artifact-based responses                             │  │
+│  │  - Automatic payload capture                            │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                              ↕                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │              Agent Runtime (9 Agents)                    │  │
+│  │  Architect, Security, Design, Development, Review,       │  │
+│  │  Testing, Requirements, UI/UX, etc.                      │  │
+│  │  Each agent exposes /.well-known/agent-card.json         │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                              ↕                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │           Observability Service (OpenTelemetry)          │  │
+│  │  - Captures all A2A interactions automatically          │  │
+│  │  - Stores full request/response payloads                │  │
+│  │  - Provides query API for trace retrieval               │  │
+│  │  - Timestamps and metadata indexing                     │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+
+**1. Consultation Initiation:**
+```
+Architect Agent
+  → Checks Rules Engine: "Do I need Security consultation?"
+  → Rules Engine: "YES - mandatory for infrastructure decisions"
+  → Architect discovers Security Agent via Agent Card
+  → Architect sends A2A message/send to Security Agent endpoint
+  → Rules Engine creates status record: consultationId → "pending"
+  → AgentCore Observability captures A2A request
+```
+
+**2. Consultation Response:**
+```
+Security Agent
+  → Receives A2A message/send at invocation endpoint
+  → Processes infrastructure review
+  → Returns A2A result with artifact (responseType: "approved")
+  → Rules Engine updates status: consultationId → "approved"
+  → AgentCore Observability captures A2A response
+  → Architect Agent receives response
+```
+
+**3. Enforcement Check:**
+```
+Architect Agent
+  → Attempts to finalize infrastructure decision
+  → Rules Engine checks: "All mandatory consultations resolved?"
+  → Rules Engine queries status records for consultationIds
+  → If any "pending" or "concerns-raised": BLOCK completion
+  → If all "approved": ALLOW completion
+```
+
+**4. Audit Trail Query:**
+```
+Administrator
+  → Queries Audit Service for "infrastructure consultations last 30 days"
+  → Audit Service calls Observability API with filters:
+      - A2A method = "message/send"
+      - metadata.decisionContext = "infrastructure"
+      - timestamp range
+  → Enriches traces with status from Rules Engine
+  → Returns combined consultation records
+```
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of mandatory consultations are enforced - no agent can bypass required consultation patterns
-- **SC-002**: Consultation requests receive responses within the configured timeout threshold at least 95% of the time
-- **SC-003**: All consultation outcomes are documented with complete audit trail within 1 minute of resolution
-- **SC-004**: Agents can initiate a consultation request in 3 steps or fewer
-- **SC-005**: Consulted agents can submit a response in 3 steps or fewer
-- **SC-006**: Audit trail queries return results within 5 seconds for searches spanning up to 90 days
-- **SC-007**: Zero decisions are finalized without completing mandatory consultations (verified through audit)
-- **SC-008**: 100% of consultation records include requesting agent, consulted agent, decision context, response, and resolution timestamp
+- **SC-001**: 100% of mandatory consultations are enforced via rules engine - no agent can bypass required consultation patterns
+- **SC-002**: 100% of consultation requests use A2A `message/send` with valid JSON-RPC 2.0 format
+- **SC-003**: 100% of consultation responses use A2A `result` with artifacts containing responseType metadata
+- **SC-004**: Consultation requests receive A2A responses within the configured timeout threshold at least 95% of the time
+- **SC-005**: All A2A consultation interactions are automatically captured by Observability within 1 second
+- **SC-006**: Agents can initiate an A2A consultation request in 3 steps or fewer (discover, construct message, send)
+- **SC-007**: Consulted agents can return an A2A consultation response in 3 steps or fewer (receive, process, return artifact)
+- **SC-008**: Observability audit trail queries return results within 5 seconds for searches spanning up to 90 days
+- **SC-009**: Zero decisions are finalized without completing mandatory consultations (verified through Observability audit)
+- **SC-010**: 100% of consultation Observability traces include requesting agent, consulted agent, decision context, responseType, and timestamps
+- **SC-011**: Rules engine blocks agent completion within 100ms when pending/unresolved mandatory consultations exist
