@@ -5,6 +5,48 @@
 **Status**: Draft
 **Input**: User description: "Workflow definition and execution with YAML DSL, dependencies, parallel execution, and approval gates"
 
+## AgentCore Integration Summary
+
+**THIS IS A FULLY CUSTOM FEATURE** built using AWS Step Functions for orchestration and AgentCore agents as workflow tasks.
+
+### What AgentCore Provides (We Use)
+
+- **Runtime** - Agents deployed with `@app.entrypoint` can be invoked by Step Functions as tasks
+- **A2A Protocol** - Step Functions can call agents via their Agent Card URLs (HTTP invocations)
+- **Observability** - Agent execution traces are logged to AgentCore Observability, Step Functions logs its own state transitions to CloudWatch
+
+### What We Build (Custom Workflow Layer)
+
+- **YAML DSL Parser** - Translates user-friendly YAML workflow definitions to AWS Step Functions ASL (Amazon States Language)
+- **Workflow Validator** - Validates YAML before ASL conversion (circular dependencies, agent existence, input/output compatibility)
+- **ASL Generator** - Generates Step Functions state machine JSON from validated YAML
+- **State Machine Deployer** - Deploys generated ASL to AWS Step Functions service
+- **Approval Gate Handler** - Lambda functions integrated with Step Functions `.waitForTaskToken` pattern for human approvals
+- **Parallel Execution Mapper** - Maps YAML parallel stages to Step Functions `Parallel` state type
+
+### Architecture
+
+```
+YAML Workflow Definition
+  ↓
+Validator (check agents exist, no cycles, inputs/outputs match)
+  ↓
+ASL Generator (convert to Step Functions JSON)
+  ↓
+AWS Step Functions Deployment
+  ↓
+Execution:
+  ├─ Sequential Tasks → Call AgentCore agents via HTTP/A2A
+  ├─ Parallel Tasks → Step Functions Parallel state
+  └─ Approval Gates → Step Functions waitForTaskToken + Lambda
+
+AgentCore Agents (Runtime)
+  ↓
+Respond to Step Functions task invocations
+  ↓
+Log execution to AgentCore Observability
+```
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -23,23 +65,23 @@
   See constitution principle II. Gherkin User Stories (NON-NEGOTIABLE).
 -->
 
-### User Story 1 - Define a Multi-Agent Workflow in YAML (Priority: P1)
+### User Story 1 - Define YAML Workflow Translated to Step Functions ASL (Priority: P1)
 
-As a workflow designer, I want to define multi-agent workflows using a YAML-based domain-specific language so that I can orchestrate complex agent collaborations without writing code.
+As a workflow designer, I want to define multi-agent workflows using a YAML-based domain-specific language that translates to AWS Step Functions ASL so that I can orchestrate complex agent collaborations without writing Step Functions JSON directly.
 
-**Why this priority**: This is the foundational capability of the workflow engine. Without the ability to define workflows, no other functionality can be used. A clear, expressive YAML DSL enables non-developers to create sophisticated agent orchestrations.
+**Why this priority**: This is the foundational capability of the workflow engine. Without the ability to define workflows and translate them to Step Functions ASL, no other functionality can be used. A clear, expressive YAML DSL enables non-developers to create sophisticated agent orchestrations that run as Step Functions state machines.
 
-**Independent Test**: Can be fully tested by creating a YAML workflow definition file and verifying the system accepts and parses it correctly, delivering immediate value by enabling workflow authoring.
+**Independent Test**: Can be fully tested by creating a YAML workflow definition file, verifying the system translates it to valid Step Functions ASL JSON, and deploying the generated state machine to AWS Step Functions, delivering immediate value by enabling workflow authoring.
 
 **Acceptance Scenarios** (Gherkin format REQUIRED):
 
 ```gherkin
-Feature: YAML Workflow Definition
+Feature: YAML to Step Functions ASL Translation
   As a workflow designer
-  I want to define workflows using YAML syntax
-  So that I can orchestrate multiple agents without writing code
+  I want to define workflows using YAML that translate to Step Functions ASL
+  So that I can orchestrate multiple agents via AWS Step Functions
 
-  Scenario: Define a simple sequential workflow
+  Scenario: Define and translate a simple sequential workflow
     Given I have access to the workflow definition interface
     When I create a workflow with the following YAML structure:
       """
@@ -56,7 +98,9 @@ Feature: YAML Workflow Definition
           outputs: ["security_findings"]
       """
     Then the system accepts the workflow definition
-    And the workflow is saved with a unique identifier
+    And the ASL Generator translates it to valid Step Functions JSON
+    And the generated ASL contains sequential Task states calling AgentCore agent URLs
+    And the state machine is deployed to AWS Step Functions
     And the workflow becomes available for execution
 
   Scenario: Define a workflow with agent consultation
@@ -373,46 +417,46 @@ Feature: Approval Gate Control
 ### Functional Requirements
 
 - **FR-001**: System MUST accept workflow definitions in YAML format following the defined DSL schema
-- **FR-002**: System MUST validate workflow definitions before saving, checking for syntax errors, missing fields, and invalid references
-- **FR-003**: System MUST detect and report circular dependencies in workflow stage definitions
-- **FR-004**: System MUST execute workflow stages in the order defined by their dependencies
-- **FR-005**: System MUST pass outputs from completed stages as inputs to dependent stages
-- **FR-006**: System MUST support parallel execution of stages that have no dependencies on each other
-- **FR-007**: System MUST pause workflow execution at configured approval gates until human approval is received
-- **FR-008**: System MUST record all workflow execution events including stage start, completion, failures, and approvals
-- **FR-009**: System MUST provide workflow execution status that shows current state, completed stages, and pending stages
-- **FR-010**: System MUST notify designated users when workflows reach approval gates or encounter failures
-- **FR-011**: System MUST support workflow triggers based on events (e.g., "spec_approved", "pull_request_opened")
-- **FR-012**: System MUST allow authorized users to cancel running workflows
-- **FR-013**: System MUST persist workflow state so that execution can survive system restarts
-- **FR-014**: System MUST enforce approval gate timeouts when configured
-- **FR-015**: System MUST support configurable maximum parallelism to limit concurrent stage execution
+- **FR-002**: YAML Validator MUST validate workflow definitions before ASL translation, checking for syntax errors, missing fields, and invalid references
+- **FR-003**: YAML Validator MUST detect and report circular dependencies in workflow stage definitions
+- **FR-004**: ASL Generator MUST translate YAML to valid AWS Step Functions ASL JSON with sequential Task states
+- **FR-005**: Generated Step Functions state machine MUST pass outputs from completed stages as inputs to dependent stages using JSONPath
+- **FR-006**: ASL Generator MUST translate parallel YAML stages to Step Functions Parallel state type for concurrent execution
+- **FR-007**: Approval Gate Handler MUST integrate with Step Functions `.waitForTaskToken` pattern to pause execution until human approval
+- **FR-008**: AWS Step Functions and AgentCore Observability MUST record all workflow execution events including stage start, completion, and failures
+- **FR-009**: System MUST query Step Functions execution API to provide workflow status showing current state, completed stages, and pending stages
+- **FR-010**: System MUST send EventBridge/SNS notifications when workflows reach approval gates or encounter failures
+- **FR-011**: System MUST deploy EventBridge rules to trigger Step Functions state machine executions based on events
+- **FR-012**: System MUST allow authorized users to stop Step Functions executions via AWS API
+- **FR-013**: AWS Step Functions MUST persist workflow state natively, ensuring execution survives system restarts
+- **FR-014**: Approval Gate Handler Lambda MUST enforce timeouts by sending timeout token to Step Functions
+- **FR-015**: ASL Generator MUST configure Step Functions Parallel state with `MaxConcurrency` parameter to limit parallel execution
 
 ### Key Entities
 
-- **Workflow Definition**: A YAML document that specifies the workflow name, trigger conditions, stages, inputs, outputs, and approval gates. Contains metadata including version, author, and creation timestamp.
+- **Workflow Definition (YAML)**: A YAML document that specifies the workflow name, trigger conditions, stages, inputs, outputs, and approval gates. Translated by ASL Generator to Step Functions state machine JSON. Contains metadata including version, author, and creation timestamp.
 
-- **Workflow Stage**: A single unit of work within a workflow, associated with an agent. Contains name, agent reference, input mappings, output declarations, optional consultation agents, and optional approval gate configuration.
+- **Step Functions State Machine (ASL)**: AWS Step Functions state machine generated from YAML workflow definition. Contains Task states that call AgentCore agents via HTTP, Parallel states for concurrent execution, and `.waitForTaskToken` states for approval gates.
 
-- **Workflow Instance**: A running or completed execution of a workflow definition. Contains unique identifier, reference to workflow definition, current status, start time, input data, and execution history.
+- **Workflow Stage (Task State)**: A single unit of work within a workflow, represented as a Step Functions Task state that invokes an AgentCore agent. Contains name, agent URL (from Agent Card), input/output mappings, retry configuration, and timeout settings.
 
-- **Stage Execution**: A record of a single stage's execution within a workflow instance. Contains stage name, start time, end time, status, input data received, output data produced, and any error details.
+- **Step Functions Execution**: A running or completed execution of a Step Functions state machine. Contains execution ARN, status, start time, input data, and execution history queryable via AWS API.
 
-- **Approval Gate**: A checkpoint in workflow execution requiring human approval. Contains approver requirements, timeout configuration, approval/rejection status, and audit information.
+- **Approval Gate (waitForTaskToken State)**: A Step Functions Task state using `.waitForTaskToken` pattern that pauses execution. Integrated with Lambda function that sends notifications and awaits human approval. Contains task token, approver requirements, timeout configuration.
 
-- **Approval Decision**: A record of a human decision at an approval gate. Contains approver identity, decision (approve/reject), timestamp, and optional comments.
+- **Approval Decision (Task Token Response)**: A record of human decision sent to Step Functions via `send_task_success` or `send_task_failure` API with task token. Contains approver identity, decision, timestamp, and optional comments.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Users can define and save a valid workflow within 10 minutes using the YAML DSL
-- **SC-002**: 100% of invalid workflow definitions are caught by validation before execution
-- **SC-003**: Workflow execution state is recoverable after system restart with no data loss
-- **SC-004**: Parallel stage execution reduces total workflow time by at least 30% compared to sequential execution when 3 or more independent stages exist
-- **SC-005**: Approval gate notifications reach designated approvers within 60 seconds of workflow reaching the gate
+- **SC-001**: Users can define a YAML workflow, translate to ASL, and deploy to Step Functions within 10 minutes
+- **SC-002**: 100% of invalid workflow definitions are caught by YAML Validator before ASL translation
+- **SC-003**: AWS Step Functions native state persistence ensures executions survive system restarts with no data loss
+- **SC-004**: Step Functions Parallel state execution reduces total workflow time by at least 30% compared to sequential execution when 3 or more independent stages exist
+- **SC-005**: Approval Gate Handler Lambda sends notifications via EventBridge/SNS within 60 seconds of Step Functions reaching `.waitForTaskToken` state
 - **SC-006**: 95% of workflow executions complete without requiring manual intervention (excluding intentional approval gates)
-- **SC-007**: Workflow execution status is queryable in real-time with less than 2 second latency
-- **SC-008**: All workflow events are captured in audit logs with complete traceability
-- **SC-009**: Users report 90% satisfaction rate with workflow definition clarity and ease of use
-- **SC-010**: System supports at least 50 concurrent workflow executions without performance degradation
+- **SC-007**: Step Functions execution status API returns workflow state with less than 2 second latency
+- **SC-008**: All workflow events are captured in Step Functions execution history and AgentCore Observability with complete traceability
+- **SC-009**: Users report 90% satisfaction rate with YAML DSL clarity and ease of use compared to writing ASL directly
+- **SC-010**: AWS Step Functions supports at least 50 concurrent executions per account without performance degradation
