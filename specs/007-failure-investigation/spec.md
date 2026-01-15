@@ -5,6 +5,47 @@
 **Status**: Draft
 **Input**: User description: "Failure analysis with context capture, pattern matching, learned remediations, and documentation"
 
+## AgentCore Integration Summary
+
+**THIS IS A FULLY CUSTOM FEATURE** using AgentCore Memory and Observability as data sources.
+
+### What AgentCore Provides (We Use)
+
+- **Observability Service** - OpenTelemetry traces showing agent actions, errors, and execution context when failures occur
+- **Memory Service** - Long-term storage for retrospective data (failure patterns, remediation strategies, success rates)
+- **Code Interpreter** - Sandboxed execution environment for testing remediation strategies before applying to live agents
+
+### What We Build (Custom Failure Analysis Layer)
+
+- **Failure Context Extractor** - Monitors AgentCore Observability for error events and extracts full diagnostic context
+- **Retrospective Store** - Custom database (DynamoDB or RDS) storing failure patterns with vector embeddings for similarity search
+- **Pattern Matching Engine** - Vector similarity search (potentially using Amazon Bedrock embeddings) to find similar historical failures
+- **Remediation Library** - Collection of learned fixes with success rates, stored in AgentCore Memory (long-term)
+- **Auto-Remediation Orchestrator** - Applies learned remediations and records outcomes back to Observability
+
+### Architecture
+
+```
+Agent Fails → AgentCore Observability (OTEL error trace)
+  ↓
+Failure Context Extractor (monitors Observability)
+  ├─ Captures: error type, stack trace, task state, inputs
+  └─ Stores in Retrospective Store (DynamoDB + vector embeddings)
+
+Agent Searches for Similar Failures
+  ↓
+Pattern Matching Engine (vector similarity search)
+  ├─ Query Retrospective Store with current failure embedding
+  └─ Returns similar failures ranked by similarity score
+
+Agent Applies Remediation
+  ↓
+Remediation Library (stored in AgentCore Memory)
+  ├─ Retrieves remediation steps for matched pattern
+  ├─ Executes remediation (may use Code Interpreter for testing)
+  └─ Records outcome → Observability + Retrospective Store
+```
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -293,36 +334,36 @@ Feature: System Learning from Successful Resolutions
 
 ### Functional Requirements
 
-- **FR-001**: System MUST automatically capture complete failure context when an agent encounters an error, timeout, or resource exhaustion
-- **FR-002**: System MUST persist all captured failure context to a durable failure store within a configurable time window
-- **FR-003**: System MUST provide similarity search capability against the retrospective store based on error type, context characteristics, and task category
-- **FR-004**: System MUST return similarity scores with search results indicating confidence level of pattern matches
-- **FR-005**: System MUST maintain remediation strategies associated with failure patterns, including historical success rates
-- **FR-006**: System MUST allow agents to apply remediation strategies and track the outcome of each application
-- **FR-007**: System MUST document all failure investigation outcomes regardless of resolution status
-- **FR-008**: System MUST support escalation to human intervention when remediation options are exhausted
-- **FR-009**: System MUST update remediation success rates based on outcome data
-- **FR-010**: System MUST identify and record emerging failure patterns from accumulated failure data
-- **FR-011**: System MUST handle meta-failures (failures during failure investigation) gracefully without losing original failure context
-- **FR-012**: System MUST provide human operators with complete failure context when escalation occurs
+- **FR-001**: Failure Context Extractor MUST monitor AgentCore Observability for error events and extract complete context from OTEL traces
+- **FR-002**: Failure Context Extractor MUST persist all captured context to Retrospective Store (DynamoDB/RDS) with vector embeddings within configurable time window
+- **FR-003**: Pattern Matching Engine MUST provide vector similarity search against Retrospective Store using Amazon Bedrock embeddings
+- **FR-004**: Pattern Matching Engine MUST return similarity scores (0.0-1.0) with search results indicating confidence of pattern matches
+- **FR-005**: Remediation Library MUST store remediation strategies in AgentCore Memory (long-term) with historical success rates
+- **FR-006**: Auto-Remediation Orchestrator MUST allow agents to apply remediations and track outcomes in AgentCore Observability
+- **FR-007**: System MUST log all failure investigation outcomes to AgentCore Observability regardless of resolution status
+- **FR-008**: System MUST send EventBridge/SNS escalation events when remediation options are exhausted
+- **FR-009**: Remediation Library MUST update success rates in AgentCore Memory based on outcome data from Observability
+- **FR-010**: Pattern Matching Engine MUST identify emerging patterns using clustering algorithms on Retrospective Store vector embeddings
+- **FR-011**: System MUST handle meta-failures gracefully by logging to Observability without losing original failure context
+- **FR-012**: Dashboard MUST query AgentCore Observability to provide human operators with complete failure context during escalation
 
 ### Key Entities
 
-- **Failure Context**: The complete snapshot of agent state, inputs, error details, execution history, and timestamp captured at the point of failure
-- **Retrospective Store**: The persistent storage containing historical failure records, patterns, and associated remediations
-- **Failure Pattern**: A characterized class of failures identified by common attributes that can be matched against new failures
-- **Remediation Strategy**: A documented approach for resolving a failure pattern, including success rate and application history
-- **Similarity Score**: A confidence metric indicating how closely a current failure matches a historical pattern
-- **Failure Outcome**: The documented result of a failure investigation, including resolution details or escalation information
+- **Failure Context (OTEL Trace)**: Complete snapshot extracted from AgentCore Observability error events, including agent state, inputs, error details, stack trace, execution history, and timestamp
+- **Retrospective Store (DynamoDB/RDS)**: Custom database containing historical failure records with vector embeddings for similarity search. Each record includes failure context, remediation strategies, success rates, and metadata
+- **Failure Pattern (Vector Embedding)**: Characterized class of failures represented as vector embedding generated from error attributes. Used for similarity search and clustering to identify related failures
+- **Remediation Strategy (AgentCore Memory)**: Documented approach for resolving a failure pattern, stored in AgentCore long-term Memory. Includes remediation steps, historical success rate, last updated timestamp, and application history
+- **Similarity Score (0.0-1.0)**: Vector cosine similarity metric indicating how closely a current failure's embedding matches a historical pattern's embedding
+- **Failure Outcome (Observability Trace)**: Documented result of failure investigation logged to AgentCore Observability, including resolution status, remediation applied, time to resolution, and escalation details if applicable
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of agent failures result in captured and persisted context within the configured time window
-- **SC-002**: Similarity search returns results within 5 seconds for 95% of queries against a retrospective store containing up to 100,000 failure records
-- **SC-003**: Agents successfully apply learned remediations without human intervention for at least 60% of failures that match known patterns
-- **SC-004**: All failure investigation outcomes are documented with complete required fields within 1 minute of resolution or escalation
-- **SC-005**: Remediation success rate predictions are accurate within 10% of actual outcomes over a rolling 30-day window
-- **SC-006**: Time to resolution for pattern-matched failures decreases by at least 40% compared to novel failures requiring human intervention
-- **SC-007**: Human escalation rate decreases over time as the system accumulates successful remediation strategies (measurable trend over 90 days)
+- **SC-001**: 100% of agent failures result in context extracted from AgentCore Observability and persisted to Retrospective Store within configured time window
+- **SC-002**: Vector similarity search against Retrospective Store returns results within 5 seconds for 95% of queries with up to 100,000 failure records
+- **SC-003**: Agents successfully apply remediations from AgentCore Memory without human intervention for at least 60% of failures matching known patterns
+- **SC-004**: All failure investigation outcomes are logged to AgentCore Observability with complete required fields within 1 minute
+- **SC-005**: Remediation success rate predictions stored in AgentCore Memory are accurate within 10% of actual outcomes over rolling 30-day window
+- **SC-006**: Time to resolution for pattern-matched failures decreases by at least 40% compared to novel failures requiring human escalation
+- **SC-007**: Human escalation rate (measured by EventBridge escalation events) decreases over time as Remediation Library grows (measurable trend over 90 days)
