@@ -5,6 +5,48 @@
 **Status**: Draft
 **Input**: User description: "Human oversight dashboard with approval gates, escalations, monitoring, and override controls"
 
+## AgentCore Integration Summary
+
+**THIS IS A FULLY CUSTOM FEATURE** that queries AgentCore APIs and integrates with Step Functions for approvals.
+
+### What AgentCore Provides (We Use)
+
+- **Observability API** - Query agent execution traces, iteration counts, errors, and activity logs for real-time monitoring
+- **Runtime API** - Query agent deployment status, execution state, and metadata
+- **Memory API** - Query agent checkpoints and shared memory for context retrieval
+- **Step Functions API** - Send task tokens (`send_task_success`/`send_task_failure`) for approval gate decisions
+
+### What We Build (Custom Dashboard UI and APIs)
+
+- **Dashboard Web Application** - React/Vue UI for human operators to view and act on oversight data
+- **Approval Gate Interface** - UI for viewing pending approvals from Step Functions `.waitForTaskToken` states and sending decisions
+- **Real-Time Monitoring Views** - Displays agent status, iteration counts, and activity logs from Observability API
+- **Escalation Management** - Receives EventBridge escalation events and displays for human review
+- **Override Control Panel** - Sends stop/pause commands to Step Functions executions and AgentCore Runtime
+- **Audit Trail Viewer** - Queries Observability for complete history of agent decisions and human interventions
+
+### Architecture
+
+```
+Dashboard UI (React/Vue)
+  ↓
+Backend API (Lambda/API Gateway)
+  ├─ Queries AgentCore Observability API (agent activity, errors)
+  ├─ Queries AgentCore Runtime API (agent status)
+  ├─ Queries AgentCore Memory API (checkpoints, context)
+  ├─ Queries Step Functions API (workflow status, pending approvals)
+  └─ Sends Step Functions task tokens (approval decisions)
+
+Approval Gates:
+  Step Functions .waitForTaskToken → Lambda sends notification → Dashboard displays → Human decides → send_task_success/failure
+
+Real-Time Updates:
+  AgentCore Observability → EventBridge → Lambda → WebSocket/SSE → Dashboard
+
+Override Controls:
+  Dashboard → Backend API → Step Functions StopExecution or AgentCore Runtime stop
+```
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -280,36 +322,36 @@ Feature: Audit Trail Viewing
 
 ### Functional Requirements
 
-- **FR-001**: System MUST display all pending approval gates with workflow context, agent information, and time waiting
-- **FR-002**: System MUST allow operators to approve, reject, or request revision of workflow stages
-- **FR-003**: System MUST display real-time status of all active agents including iteration count since last checkpoint
-- **FR-004**: System MUST visually highlight agents approaching the 3-iteration checkpoint threshold
-- **FR-005**: System MUST display escalation queue with prioritization and categorization
-- **FR-006**: System MUST allow operators to respond to escalations with guidance or reassign to other operators
-- **FR-007**: System MUST provide pause, resume, cancel, and redirect controls for all active agents
-- **FR-008**: System MUST allow operators to override any agent decision with recorded justification
-- **FR-009**: System MUST maintain complete audit trail of all agent decisions and human interventions
-- **FR-010**: System MUST support audit trail search and filtering by multiple criteria
-- **FR-011**: System MUST record operator identity and timestamp for all human actions
-- **FR-012**: System MUST generate compliance reports demonstrating checkpoint and approval gate adherence
+- **FR-001**: Dashboard MUST query Step Functions API for pending `.waitForTaskToken` states and display with workflow context, agent info, and wait time
+- **FR-002**: Dashboard MUST send `send_task_success` or `send_task_failure` with task token to Step Functions for approval decisions
+- **FR-003**: Dashboard MUST query AgentCore Observability API for agent execution traces to display real-time status and iteration counts
+- **FR-004**: Dashboard MUST highlight agents in Observability where iteration count exceeds threshold (3 iterations without checkpoint)
+- **FR-005**: Dashboard MUST subscribe to EventBridge escalation events and display escalations with priority and category
+- **FR-006**: Dashboard MUST allow operators to send responses via EventBridge or direct agent invocation for escalations
+- **FR-007**: Dashboard MUST call Step Functions `StopExecution` API and AgentCore Runtime stop commands for control operations
+- **FR-008**: Dashboard MUST record override decisions to AgentCore Memory with operator identity and justification
+- **FR-009**: Dashboard MUST query AgentCore Observability for complete audit trail of agent decisions and Step Functions execution history
+- **FR-010**: Dashboard MUST provide search UI that filters Observability traces by agent, timestamp, event type, and custom criteria
+- **FR-011**: Dashboard backend MUST record operator identity (from Cognito) and timestamp with all human actions to Observability
+- **FR-012**: Dashboard MUST generate compliance reports by querying Observability for checkpoint adherence and Step Functions for approval gate metrics
 
 ### Key Entities
 
-- **Approval Gate**: A workflow stage boundary requiring human review; contains workflow reference, stage information, agent work artifacts, and approval status
-- **Escalation**: An agent-initiated request for human guidance; contains escalating agent, reason, required decision, and resolution status
-- **Agent Status**: Real-time operational state of an agent; contains current task, iteration count, health indicators, and activity log
-- **Override**: A human correction of an agent decision; contains original decision, override decision, operator identity, and justification
-- **Audit Entry**: A recorded event in the audit trail; contains timestamp, actor (human or agent), action type, decision, and context
+- **Approval Gate (Step Functions Task Token)**: Step Functions `.waitForTaskToken` state pausing workflow execution. Dashboard queries Step Functions API for pending tokens, displays context from AgentCore Observability, and sends `send_task_success`/`send_task_failure` with operator decision
+- **Escalation (EventBridge Event)**: Agent-initiated escalation sent to EventBridge with type, agent ID, reason, and required decision. Dashboard subscribes to EventBridge, displays in escalation queue, and allows operator response
+- **Agent Status (Observability Trace Data)**: Real-time operational state queried from AgentCore Observability API. Contains current task, iteration count from OTEL spans, health indicators, and activity log from trace events
+- **Override (Memory Record)**: Human correction of agent decision, stored in AgentCore Memory. Contains original decision from Observability, override decision, operator identity from Cognito, justification, and timestamp
+- **Audit Entry (Observability Trace)**: Recorded event in AgentCore Observability or Step Functions execution history. Contains timestamp, actor (human or agent), action type, decision, and full context. Queryable via Observability API for compliance reports
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Operators can view and act on approval gates within 30 seconds of accessing the dashboard
-- **SC-002**: 100% of agent decisions are recorded in the audit trail with timestamps and context
-- **SC-003**: Override controls respond within 5 seconds of operator command, even under high agent load
-- **SC-004**: Escalations are surfaced to operators within 10 seconds of agent escalation
-- **SC-005**: Audit trail searches return results within 5 seconds for queries spanning up to 30 days of history
-- **SC-006**: Dashboard displays accurate agent status with no more than 10 seconds of latency
-- **SC-007**: Compliance reports correctly identify 100% of checkpoint threshold violations
-- **SC-008**: Operators can successfully pause any running agent within 2 user interactions
+- **SC-001**: Dashboard queries Step Functions API and displays pending approval gates within 30 seconds of page load
+- **SC-002**: 100% of agent decisions are recorded in AgentCore Observability with timestamps and context
+- **SC-003**: Step Functions `StopExecution` API calls from dashboard respond within 5 seconds
+- **SC-004**: EventBridge escalation events appear in dashboard within 10 seconds of agent emission
+- **SC-005**: AgentCore Observability API queries return audit results within 5 seconds for queries spanning up to 30 days
+- **SC-006**: Dashboard refreshes agent status from Observability API with no more than 10 seconds of latency
+- **SC-007**: Compliance reports correctly identify 100% of checkpoint threshold violations by querying Observability traces
+- **SC-008**: Operators can pause any running agent within 2 clicks (dashboard → backend → Step Functions/Runtime API)
