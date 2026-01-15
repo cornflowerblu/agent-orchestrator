@@ -2,8 +2,116 @@
 
 **Feature Branch**: `006-verification-pipeline`
 **Created**: 2026-01-14
+**Updated**: 2026-01-14 (AgentCore alignment)
 **Status**: Draft
 **Input**: User description: "Automated verification with quality gates, completion criteria, and regression detection"
+
+## Architecture Overview
+
+This feature builds a verification orchestration layer on top of AWS Bedrock AgentCore primitives:
+
+### What AgentCore Provides (Native Capabilities)
+
+- **Code Interpreter** - Sandboxed execution of verification scripts (linters, test runners, build tools)
+- **Gateway** - Expose external verification tools as MCP servers (SAST, security scanners)
+- **Observability** - Track verification execution, failures, performance metrics
+
+### What We Build (Custom Implementation)
+
+- **Verification Orchestration** - AWS Step Functions workflow to coordinate verification checks
+- **Quality Gate Logic** - Block task completion based on verification results
+- **Baseline Storage** - DynamoDB for storing quality metrics and detecting regressions
+- **Completion Criteria Engine** - Configurable rules per task type
+
+### Verification Flow
+
+```
+Agent Completes Task
+  ↓
+Orchestrator Triggers Step Functions Verification Workflow
+  ↓
+Parallel Execution (Step Functions Map State):
+  ├─ Linting Check (Code Interpreter: eslint, prettier, pylint)
+  ├─ Testing Check (Code Interpreter: pytest, jest, vitest)
+  ├─ Build Check (Code Interpreter: npm run build, cargo build)
+  └─ Security Scan (Gateway MCP: SAST tools, Semgrep)
+  ↓
+Aggregate Results (Step Functions Choice State)
+  ↓
+Compare Against Baseline (DynamoDB Query)
+  ↓
+Quality Gate Decision:
+  - All Pass → Store new baseline, Mark Complete
+  - Any Fail → Block completion, Return feedback to Agent via Memory
+```
+
+### Code Interpreter Usage Example
+
+Verification checks run as Python scripts in AgentCore Code Interpreter:
+
+```python
+# verification_script.py - Executed in Code Interpreter sandbox
+import subprocess
+import json
+
+@app.entrypoint
+def run_verification(request):
+    """Execute verification checks on agent output"""
+    code_path = request.get("code_path")
+
+    # Linting
+    lint_result = subprocess.run(
+        ["eslint", code_path, "--format", "json"],
+        capture_output=True
+    )
+
+    # Testing
+    test_result = subprocess.run(
+        ["jest", "--coverage", "--json"],
+        capture_output=True
+    )
+
+    # Build
+    build_result = subprocess.run(
+        ["npm", "run", "build"],
+        capture_output=True
+    )
+
+    return {
+        "linting": {
+            "passed": lint_result.returncode == 0,
+            "errors": json.loads(lint_result.stdout) if lint_result.returncode != 0 else []
+        },
+        "testing": {
+            "passed": test_result.returncode == 0,
+            "coverage": 85,
+            "failures": json.loads(test_result.stdout).get("testResults", [])
+        },
+        "build": {
+            "passed": build_result.returncode == 0,
+            "error": build_result.stderr.decode() if build_result.returncode != 0 else None
+        }
+    }
+```
+
+### Step Functions Orchestration
+
+The verification workflow is defined as AWS Step Functions state machine:
+
+1. **Trigger**: Orchestrator agent invokes Step Functions when agent marks task complete
+2. **Parallel Checks**: Map state executes Code Interpreter verification scripts concurrently
+3. **Aggregate**: Choice state collects results from all checks
+4. **Baseline Comparison**: Task queries DynamoDB for historical metrics
+5. **Gate Decision**: Choice state determines pass/fail based on results + regression detection
+6. **Feedback Loop**: Failed verification writes results to AgentCore Memory for agent retrieval
+
+### Key Design Principles
+
+- **Step Functions orchestrates, Code Interpreter executes** - Clear separation of concerns
+- **AgentCore Memory for feedback** - Agents query Memory to retrieve verification results
+- **DynamoDB for baselines** - Persistent storage of quality metrics per project/task-type
+- **Gateway for external tools** - SAST, Semgrep, or custom tools exposed as MCP servers
+- **Observability for tracking** - All verification runs traced via AgentCore Observability
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -23,13 +131,19 @@
   See constitution principle II. Gherkin User Stories (NON-NEGOTIABLE).
 -->
 
-### User Story 1 - Run Verification Checks on Agent Output (Priority: P1)
+### User Story 1 - Step Functions Orchestrates Verification via Code Interpreter (Priority: P1)
 
-As a platform operator, I need the system to automatically run verification checks on all agent output so that no incomplete or broken work is marked as done.
+As a platform operator, I need the system to automatically trigger a Step Functions workflow that executes verification checks via AgentCore Code Interpreter so that no incomplete or broken work is marked as done.
 
-**Why this priority**: This is the core functionality that enforces Principle III (Verification-First Completion). Without automated verification, agents could claim completion on broken code. This is the foundation upon which all other verification features depend.
+**Why this priority**: This is the core functionality that enforces Principle III (Verification-First Completion). Without automated verification orchestration, agents could claim completion on broken code. This is the foundation upon which all other verification features depend.
 
-**Independent Test**: Can be fully tested by having an agent submit output and verifying the system runs linting, tests, build, and security scans automatically. Delivers immediate value by catching broken submissions before they propagate.
+**Independent Test**: Can be fully tested by having an agent submit output, verifying the orchestrator triggers Step Functions, Step Functions invokes Code Interpreter for checks (linting, tests, build), and results are aggregated. Delivers immediate value by catching broken submissions before they propagate.
+
+**AgentCore Integration**:
+- Orchestrator agent invokes Step Functions execution via AWS SDK
+- Step Functions Map state invokes Code Interpreter for each check type
+- Code Interpreter runs verification scripts in sandboxed environment
+- Results written to AgentCore Memory for agent retrieval
 
 **Acceptance Scenarios** (Gherkin format REQUIRED):
 
