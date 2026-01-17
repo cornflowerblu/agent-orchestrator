@@ -188,8 +188,8 @@
 - [x] T086 [US4] Create ObservabilityMonitor class skeleton in src/orchestrator/monitor.py
 - [x] T087 [US4] Implement ObservabilityMonitor.watch_agent() in src/orchestrator/monitor.py
 - [x] T088 [US4] Implement threshold detection logic (SC-008: 80%) in src/orchestrator/monitor.py
-- [ ] T089 [US4] Integrate PolicyEnforcer with LoopFramework in src/loop/framework.py
-- [ ] T090 [US4] Add PolicyViolation handling to LoopFramework.run() in src/loop/framework.py
+- [x] T089 [US4] Integrate PolicyEnforcer with LoopFramework in src/loop/framework.py
+- [x] T090 [US4] Add PolicyViolation handling to LoopFramework.run() in src/loop/framework.py
 
 ### Unit Tests for User Story 4
 
