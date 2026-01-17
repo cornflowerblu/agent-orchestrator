@@ -90,7 +90,7 @@ addopts = [
 markers = [
     "unit: Unit tests",
     "integration: Integration tests (real AWS deployment required)",
-    "integration_local: Integration tests (local moto mocking)",
+    "sam_local: SAM local integration tests (LocalStack required)",
     "contract: Contract tests",
     "slow: Slow running tests",
 ]

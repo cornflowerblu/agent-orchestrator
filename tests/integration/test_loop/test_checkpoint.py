@@ -18,9 +18,9 @@ from src.loop.models import (
 
 
 @pytest.mark.integration
-@pytest.mark.integration_local
+@pytest.mark.sam_local
 @pytest.mark.asyncio
-async def test_checkpoint_memory_roundtrip(dynamodb_local) -> None:
+async def test_checkpoint_memory_roundtrip(dynamodb_localstack) -> None:
     """Test full checkpoint save and load cycle via DynamoDB service.
 
     T075: Write integration test for DynamoDB service.
@@ -94,9 +94,9 @@ async def test_checkpoint_memory_roundtrip(dynamodb_local) -> None:
 
 
 @pytest.mark.integration
-@pytest.mark.integration_local
+@pytest.mark.sam_local
 @pytest.mark.asyncio
-async def test_checkpoint_save_at_intervals(dynamodb_local) -> None:
+async def test_checkpoint_save_at_intervals(dynamodb_localstack) -> None:
     """Test checkpoints are saved at configured intervals.
 
     T075: Integration test verifying checkpoint interval logic works with real DynamoDB.
@@ -143,9 +143,9 @@ async def test_checkpoint_save_at_intervals(dynamodb_local) -> None:
 
 
 @pytest.mark.integration
-@pytest.mark.integration_local
+@pytest.mark.sam_local
 @pytest.mark.asyncio
-async def test_checkpoint_resume_from_saved_state(dynamodb_local) -> None:
+async def test_checkpoint_resume_from_saved_state(dynamodb_localstack) -> None:
     """Test resuming loop execution from a saved checkpoint.
 
     T075: Integration test for resume_from functionality with DynamoDB.
