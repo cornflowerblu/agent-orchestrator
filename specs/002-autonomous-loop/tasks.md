@@ -193,7 +193,7 @@
 
 ### Unit Tests for User Story 4
 
-- [ ] T091 [P] [US4] Write unit tests for PolicyConfig in tests/unit/test_orchestrator/test_models.py
+- [x] T091 [P] [US4] Write unit tests for PolicyConfig in tests/unit/test_orchestrator/test_models.py
 - [ ] T092 [P] [US4] Write unit tests for PolicyEnforcer in tests/unit/test_orchestrator/test_policy.py
 - [ ] T093 [P] [US4] Write unit tests for AlertManager in tests/unit/test_orchestrator/test_alerts.py
 - [ ] T094 [US4] Write unit tests for ObservabilityMonitor in tests/unit/test_orchestrator/test_monitor.py

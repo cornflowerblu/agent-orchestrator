@@ -11,7 +11,10 @@ Maps to FR-004: Support standard exit conditions (tests, build, linting, securit
 Maps to SC-002: Verification timeout of 30 seconds per tool.
 """
 
+import asyncio
 import logging
+from functools import wraps
+from typing import Callable
 
 from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
 
@@ -105,6 +108,37 @@ class ExitConditionEvaluator:
             self._gateway_client = GatewayClient(gateway_url=self.gateway_url)
         return self._gateway_client
 
+    def _execute_code_with_timeout(self, command: str) -> dict:
+        """Execute code via Code Interpreter with timeout (T051).
+
+        Enforces timeout per SC-002 (30s default).
+
+        Args:
+            command: Shell command to execute
+
+        Returns:
+            Result dictionary with exit_code and output
+
+        Raises:
+            TimeoutError: If execution exceeds timeout
+        """
+        import concurrent.futures
+        import threading
+
+        # Use ThreadPoolExecutor for timeout enforcement
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(self.code_interpreter.execute_code, command)
+
+            try:
+                result = future.result(timeout=self.timeout_seconds)
+                return result
+            except concurrent.futures.TimeoutError as e:
+                error_msg = f"Code execution timeout after {self.timeout_seconds}s"
+                logger.warning(error_msg)
+                # Cancel the future
+                future.cancel()
+                raise TimeoutError(error_msg) from e
+
     def evaluate_tests(
         self, config: ExitConditionConfig, iteration: int
     ) -> ExitConditionStatus:
@@ -137,8 +171,8 @@ class ExitConditionEvaluator:
 
             logger.debug(f"Evaluating tests with command: {pytest_cmd}")
 
-            # Execute via Code Interpreter
-            result = self.code_interpreter.execute_code(pytest_cmd)
+            # Execute via Code Interpreter with timeout
+            result = self._execute_code_with_timeout(pytest_cmd)
 
             exit_code = result.get("exit_code", 1)
             output = result.get("output", "")
@@ -194,8 +228,8 @@ class ExitConditionEvaluator:
 
             logger.debug(f"Evaluating linting with command: {ruff_cmd}")
 
-            # Execute via Code Interpreter
-            result = self.code_interpreter.execute_code(ruff_cmd)
+            # Execute via Code Interpreter with timeout
+            result = self._execute_code_with_timeout(ruff_cmd)
 
             exit_code = result.get("exit_code", 1)
             output = result.get("output", "")
@@ -247,8 +281,8 @@ class ExitConditionEvaluator:
 
             logger.debug(f"Evaluating build with command: {build_cmd}")
 
-            # Execute via Code Interpreter
-            result = self.code_interpreter.execute_code(build_cmd)
+            # Execute via Code Interpreter with timeout
+            result = self._execute_code_with_timeout(build_cmd)
 
             exit_code = result.get("exit_code", 1)
             output = result.get("output", "")
