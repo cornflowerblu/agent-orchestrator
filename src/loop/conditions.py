@@ -15,7 +15,10 @@ import asyncio
 import logging
 from typing import Any
 
+from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
+
 from src.exceptions import ExitConditionEvaluationError
+from src.gateway.tools import GatewayClient
 from src.loop.models import (
     ExitConditionConfig,
     ExitConditionStatus,
@@ -63,7 +66,46 @@ class ExitConditionEvaluator:
         self.gateway_url = gateway_url
         self.timeout_seconds = timeout_seconds
 
+        # Lazy initialization - clients created on first use
+        self._code_interpreter: CodeInterpreter | None = None
+        self._gateway_client: GatewayClient | None = None
+
         logger.info(
             f"Initialized ExitConditionEvaluator for region {region} "
             f"with {timeout_seconds}s timeout"
         )
+
+    @property
+    def code_interpreter(self) -> CodeInterpreter:
+        """Get or create Code Interpreter client (T042).
+
+        Lazy initialization to avoid creating sessions until needed.
+
+        Returns:
+            CodeInterpreter client instance
+        """
+        if self._code_interpreter is None:
+            logger.debug(f"Creating Code Interpreter client for region {self.region}")
+            self._code_interpreter = CodeInterpreter(
+                region=self.region, integration_source="agent-orchestrator"
+            )
+        return self._code_interpreter
+
+    @property
+    def gateway_client(self) -> GatewayClient:
+        """Get or create Gateway client (T042).
+
+        Lazy initialization to avoid creating connections until needed.
+
+        Returns:
+            GatewayClient instance
+
+        Raises:
+            ValueError: If gateway_url was not provided during initialization
+        """
+        if self._gateway_client is None:
+            if not self.gateway_url:
+                raise ValueError("Gateway URL must be provided to use gateway_client")
+            logger.debug(f"Creating Gateway client for {self.gateway_url}")
+            self._gateway_client = GatewayClient(gateway_url=self.gateway_url)
+        return self._gateway_client

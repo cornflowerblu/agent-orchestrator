@@ -1,8 +1,10 @@
 """Unit tests for exit condition evaluation (T054-T057)."""
 
 import pytest
+from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
 
 from src.exceptions import ExitConditionEvaluationError
+from src.gateway.tools import GatewayClient
 from src.loop.conditions import ExitConditionEvaluator
 from src.loop.models import (
     ExitConditionConfig,
@@ -36,3 +38,35 @@ class TestExitConditionEvaluator:
         )
 
         assert evaluator.gateway_url == "https://test-gateway.com"
+
+    def test_code_interpreter_initialization(self):
+        """Should lazily initialize Code Interpreter client (T042)."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+
+        # Should be None until first use
+        assert evaluator._code_interpreter is None
+
+        # Access code_interpreter property
+        code_interpreter = evaluator.code_interpreter
+
+        # Should now be initialized
+        assert code_interpreter is not None
+        assert evaluator._code_interpreter is not None
+        assert isinstance(evaluator._code_interpreter, CodeInterpreter)
+
+    def test_gateway_client_initialization(self):
+        """Should lazily initialize Gateway client when URL provided."""
+        evaluator = ExitConditionEvaluator(
+            region="us-east-1", gateway_url="https://test-gateway.com"
+        )
+
+        # Should be None until first use
+        assert evaluator._gateway_client is None
+
+        # Access gateway_client property
+        gateway_client = evaluator.gateway_client
+
+        # Should now be initialized
+        assert gateway_client is not None
+        assert evaluator._gateway_client is not None
+        assert isinstance(evaluator._gateway_client, GatewayClient)

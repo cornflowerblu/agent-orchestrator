@@ -15,18 +15,21 @@ Example:
 
 import asyncio
 import uuid
+from datetime import UTC, datetime
 from typing import Any, Callable
 
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
+from src.exceptions import LoopFrameworkError
 from src.loop.models import (
     ExitConditionStatus,
     ExitConditionStatusValue,
     IterationEvent,
     IterationEventType,
     LoopConfig,
+    LoopOutcome,
     LoopPhase,
     LoopResult,
     LoopState,
@@ -222,18 +225,144 @@ class LoopFramework:
         """Run the autonomous loop.
 
         Maps to T028: Implement LoopFramework.run() main loop logic.
+        Maps to T031: Implement iteration execution with work_function callback.
+        Maps to T032: Implement loop termination logic.
+        Maps to T033: Implement re-entry prevention.
 
-        This is a placeholder that will be implemented in subsequent tasks.
+        The loop runs until:
+        1. All exit conditions are met (outcome: COMPLETED)
+        2. Max iterations reached (outcome: ITERATION_LIMIT)
+        3. Error occurs (outcome: ERROR)
 
         Args:
-            work_function: Async function to call each iteration
-            initial_state: Optional initial agent state
+            work_function: Async function to call each iteration.
+                Signature: async def work(iteration: int, state: dict, framework: LoopFramework) -> dict
+            initial_state: Optional initial agent state dict
 
         Returns:
-            LoopResult with final outcome
+            LoopResult with final outcome, state, and statistics
+
+        Raises:
+            LoopFrameworkError: If loop is already active (re-entry prevention)
+
+        Example:
+            async def do_work(iteration, state, fw):
+                state["count"] = state.get("count", 0) + 1
+                return state
+
+            result = await framework.run(work_function=do_work, initial_state={})
         """
-        # TODO: Implement in T028
-        raise NotImplementedError("LoopFramework.run() will be implemented in T028")
+        # T033: Re-entry prevention
+        if self.state.is_active:
+            raise LoopFrameworkError("Loop is already active. Cannot start a new run while executing.")
+
+        # Initialize
+        loop_start_time = datetime.now(UTC)
+        agent_state = initial_state or {}
+        outcome = LoopOutcome.ITERATION_LIMIT  # Default if we hit max iterations
+
+        try:
+            # Set active flag
+            self.state.is_active = True
+            self.state.phase = LoopPhase.RUNNING
+
+            # Emit loop started event
+            await self.emit_event(
+                event_type=IterationEventType.LOOP_STARTED,
+                details={"initial_state": agent_state},
+            )
+
+            # T031: Main iteration loop
+            for iteration in range(self.config.max_iterations):
+                self.state.current_iteration = iteration
+                self.state.phase = LoopPhase.RUNNING
+
+                # Emit iteration started event
+                await self.emit_event(
+                    event_type=IterationEventType.ITERATION_STARTED,
+                    details={"iteration": iteration},
+                )
+
+                # Execute work function
+                iteration_start = datetime.now(UTC)
+                agent_state = await work_function(iteration, agent_state, self)
+                iteration_duration = (datetime.now(UTC) - iteration_start).total_seconds() * 1000
+
+                # Update state
+                self.state.agent_state = agent_state
+                self.state.last_iteration_at = datetime.now(UTC).isoformat()
+
+                # Emit iteration completed event
+                await self.emit_event(
+                    event_type=IterationEventType.ITERATION_COMPLETED,
+                    details={
+                        "iteration": iteration,
+                        "duration_ms": iteration_duration,
+                    },
+                )
+
+                # T032: Check termination conditions
+                if self.state.all_conditions_met():
+                    outcome = LoopOutcome.COMPLETED
+                    break
+
+            # Calculate final statistics
+            loop_end_time = datetime.now(UTC)
+            duration_seconds = (loop_end_time - loop_start_time).total_seconds()
+
+            # Emit loop completed event
+            self.state.phase = LoopPhase.COMPLETING
+            await self.emit_event(
+                event_type=IterationEventType.LOOP_COMPLETED,
+                details={"outcome": outcome.value},
+            )
+
+            # Create result
+            result = LoopResult(
+                session_id=self.state.session_id,
+                agent_name=self.state.agent_name,
+                outcome=outcome,
+                iterations_completed=self.state.current_iteration + 1,
+                max_iterations=self.state.max_iterations,
+                started_at=self.state.started_at,
+                completed_at=loop_end_time.isoformat(),
+                duration_seconds=duration_seconds,
+                final_exit_conditions=self.state.exit_conditions.copy(),
+                final_state=agent_state,
+            )
+
+            self.state.phase = LoopPhase.COMPLETED
+            return result
+
+        except Exception as e:
+            # Handle errors
+            self.state.phase = LoopPhase.ERROR
+
+            await self.emit_event(
+                event_type=IterationEventType.LOOP_ERROR,
+                details={"error": str(e)},
+            )
+
+            loop_end_time = datetime.now(UTC)
+            duration_seconds = (loop_end_time - loop_start_time).total_seconds()
+
+            return LoopResult(
+                session_id=self.state.session_id,
+                agent_name=self.state.agent_name,
+                outcome=LoopOutcome.ERROR,
+                iterations_completed=self.state.current_iteration + 1,
+                max_iterations=self.state.max_iterations,
+                started_at=self.state.started_at,
+                completed_at=loop_end_time.isoformat(),
+                duration_seconds=duration_seconds,
+                final_exit_conditions=self.state.exit_conditions.copy(),
+                final_state=agent_state,
+                error_message=str(e),
+            )
+
+        finally:
+            # T033: Always clear active flag
+            self.state.is_active = False
 
     async def emit_event(
         self,
@@ -243,15 +372,38 @@ class LoopFramework:
         """Emit an event to Observability.
 
         Maps to T035: Implement LoopFramework.emit_event() for Observability.
+        Maps to FR-014: Emit OTEL traces recording start/completion time.
 
-        This is a placeholder that will be implemented in subsequent tasks.
+        This creates an IterationEvent and emits it as an OTEL span.
 
         Args:
             event_type: Type of event to emit
             details: Optional event-specific details
+
+        Example:
+            await framework.emit_event(
+                event_type=IterationEventType.CHECKPOINT_SAVED,
+                details={"checkpoint_id": "cp-123"},
+            )
         """
-        # TODO: Implement in T035
-        pass
+        # Create event
+        event = IterationEvent(
+            event_type=event_type,
+            session_id=self.state.session_id,
+            agent_name=self.state.agent_name,
+            iteration=self.state.current_iteration,
+            max_iterations=self.state.max_iterations,
+            phase=self.state.phase,
+            exit_conditions_met=sum(
+                1 for c in self.state.exit_conditions if c.status == ExitConditionStatusValue.MET
+            ),
+            exit_conditions_total=len(self.state.exit_conditions),
+            details=details or {},
+        )
+
+        # Emit as OTEL span
+        with self.tracer.start_as_current_span(event_type.value) as span:
+            span.set_attributes(event.to_otel_attributes())
 
     async def save_checkpoint(self, custom_data: dict[str, Any] | None = None) -> None:
         """Save a checkpoint to Memory.

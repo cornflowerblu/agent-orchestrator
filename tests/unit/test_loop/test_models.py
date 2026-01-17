@@ -997,3 +997,220 @@ class TestLoopState:
             )
 
         assert "max_iterations" in str(exc_info.value)
+
+
+# =============================================================================
+# T072: Checkpoint Model Tests (User Story 2)
+# =============================================================================
+
+
+class TestCheckpoint:
+    """Tests for Checkpoint model (T059, T060, T061)."""
+
+    def test_from_loop_state_creates_checkpoint(self) -> None:
+        """Test Checkpoint.from_loop_state() creates checkpoint from LoopState."""
+        # Create a LoopState with test data
+        loop_state = LoopState(
+            session_id="test-session-123",
+            agent_name="test-agent",
+            max_iterations=100,
+            current_iteration=10,
+            phase=LoopPhase.RUNNING,
+            is_active=True,
+            exit_conditions=[
+                ExitConditionStatus(
+                    type=ExitConditionType.ALL_TESTS_PASS,
+                    status=ExitConditionStatusValue.MET,
+                ),
+            ],
+            agent_state={"key": "value"},
+        )
+
+        # Create checkpoint from loop state
+        checkpoint = Checkpoint.from_loop_state(loop_state)
+
+        # Verify checkpoint contains correct data
+        assert checkpoint.session_id == "test-session-123"
+        assert checkpoint.iteration == 10
+        assert checkpoint.loop_state_snapshot == loop_state.model_dump()
+        assert checkpoint.created_at is not None
+        assert checkpoint.agent_name == "test-agent"
+
+    def test_to_loop_state_reconstructs_state(self) -> None:
+        """Test Checkpoint.to_loop_state() reconstructs LoopState from checkpoint."""
+        # Create original LoopState
+        original_state = LoopState(
+            session_id="test-session-456",
+            agent_name="test-agent",
+            max_iterations=50,
+            current_iteration=25,
+            phase=LoopPhase.EVALUATING_CONDITIONS,
+            is_active=False,
+            exit_conditions=[
+                ExitConditionStatus(
+                    type=ExitConditionType.LINTING_CLEAN,
+                    status=ExitConditionStatusValue.NOT_MET,
+                ),
+            ],
+            agent_state={"counter": 42},
+        )
+
+        # Create checkpoint and reconstruct
+        checkpoint = Checkpoint.from_loop_state(original_state)
+        reconstructed_state = checkpoint.to_loop_state()
+
+        # Verify reconstructed state matches original
+        assert reconstructed_state.session_id == original_state.session_id
+        assert reconstructed_state.agent_name == original_state.agent_name
+        assert reconstructed_state.max_iterations == original_state.max_iterations
+        assert reconstructed_state.current_iteration == original_state.current_iteration
+        assert reconstructed_state.phase == original_state.phase
+        assert reconstructed_state.is_active == original_state.is_active
+        assert len(reconstructed_state.exit_conditions) == 1
+        assert reconstructed_state.exit_conditions[0].type == ExitConditionType.LINTING_CLEAN
+        assert reconstructed_state.agent_state == {"counter": 42}
+
+    def test_checkpoint_roundtrip(self) -> None:
+        """Test full roundtrip: LoopState -> Checkpoint -> LoopState."""
+        # Create a complex LoopState
+        original_state = LoopState(
+            session_id="roundtrip-session",
+            agent_name="roundtrip-agent",
+            max_iterations=200,
+            current_iteration=75,
+            phase=LoopPhase.RUNNING,
+            is_active=True,
+            started_at="2026-01-17T10:00:00Z",
+            last_iteration_at="2026-01-17T10:05:00Z",
+            last_checkpoint_at="2026-01-17T10:04:00Z",
+            last_checkpoint_iteration=70,
+            exit_conditions=[
+                ExitConditionStatus(
+                    type=ExitConditionType.ALL_TESTS_PASS,
+                    status=ExitConditionStatusValue.MET,
+                ),
+                ExitConditionStatus(
+                    type=ExitConditionType.BUILD_SUCCEEDS,
+                    status=ExitConditionStatusValue.NOT_MET,
+                ),
+            ],
+            agent_state={"nested": {"data": [1, 2, 3]}, "flag": True},
+        )
+
+        # Roundtrip
+        checkpoint = Checkpoint.from_loop_state(original_state)
+        restored_state = checkpoint.to_loop_state()
+
+        # Verify all fields preserved
+        assert restored_state.model_dump() == original_state.model_dump()
+
+    def test_checkpoint_has_unique_id(self) -> None:
+        """Test that each checkpoint has a unique checkpoint_id."""
+        loop_state = LoopState(
+            session_id="test-session",
+            agent_name="test-agent",
+            max_iterations=100,
+            current_iteration=5,
+        )
+
+        checkpoint1 = Checkpoint.from_loop_state(loop_state)
+        checkpoint2 = Checkpoint.from_loop_state(loop_state)
+
+        # Each checkpoint should have an ID
+        assert checkpoint1.checkpoint_id is not None
+        assert checkpoint2.checkpoint_id is not None
+        # IDs should be different (UUID-based)
+        assert checkpoint1.checkpoint_id != checkpoint2.checkpoint_id
+
+    def test_checkpoint_serialization(self) -> None:
+        """Test Checkpoint can be serialized to dict/JSON for Memory storage."""
+        loop_state = LoopState(
+            session_id="test-session",
+            agent_name="test-agent",
+            max_iterations=100,
+            current_iteration=10,
+            phase=LoopPhase.RUNNING,
+        )
+
+        checkpoint = Checkpoint.from_loop_state(loop_state)
+        data = checkpoint.model_dump()
+
+        # Verify serialized format
+        assert "checkpoint_id" in data
+        assert "session_id" in data
+        assert "iteration" in data
+        assert "loop_state_snapshot" in data
+        assert "created_at" in data
+        assert "agent_name" in data
+        assert data["session_id"] == "test-session"
+        assert data["iteration"] == 10
+
+    def test_checkpoint_deserialization(self) -> None:
+        """Test Checkpoint can be created from dict (from Memory)."""
+        data = {
+            "checkpoint_id": "checkpoint-123",
+            "session_id": "test-session",
+            "iteration": 15,
+            "loop_state_snapshot": {
+                "session_id": "test-session",
+                "agent_name": "test-agent",
+                "max_iterations": 100,
+                "current_iteration": 15,
+                "phase": "running",
+                "is_active": False,
+                "started_at": "2026-01-17T10:00:00Z",
+                "exit_conditions": [],
+                "agent_state": {},
+            },
+            "created_at": "2026-01-17T10:05:00Z",
+            "agent_name": "test-agent",
+        }
+
+        checkpoint = Checkpoint(**data)
+
+        assert checkpoint.checkpoint_id == "checkpoint-123"
+        assert checkpoint.session_id == "test-session"
+        assert checkpoint.iteration == 15
+        assert checkpoint.agent_name == "test-agent"
+        assert checkpoint.loop_state_snapshot["current_iteration"] == 15
+
+    def test_checkpoint_preserves_exit_condition_state(self) -> None:
+        """Test that checkpoint preserves full exit condition status."""
+        loop_state = LoopState(
+            session_id="test-session",
+            agent_name="test-agent",
+            max_iterations=100,
+            current_iteration=20,
+            exit_conditions=[
+                ExitConditionStatus(
+                    type=ExitConditionType.ALL_TESTS_PASS,
+                    status=ExitConditionStatusValue.MET,
+                    tool_name="pytest",
+                    tool_exit_code=0,
+                    tool_output="25 passed in 3.5s",
+                    evaluated_at="2026-01-17T10:00:00Z",
+                    iteration_evaluated=20,
+                ),
+                ExitConditionStatus(
+                    type=ExitConditionType.LINTING_CLEAN,
+                    status=ExitConditionStatusValue.NOT_MET,
+                    tool_name="ruff",
+                    tool_exit_code=1,
+                    tool_output="Found 5 errors",
+                    evaluated_at="2026-01-17T10:00:01Z",
+                    iteration_evaluated=20,
+                ),
+            ],
+        )
+
+        checkpoint = Checkpoint.from_loop_state(loop_state)
+        restored = checkpoint.to_loop_state()
+
+        # Verify exit conditions preserved
+        assert len(restored.exit_conditions) == 2
+        assert restored.exit_conditions[0].status == ExitConditionStatusValue.MET
+        assert restored.exit_conditions[0].tool_name == "pytest"
+        assert restored.exit_conditions[0].tool_exit_code == 0
+        assert restored.exit_conditions[0].iteration_evaluated == 20
+        assert restored.exit_conditions[1].status == ExitConditionStatusValue.NOT_MET
+        assert restored.exit_conditions[1].tool_name == "ruff"
