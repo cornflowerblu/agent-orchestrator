@@ -19,6 +19,8 @@ dev = [
     "pytest-cov>=4.0.0",
     "moto[all]>=5.0.0",
     "ruff>=0.1.0",
+    "aws-cdk-lib>=2.100.0",
+    "constructs>=10.0.0,<11.0.0",
 ]
 
 [build-system]
@@ -32,6 +34,12 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.ruff]
+# Same as Black.
+line-length = 100
+indent-width = 4
+target-version = "py311"
+
+[tool.ruff.lint]
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "DTZ", "T10", "ISC", "ICN", "PIE", "PYI", "PT", "RET", "SIM", "ARG", "PTH", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
 ignore = []
@@ -39,37 +47,6 @@ ignore = []
 # Allow autofix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
 unfixable = []
-
-# Exclude a variety of commonly ignored directories.
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-]
-
-# Same as Black.
-line-length = 100
-indent-width = 4
-
-target-version = "py311"
 
 [tool.ruff.format]
 quote-style = "double"
