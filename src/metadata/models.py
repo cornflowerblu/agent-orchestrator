@@ -1,8 +1,7 @@
 """Pydantic models for agent custom metadata."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -71,15 +70,14 @@ class CustomAgentMetadata(BaseModel):
     input_schemas: list[InputSchema] = Field(
         default_factory=list, description="Enhanced I/O beyond basic modes"
     )
-    output_schemas: list[OutputSchema] = Field(
-        default_factory=list, description="Enhanced outputs"
-    )
+    output_schemas: list[OutputSchema] = Field(default_factory=list, description="Enhanced outputs")
     consultation_requirements: list[dict] = Field(
-        default_factory=list, description="Consultation requirements (defined in consultation module)"
+        default_factory=list,
+        description="Consultation requirements (defined in consultation module)",
     )
     created_at: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat(), description="ISO8601 timestamp"
+        default_factory=lambda: datetime.now(UTC).isoformat(), description="ISO8601 timestamp"
     )
     updated_at: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat(), description="ISO8601 timestamp"
+        default_factory=lambda: datetime.now(UTC).isoformat(), description="ISO8601 timestamp"
     )

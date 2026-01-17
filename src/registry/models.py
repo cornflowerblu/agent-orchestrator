@@ -3,7 +3,7 @@
 Task T073: Create AgentStatus Pydantic model
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -40,36 +40,26 @@ class AgentStatus(BaseModel):
 
     agent_name: str = Field(..., description="Name of the agent")
     status: AgentStatusValue = Field(
-        default=AgentStatusValue.UNKNOWN,
-        description="Current operational status"
+        default=AgentStatusValue.UNKNOWN, description="Current operational status"
     )
     health_check: HealthCheckStatus = Field(
-        default=HealthCheckStatus.UNKNOWN,
-        description="Latest health check status"
+        default=HealthCheckStatus.UNKNOWN, description="Latest health check status"
     )
     last_seen: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat(),
-        description="ISO timestamp of last activity"
+        default_factory=lambda: datetime.now(UTC).isoformat(),
+        description="ISO timestamp of last activity",
     )
-    endpoint: str | None = Field(
-        default=None,
-        description="Agent's endpoint URL"
-    )
-    version: str | None = Field(
-        default=None,
-        description="Agent version"
-    )
+    endpoint: str | None = Field(default=None, description="Agent's endpoint URL")
+    version: str | None = Field(default=None, description="Agent version")
     metrics: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Optional metrics about the agent"
+        default_factory=dict, description="Optional metrics about the agent"
     )
     error_message: str | None = Field(
-        default=None,
-        description="Error message if status is degraded or inactive"
+        default=None, description="Error message if status is degraded or inactive"
     )
     updated_at: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat(),
-        description="ISO timestamp of last status update"
+        default_factory=lambda: datetime.now(UTC).isoformat(),
+        description="ISO timestamp of last status update",
     )
 
     def is_healthy(self) -> bool:
@@ -86,8 +76,8 @@ class AgentStatus(BaseModel):
     def mark_active(self) -> None:
         """Mark the agent as active."""
         self.status = AgentStatusValue.ACTIVE
-        self.last_seen = datetime.utcnow().isoformat()
-        self.updated_at = datetime.utcnow().isoformat()
+        self.last_seen = datetime.now(UTC).isoformat()
+        self.updated_at = datetime.now(UTC).isoformat()
 
     def mark_inactive(self, reason: str | None = None) -> None:
         """Mark the agent as inactive.
@@ -97,7 +87,7 @@ class AgentStatus(BaseModel):
         """
         self.status = AgentStatusValue.INACTIVE
         self.error_message = reason
-        self.updated_at = datetime.utcnow().isoformat()
+        self.updated_at = datetime.now(UTC).isoformat()
 
     def update_health_check(self, status: HealthCheckStatus) -> None:
         """Update the health check status.
@@ -106,8 +96,8 @@ class AgentStatus(BaseModel):
             status: New health check status
         """
         self.health_check = status
-        self.last_seen = datetime.utcnow().isoformat()
-        self.updated_at = datetime.utcnow().isoformat()
+        self.last_seen = datetime.now(UTC).isoformat()
+        self.updated_at = datetime.now(UTC).isoformat()
 
 
 class AgentStatusSummary(BaseModel):

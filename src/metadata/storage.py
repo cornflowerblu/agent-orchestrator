@@ -4,7 +4,7 @@ Task T061: Add consultation requirements to CustomAgentMetadata storage
 """
 
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import boto3
@@ -56,7 +56,7 @@ class MetadataStorage:
         """
         try:
             # Update timestamp
-            metadata.updated_at = datetime.utcnow().isoformat()
+            metadata.updated_at = datetime.now(UTC).isoformat()
 
             item = metadata.model_dump()
 
@@ -64,7 +64,7 @@ class MetadataStorage:
 
             self.table.put_item(Item=item)
 
-            logger.info(f"Stored metadata for agent '{metadata.agent_name}' version {metadata.version}")
+            logger.info(f"Stored metadata for agent '{metadata.agent_name}' v{metadata.version}")
 
             return item
 
@@ -163,9 +163,7 @@ class MetadataStorage:
             raise ValidationError("Failed to list agent metadata", details={"error": str(e)})
 
     def update_consultation_requirements(
-        self,
-        agent_name: str,
-        requirements: list[ConsultationRequirement]
+        self, agent_name: str, requirements: list[ConsultationRequirement]
     ) -> CustomAgentMetadata:
         """
         Update consultation requirements for an agent.
@@ -188,9 +186,7 @@ class MetadataStorage:
             metadata = self.get_metadata(agent_name)
 
             # Convert requirements to dict for storage
-            metadata.consultation_requirements = [
-                req.model_dump() for req in requirements
-            ]
+            metadata.consultation_requirements = [req.model_dump() for req in requirements]
 
             # Save updated metadata
             self.put_metadata(metadata)
@@ -207,13 +203,10 @@ class MetadataStorage:
             logger.error(f"Failed to update consultation requirements: {e}")
             raise ValidationError(
                 f"Failed to update consultation requirements for '{agent_name}'",
-                details={"error": str(e)}
+                details={"error": str(e)},
             )
 
-    def get_consultation_requirements(
-        self,
-        agent_name: str
-    ) -> list[ConsultationRequirement]:
+    def get_consultation_requirements(self, agent_name: str) -> list[ConsultationRequirement]:
         """
         Get consultation requirements for an agent.
 
@@ -232,8 +225,7 @@ class MetadataStorage:
 
         # Convert stored dicts back to ConsultationRequirement objects
         requirements = [
-            ConsultationRequirement(**req)
-            for req in metadata.consultation_requirements
+            ConsultationRequirement(**req) for req in metadata.consultation_requirements
         ]
 
         logger.debug(
@@ -243,9 +235,7 @@ class MetadataStorage:
         return requirements
 
     def add_consultation_requirement(
-        self,
-        agent_name: str,
-        requirement: ConsultationRequirement
+        self, agent_name: str, requirement: ConsultationRequirement
     ) -> CustomAgentMetadata:
         """
         Add a single consultation requirement to an agent.
@@ -273,9 +263,7 @@ class MetadataStorage:
         return self.update_consultation_requirements(agent_name, existing)
 
     def remove_consultation_requirement(
-        self,
-        agent_name: str,
-        requirement_agent_name: str
+        self, agent_name: str, requirement_agent_name: str
     ) -> CustomAgentMetadata:
         """
         Remove consultation requirements for a specific agent.

@@ -4,7 +4,7 @@ Task T074: Implement status tracking storage
 """
 
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import boto3
@@ -108,7 +108,7 @@ class StatusStorage:
             Updated AgentStatus
         """
         try:
-            now = datetime.utcnow().isoformat()
+            now = datetime.now(UTC).isoformat()
 
             # Build update expression dynamically
             update_parts = ["#updated_at = :updated_at", "#last_seen = :last_seen"]
@@ -182,7 +182,7 @@ class StatusStorage:
             The stored AgentStatus
         """
         try:
-            status.updated_at = datetime.utcnow().isoformat()
+            status.updated_at = datetime.now(UTC).isoformat()
 
             item = status.model_dump()
 
