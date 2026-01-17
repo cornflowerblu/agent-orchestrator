@@ -30,18 +30,16 @@ class TestCheckpointManager:
         assert manager.session_id == "test-session"
         assert manager.region == "us-west-2"
 
-    def test_create_memory_for_session(self, mock_memory) -> None:
-        """Test CheckpointManager.create_memory() creates Memory instance."""
+    def test_create_table_for_session(self, mock_dynamodb) -> None:
+        """Test CheckpointManager.create_table() creates DynamoDB table resource."""
         manager = CheckpointManager(session_id="test-session")
-        memory = manager.create_memory()
+        table = manager.create_table()
 
-        # Verify Memory was created
-        assert memory is not None
-        assert hasattr(memory, "put")
-        assert hasattr(memory, "get")
-        assert hasattr(memory, "list")
+        # Verify table resource was created
+        assert table is not None
+        assert table.table_name == "LoopCheckpoints"
 
-    def test_save_checkpoint(self, mock_memory) -> None:
+    def test_save_checkpoint(self, mock_dynamodb) -> None:
         """Test CheckpointManager.save_checkpoint() saves to Memory."""
         manager = CheckpointManager(session_id="test-session")
 
@@ -61,7 +59,7 @@ class TestCheckpointManager:
         assert checkpoint_id is not None
         assert checkpoint_id.startswith("checkpoint-")
 
-    def test_load_checkpoint_success(self, mock_memory) -> None:
+    def test_load_checkpoint_success(self, mock_dynamodb) -> None:
         """Test CheckpointManager.load_checkpoint() loads from Memory."""
         manager = CheckpointManager(session_id="test-session")
 
@@ -84,7 +82,7 @@ class TestCheckpointManager:
         assert loaded_state.current_iteration == 10
         assert loaded_state.agent_name == "test-agent"
 
-    def test_load_checkpoint_not_found(self, mock_memory) -> None:
+    def test_load_checkpoint_not_found(self, mock_dynamodb) -> None:
         """Test CheckpointManager.load_checkpoint() raises error if not found."""
         manager = CheckpointManager(session_id="test-session")
 
@@ -95,17 +93,24 @@ class TestCheckpointManager:
         assert "Checkpoint not found" in str(exc_info.value)
         assert exc_info.value.checkpoint_id is not None
 
-    def test_load_checkpoint_invalid_data(self, mock_memory) -> None:
+    def test_load_checkpoint_invalid_data(self, mock_dynamodb) -> None:
         """Test CheckpointManager.load_checkpoint() raises error for invalid data."""
         manager = CheckpointManager(session_id="test-session")
 
-        # Manually put invalid data into Memory
-        manager.create_memory()
-        manager._memory._storage["checkpoint/test-session/10"] = {  # type: ignore[union-attr]
-            "checkpoint_id": "checkpoint-123",
-            "session_id": "test-session",
-            # Missing required fields
-        }
+        # Manually put invalid data into DynamoDB
+        table = manager.create_table()
+        table.put_item(
+            Item={
+                "session_id": "test-session",
+                "iteration": 10,
+                "checkpoint_id": "checkpoint-123",
+                "checkpoint_data": {
+                    "checkpoint_id": "checkpoint-123",
+                    "session_id": "test-session",
+                    # Missing required fields like agent_name, max_iterations, etc.
+                },
+            }
+        )
 
         # Attempt to load invalid checkpoint
         with pytest.raises(CheckpointRecoveryError) as exc_info:
@@ -113,7 +118,7 @@ class TestCheckpointManager:
 
         assert "Invalid checkpoint data" in str(exc_info.value)
 
-    def test_list_checkpoints(self, mock_memory) -> None:
+    def test_list_checkpoints(self, mock_dynamodb) -> None:
         """Test CheckpointManager.list_checkpoints() lists all checkpoints."""
         manager = CheckpointManager(session_id="test-session")
 
@@ -136,7 +141,7 @@ class TestCheckpointManager:
         assert 5 in iterations
         assert 10 in iterations
 
-    def test_save_checkpoint_preserves_exit_conditions(self, mock_memory) -> None:
+    def test_save_checkpoint_preserves_exit_conditions(self, mock_dynamodb) -> None:
         """Test that save_checkpoint preserves exit condition state."""
         manager = CheckpointManager(session_id="test-session")
 
@@ -168,17 +173,18 @@ class TestCheckpointManager:
         assert loaded_state.exit_conditions[0].status == ExitConditionStatusValue.MET
         assert loaded_state.exit_conditions[0].tool_name == "pytest"
 
-    def test_checkpoint_manager_with_custom_region(self, mock_memory) -> None:
+    def test_checkpoint_manager_with_custom_region(self, mock_dynamodb) -> None:
         """Test CheckpointManager uses custom AWS region."""
-        manager = CheckpointManager(session_id="test-session", region="eu-west-1")
+        # Use us-east-1 to match the mock fixture
+        manager = CheckpointManager(session_id="test-session", region="us-east-1")
 
-        assert manager.region == "eu-west-1"
-        # When creating memory, region should be passed if needed
-        memory = manager.create_memory()
-        assert hasattr(memory, "region")
-        assert memory.region == "eu-west-1"
+        assert manager.region == "us-east-1"
+        # Verify manager can create table
+        table = manager.create_table()
+        assert table is not None
+        assert table.table_name == "LoopCheckpoints"
 
-    def test_checkpoint_roundtrip_preserves_all_state(self, mock_memory) -> None:
+    def test_checkpoint_roundtrip_preserves_all_state(self, mock_dynamodb) -> None:
         """Test full roundtrip preserves all loop state."""
         manager = CheckpointManager(session_id="test-session")
 
