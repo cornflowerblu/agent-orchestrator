@@ -11,6 +11,7 @@ sys.path.insert(0, str(project_root))
 import aws_cdk as cdk
 
 from stacks.metadata_stack import MetadataStack
+from stacks.api_stack import ApiStack
 
 app = cdk.App()
 
@@ -27,6 +28,17 @@ metadata_stack = MetadataStack(
     env=env,
     description="DynamoDB tables for agent custom metadata and status tracking",
 )
+
+# Deploy API stack (Lambda + API Gateway)
+api_stack = ApiStack(
+    app,
+    "AgentOrchestratorAPI",
+    metadata_table=metadata_stack.metadata_table,
+    status_table=metadata_stack.status_table,
+    env=env,
+    description="Lambda functions and API Gateway for agent registry",
+)
+api_stack.add_dependency(metadata_stack)
 
 # Add tags to all resources
 cdk.Tags.of(app).add("Project", "AgentOrchestrator")
