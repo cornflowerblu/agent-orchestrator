@@ -1,0 +1,122 @@
+[project]
+name = "agent-orchestrator"
+version = "0.1.0"
+description = "Multi-agent orchestration platform built on AWS Bedrock AgentCore"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+
+dependencies = [
+    "bedrock-agentcore[strands-agents]>=1.0.5",
+    "boto3>=1.34.0",
+    "pydantic>=2.12.0,<2.41.3",  # Restricted per AgentCore SDK compatibility
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.0.0",
+    "typeguard>=2.13.0",
+    "moto[all]>=5.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+    "aws-cdk-lib>=2.100.0",
+    "constructs>=10.0.0,<11.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+# Same as Black.
+line-length = 100
+indent-width = 4
+target-version = "py311"
+
+[tool.ruff.lint]
+# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "DTZ", "T10", "ISC", "ICN", "PIE", "PYI", "PT", "RET", "SIM", "ARG", "PTH", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
+ignore = [
+    "TRY003",  # Avoid specifying long messages outside exception class
+    "TRY300",  # Consider using else block (stylistic preference)
+    "TRY401",  # Redundant exception object in logging.exception (sometimes useful for context)
+    "PLR2004", # Magic value used in comparison
+    "PLC0415", # Import should be at top-level
+    "PTH123",  # Use pathlib for open() (we're fine with built-in open)
+    "ARG001",  # Unused function argument (intentional for Lambda context, test fixtures)
+    "ARG002",  # Unused method argument (intentional for test fixtures)
+    "PLR0911", # Too many return statements (normal for API handlers)
+    "PLR0913", # Too many arguments (sometimes unavoidable)
+]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501"]  # Line length in tests (error messages can be long)
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests (real AWS deployment required)",
+    "integration_local: Integration tests (local moto mocking)",
+    "contract: Contract tests",
+    "slow: Slow running tests",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+fail_under = 80
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Start lenient, can tighten later
+ignore_missing_imports = true  # Third-party libs without stubs

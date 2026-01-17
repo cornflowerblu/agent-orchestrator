@@ -1,0 +1,33 @@
+{
+  "name": "design-agent",
+  "description": "Creates system designs, architecture diagrams, and technical specifications for features and components",
+  "version": "1.0.0",
+  "url": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/design/invocations/",
+  "protocolVersion": "0.3.0",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text", "image"],
+  "skills": [
+    {
+      "id": "system-design",
+      "name": "System Design",
+      "description": "Create comprehensive system designs including architecture, components, and data flow",
+      "tags": ["design", "architecture", "systems"]
+    },
+    {
+      "id": "data-modeling",
+      "name": "Data Modeling",
+      "description": "Design data models, entities, and relationships for application persistence",
+      "tags": ["data", "modeling", "entities"]
+    },
+    {
+      "id": "api-design",
+      "name": "API Design",
+      "description": "Design RESTful APIs, GraphQL schemas, and service contracts",
+      "tags": ["api", "rest", "graphql", "contracts"]
+    }
+  ]
+}

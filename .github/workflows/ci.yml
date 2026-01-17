@@ -1,5 +1,11 @@
 name: CI
 
+# Prerequisites:
+# 1. Run scripts/setup-github-oidc.py locally to create OIDC provider and IAM role
+# 2. Add AWS_ROLE_ARN secret to GitHub repository
+# 3. Add AWS_ACCOUNT_ID variable to GitHub repository
+# No static AWS credentials needed - uses OIDC for authentication
+
 on:
   push:
     branches: [main, develop]
@@ -100,8 +106,7 @@ jobs:
         run: uv pip install -e ".[dev]" mypy types-boto3 --system
 
       - name: Run mypy
-        run: mypy src/ --ignore-missing-imports --no-error-summary || true
-        continue-on-error: true
+        run: mypy src/ --ignore-missing-imports
 
   security:
     name: Security Scan

@@ -1,0 +1,33 @@
+{
+  "name": "requirements-agent",
+  "description": "Specializes in gathering, documenting, and validating user requirements and acceptance criteria using Gherkin format",
+  "version": "1.0.0",
+  "url": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/requirements/invocations/",
+  "protocolVersion": "0.3.0",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": [
+    {
+      "id": "requirements-gathering",
+      "name": "Requirements Gathering",
+      "description": "Gather and document functional and non-functional requirements from stakeholders",
+      "tags": ["requirements", "documentation", "analysis"]
+    },
+    {
+      "id": "user-story-creation",
+      "name": "User Story Creation",
+      "description": "Create user stories with Gherkin-formatted acceptance criteria",
+      "tags": ["user-stories", "gherkin", "bdd"]
+    },
+    {
+      "id": "acceptance-criteria",
+      "name": "Acceptance Criteria Definition",
+      "description": "Define clear, testable acceptance criteria for features and user stories",
+      "tags": ["acceptance", "testing", "validation"]
+    }
+  ]
+}

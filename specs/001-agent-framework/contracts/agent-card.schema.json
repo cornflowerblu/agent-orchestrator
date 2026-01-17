@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-orchestrator.example.com/schemas/agent-card.json",
+  "title": "Agent Card",
+  "description": "A2A Protocol Agent Card for agent discovery and capability advertisement",
+  "type": "object",
+  "required": ["name", "description", "version", "url", "protocolVersion", "capabilities", "defaultInputModes", "defaultOutputModes", "skills"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique agent identifier",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9-]{0,63}$",
+      "examples": ["requirements-agent", "development-agent"]
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the agent's purpose",
+      "minLength": 10,
+      "maxLength": 500
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the agent definition",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["1.0.0", "2.1.3"]
+    },
+    "url": {
+      "type": "string",
+      "description": "AgentCore Runtime invocation URL",
+      "format": "uri",
+      "pattern": "^https://bedrock-agentcore\\..+\\.amazonaws\\.com/runtimes/.+/invocations/$"
+    },
+    "protocolVersion": {
+      "type": "string",
+      "description": "A2A protocol version",
+      "const": "0.3.0"
+    },
+    "preferredTransport": {
+      "type": "string",
+      "description": "Transport mechanism for A2A communication",
+      "const": "JSONRPC"
+    },
+    "capabilities": {
+      "type": "object",
+      "description": "Agent capabilities",
+      "required": ["streaming"],
+      "properties": {
+        "streaming": {
+          "type": "boolean",
+          "description": "Whether the agent supports streaming responses"
+        }
+      },
+      "additionalProperties": false
+    },
+    "defaultInputModes": {
+      "type": "array",
+      "description": "Supported input modalities",
+      "items": {
+        "type": "string",
+        "enum": ["text", "image", "audio"]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "defaultOutputModes": {
+      "type": "array",
+      "description": "Supported output modalities",
+      "items": {
+        "type": "string",
+        "enum": ["text", "image", "audio"]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "skills": {
+      "type": "array",
+      "description": "Skills the agent possesses",
+      "items": {
+        "$ref": "#/$defs/Skill"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "Skill": {
+      "type": "object",
+      "description": "A named ability the agent can perform",
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique skill identifier",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$",
+          "examples": ["requirements-gathering", "code-review"]
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable skill name",
+          "minLength": 3,
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "description": "What this skill does",
+          "minLength": 10,
+          "maxLength": 500
+        },
+        "tags": {
+          "type": "array",
+          "description": "Categorization tags",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,31}$"
+          },
+          "uniqueItems": true,
+          "default": []
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "architect-agent",
+  "description": "Defines technical architecture, infrastructure patterns, and deployment strategies with focus on scalability and reliability",
+  "version": "1.0.0",
+  "url": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/architect/invocations/",
+  "protocolVersion": "0.3.0",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": [
+    {
+      "id": "architecture-planning",
+      "name": "Architecture Planning",
+      "description": "Plan system architecture including microservices, serverless, and cloud-native patterns",
+      "tags": ["architecture", "planning", "cloud"]
+    },
+    {
+      "id": "infrastructure-design",
+      "name": "Infrastructure Design",
+      "description": "Design infrastructure using IaC tools like CDK, Terraform, and CloudFormation",
+      "tags": ["infrastructure", "iac", "devops"]
+    },
+    {
+      "id": "scalability-analysis",
+      "name": "Scalability Analysis",
+      "description": "Analyze and design for scalability, performance, and high availability",
+      "tags": ["scalability", "performance", "reliability"]
+    }
+  ]
+}
