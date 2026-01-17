@@ -15,6 +15,9 @@ on:
 env:
   PYTHON_VERSION: "3.11"
   AWS_REGION: "us-east-1"
+  # Set environment to "production" for main branch (RETAIN resources)
+  # Set to "ci" for other branches (DESTROY resources after tests)
+  ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'ci' }}
 
 # Required for OIDC authentication with AWS
 permissions:
@@ -266,7 +269,8 @@ jobs:
     # Run cleanup whenever deploy was attempted (success or failure)
     # Ensures full resource cleanup even if deploy fails partway
     # Environment-based removal policy (DESTROY in CI) handles table deletion
-    if: always() && needs.cdk-deploy.result != 'skipped'
+    # SKIP on main branch (production environment) to retain resources
+    if: always() && needs.cdk-deploy.result != 'skipped' && github.ref != 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
