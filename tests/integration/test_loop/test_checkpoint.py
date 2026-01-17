@@ -17,6 +17,7 @@ from src.loop.models import (
 )
 
 
+@pytest.mark.integration
 @pytest.mark.integration_local
 @pytest.mark.asyncio
 async def test_checkpoint_memory_roundtrip() -> None:
@@ -88,6 +89,7 @@ async def test_checkpoint_memory_roundtrip() -> None:
         assert original.status == restored.status
 
 
+@pytest.mark.integration
 @pytest.mark.integration_local
 @pytest.mark.asyncio
 async def test_checkpoint_save_at_intervals() -> None:
@@ -136,6 +138,7 @@ async def test_checkpoint_save_at_intervals() -> None:
             assert loaded_state.agent_state["current_iteration"] == iteration
 
 
+@pytest.mark.integration
 @pytest.mark.integration_local
 @pytest.mark.asyncio
 async def test_checkpoint_resume_from_saved_state() -> None:
