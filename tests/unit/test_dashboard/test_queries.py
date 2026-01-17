@@ -4,9 +4,8 @@ Tests for ObservabilityQueries class that queries CloudWatch/X-Ray
 for agent loop progress, events, and checkpoint data.
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+from unittest.mock import Mock, patch
 
 
 class TestObservabilityQueriesInit:
@@ -55,7 +54,6 @@ class TestObservabilityQueriesGetLoopProgress:
     def test_get_loop_progress_queries_xray_for_traces(self, mock_boto3):
         """Test that get_loop_progress queries X-Ray for trace data."""
         from src.dashboard.queries import ObservabilityQueries
-        from datetime import datetime, UTC
 
         # Setup mock X-Ray client
         mock_xray_client = Mock()
@@ -86,9 +84,8 @@ class TestObservabilityQueriesGetLoopProgress:
     @patch("src.dashboard.queries.boto3")
     def test_get_loop_progress_returns_loop_progress_model(self, mock_boto3):
         """Test that get_loop_progress returns a LoopProgress model."""
-        from src.dashboard.queries import ObservabilityQueries
         from src.dashboard.models import LoopProgress
-        from datetime import datetime, UTC
+        from src.dashboard.queries import ObservabilityQueries
 
         # Setup mock with full trace data
         mock_xray_client = Mock()

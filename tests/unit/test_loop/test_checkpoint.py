@@ -7,8 +7,13 @@ import pytest
 
 from src.exceptions import CheckpointRecoveryError
 from src.loop.checkpoint import CheckpointManager
-from src.loop.models import ExitConditionStatus, ExitConditionStatusValue, ExitConditionType, LoopPhase, LoopState
-
+from src.loop.models import (
+    ExitConditionStatus,
+    ExitConditionStatusValue,
+    ExitConditionType,
+    LoopPhase,
+    LoopState,
+)
 
 # =============================================================================
 # T073: CheckpointManager Tests (User Story 2)

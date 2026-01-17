@@ -83,7 +83,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         }
 
     except Exception as e:
-        error_message = f"Policy enforcement error: {str(e)}"
+        error_message = f"Policy enforcement error: {e!s}"
         print(error_message)
 
         return {

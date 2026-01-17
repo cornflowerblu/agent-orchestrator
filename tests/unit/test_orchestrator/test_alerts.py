@@ -3,8 +3,6 @@
 Tests for iteration warning alerts when approaching the iteration limit.
 """
 
-import pytest
-from unittest.mock import Mock, patch
 
 from src.orchestrator.alerts import AlertManager
 

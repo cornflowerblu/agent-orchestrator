@@ -3,7 +3,6 @@
 Tests for monitoring agent loop progress via Observability service.
 """
 
-import pytest
 
 from src.orchestrator.monitor import ObservabilityMonitor
 

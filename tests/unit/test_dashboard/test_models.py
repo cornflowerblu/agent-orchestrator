@@ -3,8 +3,6 @@
 Tests for LoopProgress and other response models used by dashboard queries.
 """
 
-import pytest
-from datetime import datetime, UTC
 
 
 class TestLoopProgress:

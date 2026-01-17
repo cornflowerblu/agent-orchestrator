@@ -34,7 +34,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         # Extract tool registration data from event
         action = event.get("action", "list_tools")
         tool_name = event.get("tool_name")
-        tool_definition = event.get("tool_definition", {})
+        # tool_definition = event.get("tool_definition", {})  # Reserved for future use
 
         # Log the registration event
         import time
@@ -119,7 +119,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         }
 
     except Exception as e:
-        error_message = f"Tool registry error: {str(e)}"
+        error_message = f"Tool registry error: {e!s}"
         print(error_message)
 
         return {

@@ -1,9 +1,7 @@
 """Unit tests for exit condition evaluation (T054-T057)."""
 
-import pytest
 from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
 
-from src.exceptions import ExitConditionEvaluationError
 from src.gateway.tools import GatewayClient
 from src.loop.conditions import ExitConditionEvaluator
 from src.loop.models import (
@@ -110,7 +108,7 @@ class TestEvaluateTests:
         config = ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)
 
         # Mock Code Interpreter to simulate failed pytest run
-        mock_execute = mocker.patch.object(
+        mocker.patch.object(
             evaluator.code_interpreter,
             "execute_code",
             return_value={
@@ -141,7 +139,7 @@ class TestEvaluateTests:
             return_value={"exit_code": 0, "output": "10 passed"},
         )
 
-        status = evaluator.evaluate_tests(config, iteration=1)
+        evaluator.evaluate_tests(config, iteration=1)
 
         # Verify custom arguments were included
         call_args = mock_execute.call_args[0][0]
@@ -187,7 +185,7 @@ class TestEvaluateLinting:
         config = ExitConditionConfig(type=ExitConditionType.LINTING_CLEAN)
 
         # Mock Code Interpreter to simulate ruff errors
-        mock_execute = mocker.patch.object(
+        mocker.patch.object(
             evaluator.code_interpreter,
             "execute_code",
             return_value={
@@ -217,7 +215,7 @@ class TestEvaluateLinting:
             return_value={"exit_code": 0, "output": "OK"},
         )
 
-        status = evaluator.evaluate_linting(config, iteration=1)
+        evaluator.evaluate_linting(config, iteration=1)
 
         # Verify custom path was used
         call_args = mock_execute.call_args[0][0]
@@ -239,7 +237,7 @@ class TestEvaluateDispatcher:
             return_value=ExitConditionStatus(type=ExitConditionType.ALL_TESTS_PASS),
         )
 
-        status = evaluator.evaluate(config, iteration=1)
+        evaluator.evaluate(config, iteration=1)
 
         mock_evaluate.assert_called_once_with(config, 1)
 
@@ -255,7 +253,7 @@ class TestEvaluateDispatcher:
             return_value=ExitConditionStatus(type=ExitConditionType.LINTING_CLEAN),
         )
 
-        status = evaluator.evaluate(config, iteration=1)
+        evaluator.evaluate(config, iteration=1)
 
         mock_evaluate.assert_called_once_with(config, 1)
 
@@ -271,7 +269,7 @@ class TestEvaluateDispatcher:
             return_value=ExitConditionStatus(type=ExitConditionType.BUILD_SUCCEEDS),
         )
 
-        status = evaluator.evaluate(config, iteration=1)
+        evaluator.evaluate(config, iteration=1)
 
         mock_evaluate.assert_called_once_with(config, 1)
 
@@ -287,7 +285,7 @@ class TestEvaluateDispatcher:
             return_value=ExitConditionStatus(type=ExitConditionType.SECURITY_SCAN_CLEAN),
         )
 
-        status = evaluator.evaluate(config, iteration=1)
+        evaluator.evaluate(config, iteration=1)
 
         mock_evaluate.assert_called_once_with(config, 1)
 
@@ -305,7 +303,7 @@ class TestEvaluateDispatcher:
             return_value=ExitConditionStatus(type=ExitConditionType.CUSTOM),
         )
 
-        status = evaluator.evaluate(config, iteration=1)
+        evaluator.evaluate(config, iteration=1)
 
         mock_evaluate.assert_called_once_with(config, 1)
 
@@ -321,7 +319,7 @@ class TestTimeoutHandling:
         config = ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)
 
         # Mock execute_code to raise TimeoutError
-        mock_execute = mocker.patch.object(
+        mocker.patch.object(
             evaluator.code_interpreter, "execute_code", side_effect=TimeoutError("Timeout")
         )
 

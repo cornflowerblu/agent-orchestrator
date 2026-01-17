@@ -83,7 +83,7 @@ async def test_checkpoint_memory_roundtrip() -> None:
     # Verify exit conditions structure is preserved
     assert len(restored_state.exit_conditions) == len(framework.state.exit_conditions)
     for original, restored in zip(
-        framework.state.exit_conditions, restored_state.exit_conditions
+        framework.state.exit_conditions, restored_state.exit_conditions, strict=True
     ):
         assert original.type == restored.type
         assert original.status == restored.status
@@ -115,7 +115,7 @@ async def test_checkpoint_save_at_intervals() -> None:
         state["current_iteration"] = iteration
         return state
 
-    result = await framework.run(work_function=work_func, initial_state={"count": 0})
+    _ = await framework.run(work_function=work_func, initial_state={"count": 0})
 
     # Should have saved checkpoints at iterations 2, 5 (after completing iterations 3, 6)
     # We can verify by checking the checkpoint manager's list

@@ -4,7 +4,6 @@ Tests for DashboardHandlers class that provides HTTP endpoint handlers
 for querying loop progress, events, and checkpoints.
 """
 
-import pytest
 from unittest.mock import Mock, patch
 
 

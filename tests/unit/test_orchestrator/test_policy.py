@@ -4,12 +4,13 @@ Tests for policy enforcement logic including Cedar policy creation,
 iteration limit checking, and Policy service integration.
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import patch
 
-from src.orchestrator.policy import PolicyEnforcer
-from src.orchestrator.models import PolicyConfig
+import pytest
+
 from src.exceptions import PolicyViolationError
+from src.orchestrator.models import PolicyConfig
+from src.orchestrator.policy import PolicyEnforcer
 
 
 class TestPolicyEnforcer:

@@ -6,9 +6,9 @@ They are marked as integration tests and require AWS credentials.
 
 import pytest
 
+from src.exceptions import PolicyViolationError
 from src.orchestrator.models import PolicyConfig
 from src.orchestrator.policy import PolicyEnforcer
-from src.exceptions import PolicyViolationError
 
 
 @pytest.mark.integration
@@ -85,7 +85,7 @@ class TestPolicyServiceIntegration:
             max_iterations=100,
         )
 
-        enforcer = PolicyEnforcer(config=config, region="us-east-1")
+        PolicyEnforcer(config=config, region="us-east-1")
 
         # This would require AWS credentials
         # engine = enforcer._get_or_create_policy_engine()
@@ -102,7 +102,7 @@ class TestPolicyServiceIntegration:
             max_iterations=100,
         )
 
-        enforcer = PolicyEnforcer(config=config, region="us-east-1")
+        PolicyEnforcer(config=config, region="us-east-1")
 
         # This would require AWS credentials and policy setup
         # allowed = enforcer.check_iteration_allowed(

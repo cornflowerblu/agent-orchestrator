@@ -517,7 +517,7 @@ class TestCheckpointInterval:
     @pytest.mark.asyncio
     async def test_checkpoint_saves_at_correct_intervals(self) -> None:
         """Test checkpoints saved at configured intervals."""
-        from unittest.mock import AsyncMock, Mock
+        from unittest.mock import Mock
 
         config = LoopConfig(
             agent_name="test-agent",

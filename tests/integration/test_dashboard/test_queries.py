@@ -4,9 +4,10 @@ Tests end-to-end flow of querying ObservabilityQueries with mocked
 AWS services (CloudWatch, X-Ray).
 """
 
-import pytest
+from datetime import UTC, datetime
 from unittest.mock import Mock, patch
-from datetime import datetime, UTC
+
+import pytest
 
 
 @pytest.mark.integration
@@ -16,8 +17,8 @@ class TestObservabilityQueriesIntegration:
     @patch("src.dashboard.queries.boto3")
     def test_end_to_end_progress_query_flow(self, mock_boto3):
         """Test complete flow from query initialization to progress retrieval."""
-        from src.dashboard.queries import ObservabilityQueries
         from src.dashboard.models import LoopProgress
+        from src.dashboard.queries import ObservabilityQueries
 
         # Setup mock X-Ray client with realistic trace data
         mock_xray_client = Mock()
@@ -111,7 +112,6 @@ class TestObservabilityQueriesIntegration:
     def test_handlers_integration_with_queries(self, mock_boto3):
         """Test that handlers integrate correctly with queries."""
         from src.dashboard.handlers import DashboardHandlers
-        from src.dashboard.models import LoopProgress
 
         # Setup mock X-Ray client for progress query
         mock_xray_client = Mock()
