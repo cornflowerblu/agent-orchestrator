@@ -297,7 +297,7 @@ class LoopFramework:
             )
 
             # T031: Main iteration loop
-            for iteration in range(self.config.max_iterations):
+            for iteration in range(start_iteration, self.config.max_iterations):
                 self.state.current_iteration = iteration
                 self.state.phase = LoopPhase.RUNNING
 
@@ -324,6 +324,10 @@ class LoopFramework:
                         "duration_ms": iteration_duration,
                     },
                 )
+
+                # T068: Save checkpoint at configured intervals
+                if (iteration + 1) % self.config.checkpoint_interval == 0:
+                    await self.save_checkpoint()
 
                 # T032: Check termination conditions
                 if self.state.all_conditions_met():
@@ -429,12 +433,58 @@ class LoopFramework:
         with self.tracer.start_as_current_span(event_type.value) as span:
             span.set_attributes(event.to_otel_attributes())
 
-    async def save_checkpoint(self, custom_data: dict[str, Any] | None = None) -> None:
+    async def save_checkpoint(self, custom_data: dict[str, Any] | None = None) -> str:
         """Save a checkpoint to Memory.
 
-        This is a placeholder for future checkpoint functionality (US2).
+        Maps to T069: Implement LoopFramework.save_checkpoint() helper.
+        Maps to FR-005: Framework MUST provide checkpoint save helpers.
 
         Args:
             custom_data: Optional custom data to include in checkpoint
+
+        Returns:
+            Checkpoint ID
+
+        Example:
+            checkpoint_id = await framework.save_checkpoint()
         """
-        # TODO: Implement in Phase 5 (User Story 2)
+        # Optionally merge custom_data into agent_state
+        if custom_data:
+            self.state.agent_state.update(custom_data)
+
+        # Update checkpoint tracking
+        self.state.phase = LoopPhase.SAVING_CHECKPOINT
+        self.state.last_checkpoint_at = datetime.now(UTC).isoformat()
+        self.state.last_checkpoint_iteration = self.state.current_iteration
+
+        # Save checkpoint via CheckpointManager
+        checkpoint_id = self.checkpoint_manager.save_checkpoint(self.state)
+
+        # Emit checkpoint saved event
+        await self.emit_event(
+            event_type=IterationEventType.CHECKPOINT_SAVED,
+            details={"checkpoint_id": checkpoint_id},
+        )
+
+        self.state.phase = LoopPhase.RUNNING
+        return checkpoint_id
+
+    async def load_checkpoint(self, iteration: int) -> LoopState:
+        """Load a checkpoint from Memory.
+
+        Maps to T070: Implement LoopFramework.load_checkpoint() helper.
+        Maps to FR-012: Support loading state from Memory for recovery.
+
+        Args:
+            iteration: Iteration number of checkpoint to load
+
+        Returns:
+            LoopState reconstructed from checkpoint
+
+        Raises:
+            CheckpointRecoveryError: If checkpoint not found or invalid
+
+        Example:
+            loop_state = await framework.load_checkpoint(iteration=10)
+        """
+        return self.checkpoint_manager.load_checkpoint(iteration=iteration)

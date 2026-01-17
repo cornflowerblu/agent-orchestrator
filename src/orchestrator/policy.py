@@ -130,3 +130,57 @@ class PolicyEnforcer:
         # Cache the result
         self._policy_cache[policy_name] = result
         return result["policyArn"]
+
+    def check_iteration_allowed(
+        self,
+        current_iteration: int,
+        session_id: str | None = None,
+    ) -> bool:
+        """Check if the current iteration is allowed by policy.
+
+        Maps to FR-008: Agent MUST terminate when iteration limit reached.
+
+        Args:
+            current_iteration: Current iteration number (0-indexed)
+            session_id: Optional session ID for context
+
+        Returns:
+            True if iteration is allowed
+
+        Raises:
+            PolicyViolationError: If policy denies the iteration (limit exceeded)
+
+        Example:
+            enforcer = PolicyEnforcer(config)
+            try:
+                enforcer.check_iteration_allowed(current_iteration=99, session_id="session-123")
+                # Continue with iteration
+            except PolicyViolationError as e:
+                # Handle policy violation
+                print(f"Iteration limit exceeded: {e}")
+        """
+        # Get or create policy engine
+        engine = self._get_or_create_policy_engine()
+
+        # Evaluate policy using AgentCore Policy service
+        decision = self.policy_client.evaluate(
+            principal=self.config.agent_name,
+            action="iterate",
+            resource=session_id or "loop",
+            context={
+                "current_iteration": current_iteration,
+                "max_iterations": self.config.max_iterations,
+            },
+        )
+
+        # If policy denies, raise PolicyViolationError
+        if decision != "ALLOW":
+            raise PolicyViolationError(
+                agent_name=self.config.agent_name,
+                current_iteration=current_iteration,
+                max_iterations=self.config.max_iterations,
+                session_id=session_id,
+                policy_arn=engine.get("policyEngineArn"),
+            )
+
+        return True
