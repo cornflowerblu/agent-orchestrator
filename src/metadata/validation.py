@@ -3,7 +3,7 @@
 from src.exceptions import IncompatibleTypeError
 from src.metadata.models import SemanticType
 
-# Compatibility matrix: which output types can be used as which input types
+# Compatibility matrix: maps output types to the input types they can satisfy
 COMPATIBILITY_MATRIX = {
     SemanticType.DOCUMENT: [SemanticType.DOCUMENT],
     SemanticType.ARTIFACT: [SemanticType.ARTIFACT, SemanticType.DOCUMENT],
