@@ -3,17 +3,17 @@
 Tests for ConsultationEngine methods to improve coverage.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
-from datetime import datetime
+from unittest.mock import MagicMock
 
-from src.consultation.rules import (
-    ConsultationPhase,
-    ConsultationCondition,
-    ConsultationRequirement,
-    ConsultationOutcome,
-)
+import pytest
+
 from src.consultation.enforcement import ConsultationEngine, ValidationResult
+from src.consultation.rules import (
+    ConsultationCondition,
+    ConsultationOutcome,
+    ConsultationPhase,
+    ConsultationRequirement,
+)
 
 
 class TestConsultationEngineInit:

@@ -32,7 +32,7 @@ class TestConsultationPhase:
         """Test that invalid phase values raise error."""
         from src.consultation.rules import ConsultationPhase
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="invalid-phase"):
             ConsultationPhase("invalid-phase")
 
 
@@ -93,10 +93,7 @@ class TestConsultationRequirement:
 
     def test_requirement_creation_mandatory(self):
         """Test creating a mandatory consultation requirement."""
-        from src.consultation.rules import (
-            ConsultationRequirement,
-            ConsultationPhase
-        )
+        from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 
         requirement = ConsultationRequirement(
             agent_name="security-agent",
@@ -112,9 +109,9 @@ class TestConsultationRequirement:
     def test_requirement_creation_with_condition(self):
         """Test creating a consultation requirement with conditional logic."""
         from src.consultation.rules import (
-            ConsultationRequirement,
+            ConsultationCondition,
             ConsultationPhase,
-            ConsultationCondition
+            ConsultationRequirement,
         )
 
         condition = ConsultationCondition(
@@ -134,10 +131,7 @@ class TestConsultationRequirement:
 
     def test_requirement_optional_condition(self):
         """Test that condition field is optional."""
-        from src.consultation.rules import (
-            ConsultationRequirement,
-            ConsultationPhase
-        )
+        from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 
         requirement = ConsultationRequirement(
             agent_name="review-agent",
@@ -148,10 +142,7 @@ class TestConsultationRequirement:
 
     def test_requirement_default_mandatory_false(self):
         """Test that mandatory defaults to False if not specified."""
-        from src.consultation.rules import (
-            ConsultationRequirement,
-            ConsultationPhase
-        )
+        from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 
         requirement = ConsultationRequirement(
             agent_name="testing-agent",
@@ -161,10 +152,7 @@ class TestConsultationRequirement:
 
     def test_requirement_agent_name_validation(self):
         """Test that agent name follows naming convention."""
-        from src.consultation.rules import (
-            ConsultationRequirement,
-            ConsultationPhase
-        )
+        from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 
         # Valid names
         valid_names = ["security-agent", "code-review", "my_agent", "Agent1"]
@@ -257,8 +245,9 @@ class TestConsultationOutcome:
 
     def test_outcome_timestamp_auto_generated(self):
         """Test that timestamp is auto-generated if not provided."""
-        from src.consultation.rules import ConsultationOutcome
         from datetime import datetime
+
+        from src.consultation.rules import ConsultationOutcome
 
         outcome = ConsultationOutcome(
             requirement_id="req-time",
@@ -274,10 +263,7 @@ class TestConsultationRequirementList:
 
     def test_multiple_requirements_for_agent(self):
         """Test an agent can have multiple consultation requirements."""
-        from src.consultation.rules import (
-            ConsultationRequirement,
-            ConsultationPhase
-        )
+        from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 
         requirements = [
             ConsultationRequirement(
@@ -305,10 +291,7 @@ class TestConsultationRequirementList:
 
     def test_filter_requirements_by_phase(self):
         """Test filtering requirements by consultation phase."""
-        from src.consultation.rules import (
-            ConsultationRequirement,
-            ConsultationPhase
-        )
+        from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 
         requirements = [
             ConsultationRequirement(

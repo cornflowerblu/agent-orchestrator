@@ -4,7 +4,8 @@ import json
 from pathlib import Path
 
 import pytest
-from jsonschema import validate, ValidationError as JsonSchemaValidationError
+from jsonschema import ValidationError as JsonSchemaValidationError
+from jsonschema import validate
 
 
 @pytest.fixture

@@ -4,8 +4,9 @@ Tests for User Story 4: Declare Consultation Requirements
 Task T051: Integration test for consultation enforcement
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 
 @pytest.mark.integration
@@ -20,9 +21,9 @@ class TestConsultationEnforcement:
     def sample_requirements(self):
         """Create sample consultation requirements for testing."""
         from src.consultation.rules import (
-            ConsultationRequirement,
+            ConsultationCondition,
             ConsultationPhase,
-            ConsultationCondition
+            ConsultationRequirement,
         )
 
         return [
@@ -156,7 +157,6 @@ class TestConsultationEnforcement:
     def test_query_observability_traces_real(self, consultation_engine):
         """Test querying real Observability traces for A2A consultations."""
         # This test requires deployed AgentCore infrastructure
-        pass
 
     def test_query_observability_traces_mocked(self, consultation_engine):
         """Test querying Observability traces with mocked response."""
@@ -269,7 +269,7 @@ class TestConsultationEnforcement:
 
     def test_validate_task_completion_conditional_requirement_met(self, consultation_engine):
         """Test conditional consultation is required when condition is met."""
-        from src.consultation.rules import ConsultationOutcome, ConsultationPhase
+        from src.consultation.rules import ConsultationPhase
 
         # Context triggers the conditional requirement
         task_context = {"task": {"impacts_infrastructure": True}}
@@ -325,11 +325,8 @@ class TestConsultationValidationResult:
 
     def test_validation_result_failure_missing(self):
         """Test creating a failure result with missing consultations."""
-        from src.consultation.rules import (
-            ConsultationRequirement,
-            ConsultationPhase
-        )
         from src.consultation.enforcement import ValidationResult
+        from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 
         missing = ConsultationRequirement(
             agent_name="security-agent",

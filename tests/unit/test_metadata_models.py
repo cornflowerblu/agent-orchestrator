@@ -4,10 +4,9 @@ import pytest
 from pydantic import ValidationError
 
 from src.metadata.models import (
-    SemanticType,
     InputSchema,
     OutputSchema,
-    CustomAgentMetadata,
+    SemanticType,
 )
 
 
@@ -74,9 +73,7 @@ class TestCustomAgentMetadata:
     def test_create_metadata(self):
         """Should create valid CustomAgentMetadata."""
         # Will be tested once CustomAgentMetadata is implemented
-        pass
 
     def test_metadata_with_consultation_requirements(self):
         """Should support consultation requirements."""
         # Will be tested once CustomAgentMetadata is implemented
-        pass

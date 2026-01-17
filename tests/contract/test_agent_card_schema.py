@@ -4,13 +4,16 @@ import json
 from pathlib import Path
 
 import pytest
-from jsonschema import validate, ValidationError as JsonSchemaValidationError
+from jsonschema import ValidationError as JsonSchemaValidationError
+from jsonschema import validate
 
 
 @pytest.fixture
 def agent_card_schema():
     """Load Agent Card JSON schema."""
-    schema_path = Path(__file__).parents[2] / "specs/001-agent-framework/contracts/agent-card.schema.json"
+    schema_path = (
+        Path(__file__).parents[2] / "specs/001-agent-framework/contracts/agent-card.schema.json"
+    )
     with open(schema_path) as f:
         return json.load(f)
 

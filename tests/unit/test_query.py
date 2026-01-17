@@ -3,18 +3,19 @@
 Task T063: Unit test for agent query interface in tests/unit/test_query.py
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-from src.registry.query import AgentRegistry
+import pytest
+
 from src.agents.models import AgentCard, Skill
+from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 from src.metadata.models import (
     CustomAgentMetadata,
     InputSchema,
     OutputSchema,
     SemanticType,
 )
-from src.consultation.rules import ConsultationRequirement, ConsultationPhase
+from src.registry.query import AgentRegistry
 
 
 @pytest.fixture
@@ -135,8 +136,7 @@ def mock_metadata_storage(sample_metadata):
 @pytest.fixture
 def mock_discovery():
     """Mock agent discovery."""
-    discovery = MagicMock()
-    return discovery
+    return MagicMock()
 
 
 @pytest.fixture
@@ -276,6 +276,38 @@ class TestCheckCompatibility:
             registry.check_compatibility(
                 source_agent="non-existent",
                 target_agent="code-reviewer"
+            )
+
+    def test_check_compatibility_missing_target(self, registry, mock_metadata_storage):
+        """Test checking compatibility when target agent doesn't exist."""
+        from src.metadata.models import CustomAgentMetadata, OutputSchema, SemanticType
+
+        # Source exists, target returns None
+        source_metadata = CustomAgentMetadata(
+            agent_name="code-reviewer",
+            version="1.0.0",
+            output_schemas=[
+                OutputSchema(
+                    name="review",
+                    semantic_type=SemanticType.DOCUMENT,
+                    description="Code review output",
+                    guaranteed=True
+                )
+            ]
+        )
+
+        def get_metadata_side_effect(agent_name):
+            if agent_name == "code-reviewer":
+                return source_metadata
+            return None
+
+        mock_metadata_storage.get_metadata.side_effect = get_metadata_side_effect
+
+        from src.exceptions import AgentNotFoundError
+        with pytest.raises(AgentNotFoundError):
+            registry.check_compatibility(
+                source_agent="code-reviewer",
+                target_agent="non-existent"
             )
 
 

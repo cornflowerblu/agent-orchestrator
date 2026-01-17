@@ -4,12 +4,13 @@ Tests for T076-T083: Lambda handlers
 """
 
 import json
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
 from botocore.exceptions import ClientError
-from src.agents.models import AgentCard, AgentCapabilities, Skill
-from src.consultation.rules import ConsultationRequirement, ConsultationPhase
+
+from src.agents.models import AgentCapabilities, AgentCard, Skill
+from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 from src.exceptions import AgentNotFoundError
 from src.registry.models import AgentStatus, AgentStatusValue, HealthCheckStatus
 from src.registry.query import CompatibilityResult

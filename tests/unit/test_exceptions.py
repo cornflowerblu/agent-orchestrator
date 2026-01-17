@@ -5,11 +5,11 @@ import pytest
 from src.exceptions import (
     AgentFrameworkError,
     AgentNotFoundError,
-    ValidationError,
     ConsultationRequiredError,
     DuplicateAgentError,
-    ToolUnavailableError,
     IncompatibleTypeError,
+    ToolUnavailableError,
+    ValidationError,
 )
 
 

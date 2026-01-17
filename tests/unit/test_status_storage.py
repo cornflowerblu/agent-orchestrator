@@ -3,11 +3,9 @@
 Tests for T073-T074: AgentStatus model and status tracking storage
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
-from datetime import datetime
 
 import boto3
+import pytest
 from moto import mock_aws
 
 from src.registry.models import (

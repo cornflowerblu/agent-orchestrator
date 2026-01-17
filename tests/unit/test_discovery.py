@@ -3,16 +3,17 @@
 Task T062: Unit test for agent discovery in tests/unit/test_discovery.py
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-import httpx
+from unittest.mock import patch
 
+import httpx
+import pytest
+
+from src.agents.models import AgentCard
 from src.registry.discovery import (
     AgentDiscovery,
-    DiscoveryResult,
     DiscoveryError,
+    DiscoveryResult,
 )
-from src.agents.models import AgentCard, Skill
 
 
 @pytest.fixture
@@ -86,7 +87,7 @@ class TestFetchAgentCard:
         with patch.object(discovery, '_http_get') as mock_get:
             mock_get.return_value = sample_agent_card_data
 
-            result = await discovery.fetch_agent_card("https://agent.example.com/")
+            await discovery.fetch_agent_card("https://agent.example.com/")
 
             mock_get.assert_called_once_with(
                 "https://agent.example.com/.well-known/agent-card.json"

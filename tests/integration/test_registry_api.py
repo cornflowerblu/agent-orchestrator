@@ -5,9 +5,10 @@ Task T064: Integration test for registry API in tests/integration/test_registry_
 These tests require AWS deployment and are skipped in unit test runs.
 """
 
-import pytest
 import json
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.registry.models import AgentStatus, AgentStatusValue, HealthCheckStatus
 
@@ -71,8 +72,8 @@ class TestListAgentsHandler:
 
     def test_list_agents_with_results(self, mock_lambda_context, sample_event_list_agents):
         """Test listing agents with results."""
+        from src.agents.models import AgentCapabilities, AgentCard
         from src.registry.handlers import list_agents_handler
-        from src.agents.models import AgentCard, AgentCapabilities
 
         with patch('src.registry.handlers.get_registry') as mock_get_registry:
             mock_registry = MagicMock()
@@ -114,8 +115,8 @@ class TestGetAgentHandler:
 
     def test_get_agent_success(self, mock_lambda_context, sample_event_get_agent):
         """Test getting an existing agent."""
+        from src.agents.models import AgentCapabilities, AgentCard
         from src.registry.handlers import get_agent_handler
-        from src.agents.models import AgentCard, AgentCapabilities
 
         with patch('src.registry.handlers.get_registry') as mock_get_registry:
             mock_registry = MagicMock()
@@ -140,8 +141,8 @@ class TestGetAgentHandler:
 
     def test_get_agent_not_found(self, mock_lambda_context, sample_event_get_agent):
         """Test getting a non-existent agent."""
-        from src.registry.handlers import get_agent_handler
         from src.exceptions import AgentNotFoundError
+        from src.registry.handlers import get_agent_handler
 
         with patch('src.registry.handlers.get_registry') as mock_get_registry:
             mock_registry = MagicMock()
@@ -186,8 +187,8 @@ class TestGetConsultationRequirementsHandler:
 
     def test_get_requirements_success(self, mock_lambda_context):
         """Test getting consultation requirements."""
+        from src.consultation.rules import ConsultationPhase, ConsultationRequirement
         from src.registry.handlers import get_consultation_requirements_handler
-        from src.consultation.rules import ConsultationRequirement, ConsultationPhase
 
         event = {
             "httpMethod": "GET",
@@ -254,8 +255,8 @@ class TestFindCompatibleAgentsHandler:
 
     def test_find_compatible_agents_success(self, mock_lambda_context):
         """Test finding compatible agents."""
+        from src.agents.models import AgentCapabilities, AgentCard
         from src.registry.handlers import find_compatible_agents_handler
-        from src.agents.models import AgentCard, AgentCapabilities
 
         event = {
             "httpMethod": "POST",

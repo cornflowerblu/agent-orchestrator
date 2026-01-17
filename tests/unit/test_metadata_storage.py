@@ -3,25 +3,22 @@
 Tests for the DynamoDB storage layer using moto mocks.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
-from datetime import datetime
 
 import boto3
+import pytest
 from moto import mock_aws
 
+from src.consultation.rules import (
+    ConsultationPhase,
+    ConsultationRequirement,
+)
+from src.exceptions import AgentNotFoundError
 from src.metadata.models import (
     CustomAgentMetadata,
     InputSchema,
     OutputSchema,
     SemanticType,
 )
-from src.consultation.rules import (
-    ConsultationRequirement,
-    ConsultationPhase,
-    ConsultationCondition,
-)
-from src.exceptions import AgentNotFoundError, ValidationError
 
 
 @pytest.fixture
@@ -478,7 +475,7 @@ class TestConsultationRequirementStorage:
             storage.update_consultation_requirements("development-agent", requirements)
 
             # Remove security-agent requirements
-            result = storage.remove_consultation_requirement(
+            storage.remove_consultation_requirement(
                 "development-agent",
                 "security-agent"
             )

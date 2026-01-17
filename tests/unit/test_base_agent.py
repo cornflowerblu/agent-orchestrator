@@ -1,9 +1,9 @@
 """Unit tests for BaseAgent class."""
 
 import pytest
+
 from src.agents.base_agent import BaseAgent
 from src.agents.models import AgentCard, Skill
-from src.exceptions import DuplicateAgentError
 
 
 @pytest.fixture
@@ -45,19 +45,15 @@ class TestBaseAgent:
     def test_agent_card_validation(self):
         """Should validate Agent Card fields during creation."""
         # This will be tested once BaseAgent implements validation
-        pass
 
     def test_load_agent_card_from_json(self, tmp_path):
         """Should load Agent Card from JSON file."""
         # This will be tested once load_from_json is implemented
-        pass
 
     def test_duplicate_agent_detection(self):
         """Should detect duplicate agent names."""
         # This will be tested once deployment logic is implemented
-        pass
 
     def test_version_increment(self, sample_agent_card):
         """Should support version updates."""
         # This will be tested once versioning is implemented
-        pass

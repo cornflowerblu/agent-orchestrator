@@ -1,8 +1,8 @@
 """Unit tests for Gateway tool discovery and access."""
 
 import pytest
+
 from src.gateway.tools import GatewayClient
-from src.exceptions import ToolUnavailableError
 
 
 @pytest.fixture
@@ -29,17 +29,14 @@ class TestGatewayClient:
     def test_list_tools_sync(self, gateway_url):
         """Should list tools from Gateway."""
         # This will be tested with mocking once Gateway is available
-        pass
 
     def test_call_tool_sync(self, gateway_url):
         """Should invoke tools through Gateway."""
         # This will be tested with mocking once Gateway is available
-        pass
 
     def test_search_tools_semantic(self, gateway_url):
         """Should search tools using semantic query."""
         # This will be tested with mocking once Gateway is available
-        pass
 
     def test_handle_tool_error(self, gateway_url):
         """Should handle tool errors gracefully."""
