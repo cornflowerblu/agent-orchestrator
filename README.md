@@ -171,4 +171,4 @@ cat specs/001-agent-framework/spec.md
 
 ## License
 
-[TBD]
+Apache License 2.0 - see [LICENSE](LICENSE) for details.
