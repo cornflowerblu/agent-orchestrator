@@ -24,11 +24,11 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create project structure per implementation plan with src/, tests/, infrastructure/ directories
-- [ ] T002 Initialize Python 3.11+ project with pyproject.toml including bedrock-agentcore-sdk-python, strands, boto3, pydantic dependencies
-- [ ] T003 [P] Configure ruff for linting and formatting in pyproject.toml
-- [ ] T004 [P] Create .env.example with AWS_REGION, AGENT_METADATA_TABLE, AGENT_STATUS_TABLE, GATEWAY_URL
-- [ ] T005 [P] Create pytest configuration in pyproject.toml with pytest-asyncio, pytest-cov, moto
+- [X] T001 Create project structure per implementation plan with src/, tests/, infrastructure/ directories
+- [X] T002 Initialize Python 3.11+ project with pyproject.toml including bedrock-agentcore-sdk-python, strands, boto3, pydantic dependencies
+- [X] T003 [P] Configure ruff for linting and formatting in pyproject.toml
+- [X] T004 [P] Create .env.example with AWS_REGION, AGENT_METADATA_TABLE, AGENT_STATUS_TABLE, GATEWAY_URL
+- [X] T005 [P] Create pytest configuration in pyproject.toml with pytest-asyncio, pytest-cov, moto
 
 ---
 
@@ -38,13 +38,13 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Create base Pydantic models for SemanticType enum in src/metadata/models.py
-- [ ] T007 [P] Create ValidationRule Pydantic model in src/metadata/models.py
-- [ ] T008 Create CDK app entry point in infrastructure/cdk/app.py
-- [ ] T009 [P] Create DynamoDB metadata stack with AgentMetadata table in infrastructure/cdk/stacks/metadata_stack.py
-- [ ] T010 [P] Create DynamoDB status table with AgentStatus in infrastructure/cdk/stacks/metadata_stack.py
-- [ ] T011 Create base exception classes in src/exceptions.py (AgentNotFoundError, ValidationError, ConsultationRequiredError)
-- [ ] T012 [P] Create logging configuration in src/logging_config.py
+- [X] T006 Create base Pydantic models for SemanticType enum in src/metadata/models.py
+- [X] T007 [P] Create ValidationRule Pydantic model in src/metadata/models.py
+- [X] T008 Create CDK app entry point in infrastructure/cdk/app.py
+- [X] T009 [P] Create DynamoDB metadata stack with AgentMetadata table in infrastructure/cdk/stacks/metadata_stack.py
+- [X] T010 [P] Create DynamoDB status table with AgentStatus in infrastructure/cdk/stacks/metadata_stack.py
+- [X] T011 Create base exception classes in src/exceptions.py (AgentNotFoundError, ValidationError, ConsultationRequiredError)
+- [X] T012 [P] Create logging configuration in src/logging_config.py
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -58,26 +58,26 @@
 
 ### Tests for User Story 1
 
-- [ ] T013 [P] [US1] Contract test for Agent Card schema validation in tests/contract/test_agent_card_schema.py
-- [ ] T014 [P] [US1] Unit test for base agent class in tests/unit/test_base_agent.py
+- [X] T013 [P] [US1] Contract test for Agent Card schema validation in tests/contract/test_agent_card_schema.py
+- [X] T014 [P] [US1] Unit test for base agent class in tests/unit/test_base_agent.py
 
 ### Implementation for User Story 1
 
-- [ ] T015 [P] [US1] Create Skill Pydantic model in src/agents/models.py
-- [ ] T016 [P] [US1] Create AgentCard Pydantic model in src/agents/models.py
-- [ ] T017 [US1] Create BaseAgent class with AgentCore Runtime integration in src/agents/base_agent.py
-- [ ] T018 [US1] Implement Agent Card JSON loader from manifests in src/agents/base_agent.py
-- [ ] T019 [P] [US1] Create Orchestrator agent manifest in src/agents/manifests/orchestrator.json
-- [ ] T020 [P] [US1] Create Requirements agent manifest in src/agents/manifests/requirements.json
-- [ ] T021 [P] [US1] Create Design agent manifest in src/agents/manifests/design.json
-- [ ] T022 [P] [US1] Create Architect agent manifest in src/agents/manifests/architect.json
-- [ ] T023 [P] [US1] Create Development agent manifest in src/agents/manifests/development.json
-- [ ] T024 [P] [US1] Create Testing agent manifest in src/agents/manifests/testing.json
-- [ ] T025 [P] [US1] Create Security agent manifest in src/agents/manifests/security.json
-- [ ] T026 [P] [US1] Create Review agent manifest in src/agents/manifests/review.json
-- [ ] T027 [P] [US1] Create UI/UX agent manifest in src/agents/manifests/uiux.json
-- [ ] T028 [US1] Implement duplicate name validation in agent deployment in src/agents/base_agent.py
-- [ ] T029 [US1] Implement Agent Card versioning support in src/agents/base_agent.py
+- [X] T015 [P] [US1] Create Skill Pydantic model in src/agents/models.py
+- [X] T016 [P] [US1] Create AgentCard Pydantic model in src/agents/models.py
+- [X] T017 [US1] Create BaseAgent class with AgentCore Runtime integration in src/agents/base_agent.py
+- [X] T018 [US1] Implement Agent Card JSON loader from manifests in src/agents/base_agent.py
+- [X] T019 [P] [US1] Create Orchestrator agent manifest in src/agents/manifests/orchestrator.json
+- [X] T020 [P] [US1] Create Requirements agent manifest in src/agents/manifests/requirements.json
+- [X] T021 [P] [US1] Create Design agent manifest in src/agents/manifests/design.json
+- [X] T022 [P] [US1] Create Architect agent manifest in src/agents/manifests/architect.json
+- [X] T023 [P] [US1] Create Development agent manifest in src/agents/manifests/development.json
+- [X] T024 [P] [US1] Create Testing agent manifest in src/agents/manifests/testing.json
+- [X] T025 [P] [US1] Create Security agent manifest in src/agents/manifests/security.json
+- [X] T026 [P] [US1] Create Review agent manifest in src/agents/manifests/review.json
+- [X] T027 [P] [US1] Create UI/UX agent manifest in src/agents/manifests/uiux.json
+- [X] T028 [US1] Implement duplicate name validation in agent deployment in src/agents/base_agent.py
+- [X] T029 [US1] Implement Agent Card versioning support in src/agents/base_agent.py
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - agents can be defined with Agent Cards and deployed to AgentCore Runtime
 
@@ -91,17 +91,17 @@
 
 ### Tests for User Story 2
 
-- [ ] T030 [P] [US2] Unit test for Gateway tool discovery helpers in tests/unit/test_gateway_tools.py
-- [ ] T031 [P] [US2] Integration test for Gateway tool access in tests/integration/test_gateway_tools.py
+- [X] T030 [P] [US2] Unit test for Gateway tool discovery helpers in tests/unit/test_gateway_tools.py
+- [X] T031 [P] [US2] Integration test for Gateway tool access in tests/integration/test_gateway_tools.py
 
 ### Implementation for User Story 2
 
-- [ ] T032 [US2] Create MCPClient wrapper with sync methods in src/gateway/tools.py
-- [ ] T033 [US2] Implement list_tools_sync helper in src/gateway/tools.py
-- [ ] T034 [US2] Implement call_tool_sync helper in src/gateway/tools.py
-- [ ] T035 [US2] Implement semantic search via x_amz_bedrock_agentcore_search in src/gateway/tools.py
-- [ ] T036 [US2] Implement graceful error handling for tool unavailability in src/gateway/tools.py
-- [ ] T037 [US2] Add Observability tracing for tool invocations in src/gateway/tools.py
+- [X] T032 [US2] Create MCPClient wrapper with sync methods in src/gateway/tools.py
+- [X] T033 [US2] Implement list_tools_sync helper in src/gateway/tools.py
+- [X] T034 [US2] Implement call_tool_sync helper in src/gateway/tools.py
+- [X] T035 [US2] Implement semantic search via x_amz_bedrock_agentcore_search in src/gateway/tools.py
+- [X] T036 [US2] Implement graceful error handling for tool unavailability in src/gateway/tools.py
+- [X] T037 [US2] Add Observability tracing for tool invocations in src/gateway/tools.py
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work - agents have Agent Cards and can access tools via Gateway
 
@@ -115,21 +115,21 @@
 
 ### Tests for User Story 3
 
-- [ ] T038 [P] [US3] Contract test for custom metadata schema in tests/contract/test_metadata_schema.py
-- [ ] T039 [P] [US3] Unit test for metadata models in tests/unit/test_metadata_models.py
-- [ ] T040 [P] [US3] Unit test for semantic validation in tests/unit/test_validation.py
+- [X] T038 [P] [US3] Contract test for custom metadata schema in tests/contract/test_metadata_schema.py
+- [X] T039 [P] [US3] Unit test for metadata models in tests/unit/test_metadata_models.py
+- [X] T040 [P] [US3] Unit test for semantic validation in tests/unit/test_validation.py
 
 ### Implementation for User Story 3
 
-- [ ] T041 [P] [US3] Create InputSchema Pydantic model in src/metadata/models.py
-- [ ] T042 [P] [US3] Create OutputSchema Pydantic model in src/metadata/models.py
-- [ ] T043 [US3] Create CustomAgentMetadata Pydantic model in src/metadata/models.py
-- [ ] T044 [US3] Implement DynamoDB storage layer for metadata in src/metadata/storage.py
-- [ ] T045 [US3] Implement put_metadata operation in src/metadata/storage.py
-- [ ] T046 [US3] Implement get_metadata operation in src/metadata/storage.py
-- [ ] T047 [US3] Implement semantic type compatibility matrix in src/metadata/validation.py
-- [ ] T048 [US3] Implement validate_input_compatibility function in src/metadata/validation.py
-- [ ] T049 [US3] Implement validate_output_compatibility function in src/metadata/validation.py
+- [X] T041 [P] [US3] Create InputSchema Pydantic model in src/metadata/models.py
+- [X] T042 [P] [US3] Create OutputSchema Pydantic model in src/metadata/models.py
+- [X] T043 [US3] Create CustomAgentMetadata Pydantic model in src/metadata/models.py
+- [X] T044 [US3] Implement DynamoDB storage layer for metadata in src/metadata/storage.py
+- [X] T045 [US3] Implement put_metadata operation in src/metadata/storage.py
+- [X] T046 [US3] Implement get_metadata operation in src/metadata/storage.py
+- [X] T047 [US3] Implement semantic type compatibility matrix in src/metadata/validation.py
+- [X] T048 [US3] Implement validate_input_compatibility function in src/metadata/validation.py
+- [X] T049 [US3] Implement validate_output_compatibility function in src/metadata/validation.py
 
 **Checkpoint**: At this point, User Story 3 is complete - agents can have enhanced input/output schemas with semantic validation
 
@@ -143,21 +143,21 @@
 
 ### Tests for User Story 4
 
-- [ ] T050 [P] [US4] Unit test for consultation rules in tests/unit/test_consultation_rules.py
-- [ ] T051 [P] [US4] Integration test for consultation enforcement in tests/integration/test_consultation_enforcement.py
+- [X] T050 [P] [US4] Unit test for consultation rules in tests/unit/test_consultation_rules.py
+- [X] T051 [P] [US4] Integration test for consultation enforcement in tests/integration/test_consultation_enforcement.py
 
 ### Implementation for User Story 4
 
-- [ ] T052 [P] [US4] Create ConsultationPhase enum in src/consultation/rules.py
-- [ ] T053 [P] [US4] Create ConsultationCondition Pydantic model in src/consultation/rules.py
-- [ ] T054 [US4] Create ConsultationRequirement Pydantic model in src/consultation/rules.py
-- [ ] T055 [US4] Create ConsultationOutcome Pydantic model in src/consultation/rules.py
-- [ ] T056 [US4] Implement ConsultationEngine class in src/consultation/enforcement.py
-- [ ] T057 [US4] Implement get_requirements method in src/consultation/enforcement.py
-- [ ] T058 [US4] Implement evaluate_condition method for conditional consultations in src/consultation/enforcement.py
-- [ ] T059 [US4] Implement query_observability_traces for A2A consultation verification in src/consultation/enforcement.py
-- [ ] T060 [US4] Implement validate_task_completion that blocks on missing consultations in src/consultation/enforcement.py
-- [ ] T061 [US4] Add consultation requirements to CustomAgentMetadata storage in src/metadata/storage.py
+- [X] T052 [P] [US4] Create ConsultationPhase enum in src/consultation/rules.py
+- [X] T053 [P] [US4] Create ConsultationCondition Pydantic model in src/consultation/rules.py
+- [X] T054 [US4] Create ConsultationRequirement Pydantic model in src/consultation/rules.py
+- [X] T055 [US4] Create ConsultationOutcome Pydantic model in src/consultation/rules.py
+- [X] T056 [US4] Implement ConsultationEngine class in src/consultation/enforcement.py
+- [X] T057 [US4] Implement get_requirements method in src/consultation/enforcement.py
+- [X] T058 [US4] Implement evaluate_condition method for conditional consultations in src/consultation/enforcement.py
+- [X] T059 [US4] Implement query_observability_traces for A2A consultation verification in src/consultation/enforcement.py
+- [X] T060 [US4] Implement validate_task_completion that blocks on missing consultations in src/consultation/enforcement.py
+- [X] T061 [US4] Add consultation requirements to CustomAgentMetadata storage in src/metadata/storage.py
 
 **Checkpoint**: At this point, User Story 4 is complete - consultation requirements are enforced before task completion
 
@@ -171,31 +171,31 @@
 
 ### Tests for User Story 5
 
-- [ ] T062 [P] [US5] Unit test for agent discovery in tests/unit/test_discovery.py
-- [ ] T063 [P] [US5] Unit test for agent query interface in tests/unit/test_query.py
-- [ ] T064 [P] [US5] Integration test for registry API in tests/integration/test_registry_api.py
+- [X] T062 [P] [US5] Unit test for agent discovery in tests/unit/test_discovery.py
+- [X] T063 [P] [US5] Unit test for agent query interface in tests/unit/test_query.py
+- [X] T064 [P] [US5] Integration test for registry API in tests/integration/test_registry_api.py
 
 ### Implementation for User Story 5
 
-- [ ] T065 [US5] Implement A2A Agent Card discovery in src/registry/discovery.py
-- [ ] T066 [US5] Implement fetch_agent_card from /.well-known/agent-card.json in src/registry/discovery.py
-- [ ] T067 [US5] Implement discover_all_agents via A2A protocol in src/registry/discovery.py
-- [ ] T068 [US5] Create AgentRegistry class in src/registry/query.py
-- [ ] T069 [US5] Implement find_by_skill method in src/registry/query.py
-- [ ] T070 [US5] Implement find_by_input_compatibility method in src/registry/query.py
-- [ ] T071 [US5] Implement check_compatibility method in src/registry/query.py
-- [ ] T072 [US5] Implement get_consultation_requirements method in src/registry/query.py
-- [ ] T073 [US5] Create AgentStatus Pydantic model in src/registry/models.py
-- [ ] T074 [US5] Implement status tracking storage in src/registry/status.py
-- [ ] T075 [US5] Create API stack with Lambda + API Gateway in infrastructure/cdk/stacks/api_stack.py
-- [ ] T076 [US5] Implement listAgents Lambda handler in src/registry/handlers.py
-- [ ] T077 [US5] Implement getAgent Lambda handler in src/registry/handlers.py
-- [ ] T078 [US5] Implement updateAgentMetadata Lambda handler in src/registry/handlers.py
-- [ ] T079 [US5] Implement getConsultationRequirements Lambda handler in src/registry/handlers.py
-- [ ] T080 [US5] Implement checkCompatibility Lambda handler in src/registry/handlers.py
-- [ ] T081 [US5] Implement findCompatibleAgents Lambda handler in src/registry/handlers.py
-- [ ] T082 [US5] Implement getAgentStatus Lambda handler in src/registry/handlers.py
-- [ ] T083 [US5] Implement updateAgentStatus Lambda handler in src/registry/handlers.py
+- [X] T065 [US5] Implement A2A Agent Card discovery in src/registry/discovery.py
+- [X] T066 [US5] Implement fetch_agent_card from /.well-known/agent-card.json in src/registry/discovery.py
+- [X] T067 [US5] Implement discover_all_agents via A2A protocol in src/registry/discovery.py
+- [X] T068 [US5] Create AgentRegistry class in src/registry/query.py
+- [X] T069 [US5] Implement find_by_skill method in src/registry/query.py
+- [X] T070 [US5] Implement find_by_input_compatibility method in src/registry/query.py
+- [X] T071 [US5] Implement check_compatibility method in src/registry/query.py
+- [X] T072 [US5] Implement get_consultation_requirements method in src/registry/query.py
+- [X] T073 [US5] Create AgentStatus Pydantic model in src/registry/models.py
+- [X] T074 [US5] Implement status tracking storage in src/registry/status.py
+- [X] T075 [US5] Create API stack with Lambda + API Gateway in infrastructure/cdk/stacks/api_stack.py
+- [X] T076 [US5] Implement listAgents Lambda handler in src/registry/handlers.py
+- [X] T077 [US5] Implement getAgent Lambda handler in src/registry/handlers.py
+- [X] T078 [US5] Implement updateAgentMetadata Lambda handler in src/registry/handlers.py
+- [X] T079 [US5] Implement getConsultationRequirements Lambda handler in src/registry/handlers.py
+- [X] T080 [US5] Implement checkCompatibility Lambda handler in src/registry/handlers.py
+- [X] T081 [US5] Implement findCompatibleAgents Lambda handler in src/registry/handlers.py
+- [X] T082 [US5] Implement getAgentStatus Lambda handler in src/registry/handlers.py
+- [X] T083 [US5] Implement updateAgentStatus Lambda handler in src/registry/handlers.py
 
 **Checkpoint**: All user stories should now be independently functional - full agent framework with discovery, tools, metadata, consultation, and registry API
 

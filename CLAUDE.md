@@ -26,4 +26,13 @@ Python 3.11+ (AgentCore SDK requirement): Follow standard conventions
 - 001-agent-framework: Added Python 3.11+ (AgentCore SDK requirement) + AWS Bedrock AgentCore SDK, boto3, pydantic (validation)
 
 <!-- MANUAL ADDITIONS START -->
+
+## Constitution
+
+Before any implementation work, read `.specify/memory/constitution.md` for non-negotiable project principles including:
+- **Gherkin syntax** for all user stories and acceptance criteria
+- **Verification-first** - no claiming "done" without tests/linting passing
+- **Conventional commits** with logical chunks (not monolithic commits)
+- **Spec-driven flow** - spec → plan → tasks → implement
+
 <!-- MANUAL ADDITIONS END -->
