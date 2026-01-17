@@ -180,7 +180,7 @@
 - [x] T078 [US4] Create PolicyEnforcer class skeleton in src/orchestrator/policy.py
 - [x] T079 [US4] Implement Policy client wrapper in src/orchestrator/policy.py
 - [x] T080 [US4] Implement PolicyEnforcer.create_iteration_policy() in src/orchestrator/policy.py
-- [ ] T081 [US4] Implement PolicyEnforcer.check_iteration_allowed() in src/orchestrator/policy.py
+- [x] T081 [US4] Implement PolicyEnforcer.check_iteration_allowed() in src/orchestrator/policy.py
 - [ ] T082 [US4] Implement PolicyEnforcer.update_policy() in src/orchestrator/policy.py
 - [ ] T083 [US4] Implement PolicyEnforcer.get_policy() in src/orchestrator/policy.py
 - [ ] T084 [US4] Create AlertManager class in src/orchestrator/alerts.py
