@@ -1,0 +1,33 @@
+{
+  "name": "review-agent",
+  "description": "Conducts comprehensive code reviews focusing on quality, maintainability, and adherence to best practices",
+  "version": "1.0.0",
+  "url": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/review/invocations/",
+  "protocolVersion": "0.3.0",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": [
+    {
+      "id": "code-review",
+      "name": "Code Review",
+      "description": "Review code for quality, readability, and adherence to coding standards",
+      "tags": ["review", "quality", "standards"]
+    },
+    {
+      "id": "architecture-review",
+      "name": "Architecture Review",
+      "description": "Review system architecture and design decisions for best practices",
+      "tags": ["review", "architecture", "design"]
+    },
+    {
+      "id": "performance-review",
+      "name": "Performance Review",
+      "description": "Analyze code and queries for performance optimization opportunities",
+      "tags": ["review", "performance", "optimization"]
+    }
+  ]
+}

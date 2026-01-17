@@ -1,0 +1,33 @@
+{
+  "name": "development-agent",
+  "description": "Implements features by writing production-quality code following best practices and design specifications",
+  "version": "1.0.0",
+  "url": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/development/invocations/",
+  "protocolVersion": "0.3.0",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": [
+    {
+      "id": "code-implementation",
+      "name": "Code Implementation",
+      "description": "Write production-quality code implementing features according to specifications",
+      "tags": ["coding", "implementation", "development"]
+    },
+    {
+      "id": "api-implementation",
+      "name": "API Implementation",
+      "description": "Implement REST APIs, GraphQL resolvers, and service endpoints",
+      "tags": ["api", "endpoints", "services"]
+    },
+    {
+      "id": "database-integration",
+      "name": "Database Integration",
+      "description": "Implement database queries, ORM models, and data persistence logic",
+      "tags": ["database", "orm", "persistence"]
+    }
+  ]
+}

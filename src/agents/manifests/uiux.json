@@ -1,0 +1,33 @@
+{
+  "name": "uiux-agent",
+  "description": "Designs user interfaces and experiences focusing on usability, accessibility, and user satisfaction",
+  "version": "1.0.0",
+  "url": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/uiux/invocations/",
+  "protocolVersion": "0.3.0",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": ["text", "image"],
+  "defaultOutputModes": ["text", "image"],
+  "skills": [
+    {
+      "id": "interface-design",
+      "name": "Interface Design",
+      "description": "Design user interfaces with focus on usability and visual consistency",
+      "tags": ["ui", "design", "usability"]
+    },
+    {
+      "id": "user-experience",
+      "name": "User Experience Design",
+      "description": "Design user flows and interactions optimized for user satisfaction",
+      "tags": ["ux", "flows", "interaction"]
+    },
+    {
+      "id": "accessibility-design",
+      "name": "Accessibility Design",
+      "description": "Ensure interfaces meet WCAG accessibility standards and guidelines",
+      "tags": ["accessibility", "wcag", "a11y"]
+    }
+  ]
+}

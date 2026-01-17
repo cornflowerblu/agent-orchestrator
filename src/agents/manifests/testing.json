@@ -1,0 +1,33 @@
+{
+  "name": "testing-agent",
+  "description": "Creates and executes comprehensive test suites including unit, integration, and contract tests with high coverage",
+  "version": "1.0.0",
+  "url": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/testing/invocations/",
+  "protocolVersion": "0.3.0",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": [
+    {
+      "id": "unit-testing",
+      "name": "Unit Testing",
+      "description": "Write and execute unit tests with mocking for isolated component testing",
+      "tags": ["testing", "unit-tests", "mocking"]
+    },
+    {
+      "id": "integration-testing",
+      "name": "Integration Testing",
+      "description": "Create integration tests validating interactions between components and services",
+      "tags": ["testing", "integration", "e2e"]
+    },
+    {
+      "id": "contract-testing",
+      "name": "Contract Testing",
+      "description": "Implement contract tests ensuring API and schema compliance",
+      "tags": ["testing", "contracts", "api"]
+    }
+  ]
+}

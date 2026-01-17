@@ -1,0 +1,33 @@
+{
+  "name": "security-agent",
+  "description": "Performs security analysis, vulnerability scanning, and implements security best practices and compliance requirements",
+  "version": "1.0.0",
+  "url": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/security/invocations/",
+  "protocolVersion": "0.3.0",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": [
+    {
+      "id": "security-review",
+      "name": "Security Review",
+      "description": "Review code and architecture for security vulnerabilities and OWASP top 10 issues",
+      "tags": ["security", "vulnerability", "owasp"]
+    },
+    {
+      "id": "threat-modeling",
+      "name": "Threat Modeling",
+      "description": "Perform threat modeling and risk assessment for system components",
+      "tags": ["security", "threats", "risk"]
+    },
+    {
+      "id": "compliance-validation",
+      "name": "Compliance Validation",
+      "description": "Validate compliance with security standards like SOC2, HIPAA, and GDPR",
+      "tags": ["compliance", "standards", "regulation"]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "orchestrator-agent",
+  "description": "Orchestrates task assignment and coordination across all platform agents based on skill requirements and workload",
+  "version": "1.0.0",
+  "url": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/orchestrator/invocations/",
+  "protocolVersion": "0.3.0",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": [
+    {
+      "id": "task-assignment",
+      "name": "Task Assignment",
+      "description": "Assign tasks to appropriate agents based on skills, availability, and input compatibility",
+      "tags": ["orchestration", "coordination", "scheduling"]
+    },
+    {
+      "id": "agent-discovery",
+      "name": "Agent Discovery",
+      "description": "Discover available agents via A2A protocol and query their capabilities",
+      "tags": ["discovery", "a2a", "registry"]
+    },
+    {
+      "id": "workflow-coordination",
+      "name": "Workflow Coordination",
+      "description": "Coordinate multi-agent workflows and ensure proper task sequencing",
+      "tags": ["workflow", "coordination", "dependencies"]
+    }
+  ]
+}
