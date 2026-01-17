@@ -73,9 +73,17 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
           flags: unittests
           fail_ci_if_error: false
+
+      - name: Upload unit test coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage
+          path: coverage.xml
+          retention-days: 30
 
   type-check:
     name: Type Check
@@ -234,7 +242,15 @@ jobs:
           AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      - name: Upload integration test coverage
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: integration
+          fail_ci_if_error: false
+
+      - name: Upload integration test coverage artifact
         uses: actions/upload-artifact@v4
         with:
           name: integration-coverage
