@@ -183,8 +183,8 @@
 - [x] T081 [US4] Implement PolicyEnforcer.check_iteration_allowed() in src/orchestrator/policy.py
 - [x] T082 [US4] Implement PolicyEnforcer.update_policy() in src/orchestrator/policy.py
 - [x] T083 [US4] Implement PolicyEnforcer.get_policy() in src/orchestrator/policy.py
-- [ ] T084 [US4] Create AlertManager class in src/orchestrator/alerts.py
-- [ ] T085 [US4] Implement AlertManager.send_warning() for 80% threshold in src/orchestrator/alerts.py
+- [x] T084 [US4] Create AlertManager class in src/orchestrator/alerts.py
+- [x] T085 [US4] Implement AlertManager.send_warning() for 80% threshold in src/orchestrator/alerts.py
 - [ ] T086 [US4] Create ObservabilityMonitor class skeleton in src/orchestrator/monitor.py
 - [ ] T087 [US4] Implement ObservabilityMonitor.watch_agent() in src/orchestrator/monitor.py
 - [ ] T088 [US4] Implement threshold detection logic (SC-008: 80%) in src/orchestrator/monitor.py
@@ -195,7 +195,7 @@
 
 - [x] T091 [P] [US4] Write unit tests for PolicyConfig in tests/unit/test_orchestrator/test_models.py
 - [x] T092 [P] [US4] Write unit tests for PolicyEnforcer in tests/unit/test_orchestrator/test_policy.py
-- [ ] T093 [P] [US4] Write unit tests for AlertManager in tests/unit/test_orchestrator/test_alerts.py
+- [x] T093 [P] [US4] Write unit tests for AlertManager in tests/unit/test_orchestrator/test_alerts.py
 - [ ] T094 [US4] Write unit tests for ObservabilityMonitor in tests/unit/test_orchestrator/test_monitor.py
 - [ ] T095 [US4] Write integration test for Policy service in tests/integration/test_orchestrator/test_policy.py
 
