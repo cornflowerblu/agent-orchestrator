@@ -277,12 +277,23 @@ for agent in agents:
 ### Check Consultation Requirements
 
 ```python
-from src.consultation.rules import ConsultationEngine
+from src.consultation.enforcement import ConsultationEngine
+from src.consultation.rules import ConsultationRequirement, ConsultationPhase
 
-engine = ConsultationEngine()
-requirements = engine.get_requirements('development-agent')
-for req in requirements:
-    print(f"  Must consult: {req.target_agent} ({req.phase})")
+# Create engine with requirements
+requirements = [
+    ConsultationRequirement(
+        agent_name="security-agent",
+        phase=ConsultationPhase.PRE_COMPLETION,
+        mandatory=True
+    )
+]
+engine = ConsultationEngine(requirements=requirements)
+
+# Get requirements for a specific phase
+pre_completion_reqs = engine.get_requirements(ConsultationPhase.PRE_COMPLETION)
+for req in pre_completion_reqs:
+    print(f"  Must consult: {req.agent_name} ({req.phase.value})")
 ```
 
 ### Validate Task Assignment
