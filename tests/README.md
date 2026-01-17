@@ -122,10 +122,48 @@ pytest -m "not integration" --cov=src --cov-report=term-missing
 | `integration` | Real AWS E2E tests | Yes |
 | `slow` | Long-running tests | Varies |
 
+## CI Workflow
+
+The CI pipeline runs tests in parallel for fast feedback:
+
+```
+                    ┌─────────────────┐
+                    │      lint       │
+                    └────────┬────────┘
+                             │
+           ┌─────────────────┼─────────────────┐
+           │                 │                 │
+           ▼                 ▼                 ▼
+┌──────────────────┐ ┌──────────────────┐ ┌────────────┐
+│   Unit Tests     │ │ SAM Local Tests  │ │ type-check │
+│ (coverage: 79%)  │ │ (no coverage)    │ │            │
+└────────┬─────────┘ └────────┬─────────┘ └─────┬──────┘
+         │                    │                 │
+         └────────────────────┴─────────────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │   all-checks      │
+                    └───────────────────┘
+                              │
+              (on PR or [deploy] tag)
+                              │
+                    ┌─────────▼─────────┐
+                    │   CDK Deploy →    │
+                    │ Integration Tests │
+                    │   → CDK Destroy   │
+                    └───────────────────┘
+```
+
+### Why SAM Tests Don't Have Coverage
+
+SAM local tests invoke Lambda handlers via `sam local invoke`, which runs code in Docker containers. pytest-cov only measures code in the same Python process, so SAM tests can't contribute to source coverage.
+
+**SAM tests validate that code *runs*. Unit tests validate code *coverage*.**
+
 ## Coverage Targets
 
-- **Unit tests**: 80%
-- **Integration tests**: 60%
+- **Unit tests**: 79% (measured in CI)
+- **Integration tests**: 60% (measured in CI after deploy)
 
 ## Key Files
 
@@ -153,6 +191,82 @@ cd infrastructure/sam-local && ./build.sh
 
 The SAM template uses `host.docker.internal:4566` which works on Mac/Windows.
 On Linux, you may need `--network host` flag.
+
+## Adding Tests for New Features
+
+When adding a new Lambda handler or feature, follow this checklist:
+
+### 1. Unit Tests (Required)
+
+Add unit tests in `tests/unit/` with mocked dependencies:
+
+```python
+@pytest.mark.unit
+class TestMyNewHandler:
+    def test_success_case(self, mock_dynamodb):
+        # Test with mocked DynamoDB
+        ...
+```
+
+### 2. SAM Local Tests (Required for Lambda handlers)
+
+For new Lambda handlers, add SAM local tests:
+
+**a) Add handler to SAM template** (`infrastructure/sam-local/template.yaml`):
+```yaml
+MyNewFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    CodeUri: .aws-sam/build/MyNewFunction
+    Handler: src.my_module.handler
+    Environment:
+      Variables:
+        MY_TABLE: MyTable
+```
+
+**b) Update build script** (`infrastructure/sam-local/build.sh`):
+```bash
+for func in ListAgentsFunction GetAgentFunction ... MyNewFunction; do
+```
+
+**c) Add event file** (`infrastructure/sam-local/events/my_event.json`):
+```json
+{
+  "httpMethod": "GET",
+  "path": "/my-resource",
+  ...
+}
+```
+
+**d) Add test** (`tests/integration/sam_local/test_my_handler.py`):
+```python
+@pytest.mark.sam_local
+@pytest.mark.slow
+class TestMyNewHandler:
+    def test_with_event_file(self, sam_invoker):
+        response = sam_invoker.invoke_with_event_file("MyNewFunction", "my_event.json")
+        assert response["statusCode"] == 200
+```
+
+### 3. Integration Tests (For E2E validation)
+
+Add integration tests that run against real AWS:
+
+```python
+@pytest.mark.integration
+class TestMyFeatureE2E:
+    def test_real_aws_behavior(self, api_url):
+        # Test against deployed API
+        ...
+```
+
+### New DynamoDB Tables
+
+If your feature needs a new DynamoDB table:
+
+1. Add to CDK stack (`infrastructure/cdk/`)
+2. Add to LocalStack init script (`infrastructure/sam-local/init-localstack.sh`)
+3. Add to CI workflow (`.github/workflows/ci.yml` - "Create DynamoDB tables" step)
 
 ---
 
