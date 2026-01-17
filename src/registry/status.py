@@ -77,11 +77,17 @@ class StatusStorage:
             )
 
         except ClientError as e:
-            logger.error(f"Failed to get status: {e}")
+            error_code = e.response.get("Error", {}).get("Code", "Unknown")
+            logger.exception(f"DynamoDB error getting status for '{agent_name}': {error_code}")
             raise ValidationError(
                 f"Failed to get status for '{agent_name}'",
-                details={"error": str(e)},
-            )
+                details={
+                    "error": str(e),
+                    "error_code": error_code,
+                    "agent_name": agent_name,
+                    "table": self.table_name,
+                },
+            ) from e
 
     def update_status(
         self,
@@ -106,6 +112,10 @@ class StatusStorage:
 
         Returns:
             Updated AgentStatus
+
+        Raises:
+            AgentNotFoundError: If no status exists for the agent
+            ValidationError: If update fails due to DynamoDB error
         """
         try:
             now = datetime.now(UTC).isoformat()
@@ -155,22 +165,35 @@ class StatusStorage:
 
             logger.debug(f"Updating status for agent '{agent_name}'")
 
+            # Use conditional expression to ensure item exists before updating
             self.table.update_item(
                 Key={"agent_name": agent_name},
                 UpdateExpression=update_expression,
                 ExpressionAttributeNames=expression_names,
                 ExpressionAttributeValues=expression_values,
+                ConditionExpression="attribute_exists(agent_name)",
             )
 
             # Return the updated status
             return self.get_status(agent_name)
 
         except ClientError as e:
-            logger.error(f"Failed to update status: {e}")
+            error_code = e.response.get("Error", {}).get("Code", "Unknown")
+
+            # Handle conditional check failure (item doesn't exist)
+            if error_code == "ConditionalCheckFailedException":
+                raise AgentNotFoundError(agent_name) from e
+
+            logger.exception(f"DynamoDB error updating status for '{agent_name}': {error_code}")
             raise ValidationError(
                 f"Failed to update status for '{agent_name}'",
-                details={"error": str(e)},
-            )
+                details={
+                    "error": str(e),
+                    "error_code": error_code,
+                    "agent_name": agent_name,
+                    "table": self.table_name,
+                },
+            ) from e
 
     def put_status(self, status: AgentStatus) -> AgentStatus:
         """Create or replace an agent status.
@@ -199,11 +222,19 @@ class StatusStorage:
             return status
 
         except ClientError as e:
-            logger.error(f"Failed to store status: {e}")
+            error_code = e.response.get("Error", {}).get("Code", "Unknown")
+            logger.exception(
+                f"DynamoDB error storing status for '{status.agent_name}': {error_code}"
+            )
             raise ValidationError(
                 f"Failed to store status for '{status.agent_name}'",
-                details={"error": str(e)},
-            )
+                details={
+                    "error": str(e),
+                    "error_code": error_code,
+                    "agent_name": status.agent_name,
+                    "table": self.table_name,
+                },
+            ) from e
 
     def delete_status(self, agent_name: str) -> None:
         """Delete status for an agent.
@@ -219,11 +250,17 @@ class StatusStorage:
             logger.info(f"Deleted status for agent '{agent_name}'")
 
         except ClientError as e:
-            logger.error(f"Failed to delete status: {e}")
+            error_code = e.response.get("Error", {}).get("Code", "Unknown")
+            logger.exception(f"DynamoDB error deleting status for '{agent_name}': {error_code}")
             raise ValidationError(
                 f"Failed to delete status for '{agent_name}'",
-                details={"error": str(e)},
-            )
+                details={
+                    "error": str(e),
+                    "error_code": error_code,
+                    "agent_name": agent_name,
+                    "table": self.table_name,
+                },
+            ) from e
 
     def list_all_statuses(self) -> list[AgentStatus]:
         """List status for all agents.
@@ -263,8 +300,16 @@ class StatusStorage:
             return statuses
 
         except ClientError as e:
-            logger.error(f"Failed to list statuses: {e}")
-            raise ValidationError("Failed to list agent statuses", details={"error": str(e)})
+            error_code = e.response.get("Error", {}).get("Code", "Unknown")
+            logger.exception(f"DynamoDB error listing statuses: {error_code}")
+            raise ValidationError(
+                "Failed to list agent statuses",
+                details={
+                    "error": str(e),
+                    "error_code": error_code,
+                    "table": self.table_name,
+                },
+            ) from e
 
     def get_status_summary(self) -> AgentStatusSummary:
         """Get a summary of all agent statuses.

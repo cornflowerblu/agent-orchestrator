@@ -4,17 +4,17 @@ Task T086: Create integration test stack naming and cleanup
 """
 
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
+from aws_cdk import RemovalPolicy, Stack, Tags
+from aws_cdk import aws_dynamodb as dynamodb
+from botocore.exceptions import ClientError
 from constructs import Construct
-from aws_cdk import (
-    Duration,
-    RemovalPolicy,
-    Stack,
-    Tags,
-    aws_dynamodb as dynamodb,
-)
+
+from src.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def get_test_stack_name(base_name: str = "AgentFrameworkTest") -> str:
@@ -26,7 +26,7 @@ def get_test_stack_name(base_name: str = "AgentFrameworkTest") -> str:
     Returns:
         Unique stack name with timestamp
     """
-    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
     return f"{base_name}-{timestamp}"
 
 
@@ -40,7 +40,7 @@ def get_test_resource_name(resource_type: str, base_name: str = "test") -> str:
     Returns:
         Unique resource name with timestamp
     """
-    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
     return f"{base_name}-{resource_type}-{timestamp}"
 
 
@@ -81,14 +81,14 @@ class TestStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # Generate test run ID if not provided
-        self.test_run_id = test_run_id or datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        self.test_run_id = test_run_id or datetime.now(UTC).strftime("%Y%m%d%H%M%S")
 
         # Add tags for identification
         Tags.of(self).add("Environment", "test")
         Tags.of(self).add("Purpose", "integration-testing")
         Tags.of(self).add("TestRunId", self.test_run_id)
         Tags.of(self).add("AutoCleanup", "true")
-        Tags.of(self).add("CreatedAt", datetime.utcnow().isoformat())
+        Tags.of(self).add("CreatedAt", datetime.now(UTC).isoformat())
 
         # Create test DynamoDB tables with cleanup-friendly settings
         self.metadata_table = dynamodb.Table(
@@ -118,7 +118,7 @@ class TestStack(Stack):
             time_to_live_attribute="ttl",
         )
 
-        # Add TTL to status table for auto-cleanup of old test data
+        # Add tags to tables for easy identification during cleanup
         Tags.of(self.metadata_table).add("TestResource", "true")
         Tags.of(self.status_table).add("TestResource", "true")
 
@@ -128,19 +128,39 @@ class TestCleanup:
 
     Provides methods to identify and delete test stacks and resources
     based on tags and naming conventions.
+
+    Usage:
+        # List old test stacks
+        cleanup = TestCleanup(region="us-east-1")
+        stacks = cleanup.list_test_stacks(max_age_hours=24)
+
+        # Dry run to see what would be deleted
+        result = cleanup.cleanup_old_test_resources(dry_run=True)
+
+        # Actually delete old resources
+        result = cleanup.cleanup_old_test_resources(dry_run=False)
+
+    Note:
+        This class identifies test resources by naming convention:
+        - Stacks: Contains "test" (case-insensitive) and "AgentFramework"
+        - Tables: Contains "-test-" and either "AgentMetadata" or "AgentStatus"
     """
 
     def __init__(self, region: str | None = None):
         """Initialize cleanup utility.
 
         Args:
-            region: AWS region (defaults to AWS_REGION env var)
+            region: AWS region (defaults to AWS_REGION env var or us-east-1)
+
+        Note:
+            Requires AWS credentials with CloudFormation and DynamoDB permissions.
         """
         import boto3
 
         self.region = region or os.getenv("AWS_REGION", "us-east-1")
         self.cloudformation = boto3.client("cloudformation", region_name=self.region)
         self.dynamodb = boto3.client("dynamodb", region_name=self.region)
+        logger.info(f"Initialized TestCleanup for region '{self.region}'")
 
     def list_test_stacks(self, max_age_hours: int = 24) -> list[dict[str, Any]]:
         """List test stacks that can be cleaned up.
@@ -168,15 +188,17 @@ class TestCleanup:
                 if "test" in stack_name.lower() and "AgentFramework" in stack_name:
                     creation_time = stack["CreationTime"]
                     age_hours = (
-                        datetime.utcnow() - creation_time.replace(tzinfo=None)
+                        datetime.now(UTC) - creation_time.astimezone(UTC)
                     ).total_seconds() / 3600
 
                     if age_hours > max_age_hours:
-                        stacks.append({
-                            "name": stack_name,
-                            "creation_time": creation_time.isoformat(),
-                            "age_hours": round(age_hours, 1),
-                        })
+                        stacks.append(
+                            {
+                                "name": stack_name,
+                                "creation_time": creation_time.isoformat(),
+                                "age_hours": round(age_hours, 1),
+                            }
+                        )
 
         return stacks
 
@@ -191,10 +213,12 @@ class TestCleanup:
         """
         try:
             self.cloudformation.delete_stack(StackName=stack_name)
-            return True
-        except Exception as e:
-            print(f"Failed to delete stack {stack_name}: {e}")
+        except ClientError:
+            logger.exception(f"Failed to delete stack {stack_name}")
             return False
+        else:
+            logger.info(f"Initiated deletion of stack '{stack_name}'")
+            return True
 
     def list_test_tables(self) -> list[str]:
         """List DynamoDB tables created for testing.
@@ -225,10 +249,12 @@ class TestCleanup:
         """
         try:
             self.dynamodb.delete_table(TableName=table_name)
-            return True
-        except Exception as e:
-            print(f"Failed to delete table {table_name}: {e}")
+        except ClientError:
+            logger.exception(f"Failed to delete table {table_name}")
             return False
+        else:
+            logger.info(f"Initiated deletion of table '{table_name}'")
+            return True
 
     def cleanup_old_test_resources(
         self, max_age_hours: int = 24, dry_run: bool = True
