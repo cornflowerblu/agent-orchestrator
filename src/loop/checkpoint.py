@@ -173,4 +173,5 @@ class CheckpointManager:
 
         # List all checkpoints for this session
         prefix = f"checkpoint/{self.session_id}/"
-        return self._memory.list(prefix=prefix)  # type: ignore[union-attr]
+        result: list[dict[str, Any]] = self._memory.list(prefix=prefix)  # type: ignore[union-attr,no-any-return]
+        return result

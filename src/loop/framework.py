@@ -92,7 +92,7 @@ class LoopFramework:
 
         # T089: Initialize PolicyEnforcer if policy engine is configured
         if policy_enforcer is not None:
-            self.policy_enforcer = policy_enforcer
+            self.policy_enforcer: PolicyEnforcer | None = policy_enforcer
         elif config.policy_engine_arn:
             policy_config = PolicyConfig(
                 agent_name=config.agent_name,
@@ -365,7 +365,12 @@ class LoopFramework:
 
                 # Execute work function
                 iteration_start = datetime.now(UTC)
-                agent_state = await work_function(iteration, agent_state, self)
+                work_result = work_function(iteration, agent_state, self)
+                # Work function can be sync or async
+                if hasattr(work_result, "__await__"):
+                    agent_state = await work_result  # type: ignore[misc]
+                else:
+                    agent_state = work_result  # type: ignore[assignment]
                 iteration_duration = (datetime.now(UTC) - iteration_start).total_seconds() * 1000
 
                 # Update state
@@ -586,7 +591,7 @@ class LoopFramework:
                 details={
                     "condition": condition_config.type.value,
                     "status": status.status.value,
-                    "message": status.message,
+                    "message": status.details if hasattr(status, "details") else "",
                 },
             )
 

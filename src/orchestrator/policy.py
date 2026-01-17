@@ -74,10 +74,11 @@ class PolicyEnforcer:
 
         # Check cache
         if engine_name in self._policy_engine_cache:
-            return self._policy_engine_cache[engine_name]
+            cached_result: dict[str, Any] = self._policy_engine_cache[engine_name]
+            return cached_result
 
         # Create or get policy engine using AgentCore Policy service
-        result = self.policy_client.create_or_get_policy_engine(
+        result: dict[str, Any] = self.policy_client.create_or_get_policy_engine(
             name=engine_name,
             description=f"Enforces iteration limits for {self.config.agent_name}",
         )
@@ -110,13 +111,13 @@ class PolicyEnforcer:
 
         # Check cache
         if policy_name in self._policy_cache:
-            return self._policy_cache[policy_name]["policyArn"]
+            return str(self._policy_cache[policy_name]["policyArn"])
 
         # Generate Cedar statement
-        cedar_statement = self.config.generate_cedar_statement()
+        cedar_statement: str = self.config.generate_cedar_statement()
 
         # Create policy using AgentCore Policy service
-        result = self.policy_client.create_or_get_policy(
+        result: dict[str, Any] = self.policy_client.create_or_get_policy(
             policy_engine_id=engine_id,
             name=policy_name,
             description=f"Iteration limit policy for {self.config.agent_name}",
@@ -129,7 +130,7 @@ class PolicyEnforcer:
 
         # Cache the result
         self._policy_cache[policy_name] = result
-        return result["policyArn"]
+        return str(result["policyArn"])
 
     def check_iteration_allowed(
         self,
@@ -223,7 +224,7 @@ class PolicyEnforcer:
             policy_name += f"-{new_config.session_id}"
         self._policy_cache[policy_name] = result
 
-        return result["policyArn"]
+        return str(result["policyArn"])
 
     def get_policy(self, policy_id: str) -> dict[str, Any]:
         """Retrieve an existing policy by ID.
@@ -240,4 +241,5 @@ class PolicyEnforcer:
             print(policy["name"])  # "iteration-limit-test-agent"
         """
         # Get policy using AgentCore Policy service
-        return self.policy_client.get_policy(policy_id=policy_id)
+        result: dict[str, Any] = self.policy_client.get_policy(policy_id=policy_id)
+        return result
