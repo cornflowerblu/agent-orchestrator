@@ -31,9 +31,7 @@ def get_all_dynamodb_tables_from_stacks() -> list[str]:
     try:
         # Get all stacks (paginate if needed)
         paginator = cfn.get_paginator("list_stacks")
-        for page in paginator.paginate(
-            StackStatusFilter=["CREATE_COMPLETE", "UPDATE_COMPLETE"]
-        ):
+        for page in paginator.paginate(StackStatusFilter=["CREATE_COMPLETE", "UPDATE_COMPLETE"]):
             for stack in page["StackSummaries"]:
                 # Only process AgentOrchestrator stacks
                 if stack["StackName"].startswith("AgentOrchestrator"):
@@ -77,9 +75,7 @@ def get_table_keys(table_name: str) -> tuple[str, str | None]:
     # Get key schema
     key_schema = table.key_schema
     partition_key = next(k["AttributeName"] for k in key_schema if k["KeyType"] == "HASH")
-    sort_key = next(
-        (k["AttributeName"] for k in key_schema if k["KeyType"] == "RANGE"), None
-    )
+    sort_key = next((k["AttributeName"] for k in key_schema if k["KeyType"] == "RANGE"), None)
 
     return partition_key, sort_key
 
