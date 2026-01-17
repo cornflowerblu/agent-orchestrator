@@ -4,7 +4,6 @@ Tests for LoopProgress and other response models used by dashboard queries.
 """
 
 
-
 class TestLoopProgress:
     """Test LoopProgress response model."""
 

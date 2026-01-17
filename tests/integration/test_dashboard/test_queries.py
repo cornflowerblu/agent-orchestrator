@@ -28,14 +28,18 @@ class TestObservabilityQueriesIntegration:
                     "Id": "trace-integration-test",
                     "StartTime": datetime(2026, 1, 17, 10, 0, 0, tzinfo=UTC),
                     "Annotations": {
-                        "session_id": [{"AnnotationValue": {"StringValue": "loop-integration-123"}}],
+                        "session_id": [
+                            {"AnnotationValue": {"StringValue": "loop-integration-123"}}
+                        ],
                         "iteration.number": [{"AnnotationValue": {"NumberValue": 42}}],
                         "iteration.max": [{"AnnotationValue": {"NumberValue": 100}}],
-                        "loop.agent_name": [{"AnnotationValue": {"StringValue": "integration-test-agent"}}],
+                        "loop.agent_name": [
+                            {"AnnotationValue": {"StringValue": "integration-test-agent"}}
+                        ],
                         "loop.phase": [{"AnnotationValue": {"StringValue": "running"}}],
                         "exit_conditions.met": [{"AnnotationValue": {"NumberValue": 1}}],
                         "exit_conditions.total": [{"AnnotationValue": {"NumberValue": 3}}],
-                    }
+                    },
                 }
             ]
         }
@@ -87,7 +91,7 @@ class TestObservabilityQueriesIntegration:
                     {"field": "iteration", "value": "5"},
                     {"field": "session_id", "value": "loop-integration-456"},
                 ],
-            ]
+            ],
         }
 
         # Initialize queries and fetch events
@@ -124,9 +128,11 @@ class TestObservabilityQueriesIntegration:
                         "session_id": [{"AnnotationValue": {"StringValue": "loop-handler-789"}}],
                         "iteration.number": [{"AnnotationValue": {"NumberValue": 75}}],
                         "iteration.max": [{"AnnotationValue": {"NumberValue": 100}}],
-                        "loop.agent_name": [{"AnnotationValue": {"StringValue": "handler-test-agent"}}],
+                        "loop.agent_name": [
+                            {"AnnotationValue": {"StringValue": "handler-test-agent"}}
+                        ],
                         "loop.phase": [{"AnnotationValue": {"StringValue": "running"}}],
-                    }
+                    },
                 }
             ]
         }
@@ -167,7 +173,7 @@ class TestObservabilityQueriesIntegration:
                     {"field": "iteration", "value": "10"},
                     {"field": "checkpoint_id", "value": "checkpoint-2"},
                 ],
-            ]
+            ],
         }
 
         # Initialize queries and list checkpoints
@@ -204,7 +210,7 @@ class TestObservabilityQueriesIntegration:
                     {"field": "status", "value": "met"},
                     {"field": "iteration", "value": "15"},
                 ],
-            ]
+            ],
         }
 
         # Initialize queries and get history
@@ -237,12 +243,18 @@ class TestObservabilityQueriesIntegration:
                         "Id": f"trace-stream-{call_count}",
                         "StartTime": datetime(2026, 1, 17, 10, 0, 0, tzinfo=UTC),
                         "Annotations": {
-                            "session_id": [{"AnnotationValue": {"StringValue": "loop-stream-test"}}],
-                            "iteration.number": [{"AnnotationValue": {"NumberValue": call_count * 10}}],
+                            "session_id": [
+                                {"AnnotationValue": {"StringValue": "loop-stream-test"}}
+                            ],
+                            "iteration.number": [
+                                {"AnnotationValue": {"NumberValue": call_count * 10}}
+                            ],
                             "iteration.max": [{"AnnotationValue": {"NumberValue": 100}}],
-                            "loop.agent_name": [{"AnnotationValue": {"StringValue": "stream-test-agent"}}],
+                            "loop.agent_name": [
+                                {"AnnotationValue": {"StringValue": "stream-test-agent"}}
+                            ],
                             "loop.phase": [{"AnnotationValue": {"StringValue": "running"}}],
-                        }
+                        },
                     }
                 ]
             }
@@ -254,7 +266,7 @@ class TestObservabilityQueriesIntegration:
         progress_generator = queries.stream_progress(
             session_id="loop-stream-test",
             poll_interval=0.1,
-            max_duration=1  # 1 second max duration, will get ~3 updates at 0.1s intervals
+            max_duration=1,  # 1 second max duration, will get ~3 updates at 0.1s intervals
         )
 
         # Collect streamed progress updates (limit to 3 for test)

@@ -94,8 +94,16 @@ class TestDashboardHandlersGetEvents:
         # Setup mock queries
         mock_queries = Mock()
         mock_events = [
-            {"timestamp": "2026-01-17T10:00:00Z", "event_type": "loop.iteration.started", "iteration": "10"},
-            {"timestamp": "2026-01-17T10:01:00Z", "event_type": "loop.iteration.completed", "iteration": "10"},
+            {
+                "timestamp": "2026-01-17T10:00:00Z",
+                "event_type": "loop.iteration.started",
+                "iteration": "10",
+            },
+            {
+                "timestamp": "2026-01-17T10:01:00Z",
+                "event_type": "loop.iteration.completed",
+                "iteration": "10",
+            },
         ]
         mock_queries.get_recent_events.return_value = mock_events
         mock_queries_class.return_value = mock_queries

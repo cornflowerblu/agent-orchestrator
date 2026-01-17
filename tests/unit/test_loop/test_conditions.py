@@ -335,9 +335,7 @@ class TestTimeoutHandling:
         mock_executor.__exit__ = mocker.Mock(return_value=None)
         mock_executor.submit = mock_submit
 
-        mocker.patch(
-            "concurrent.futures.ThreadPoolExecutor", return_value=mock_executor
-        )
+        mocker.patch("concurrent.futures.ThreadPoolExecutor", return_value=mock_executor)
 
         status = evaluator.evaluate_tests(config, iteration=1)
 

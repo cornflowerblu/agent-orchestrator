@@ -528,9 +528,7 @@ class TestCheckpointInterval:
         framework = await LoopFramework.initialize(config)
 
         # Mock the checkpoint manager
-        framework.checkpoint_manager.save_checkpoint = Mock(
-            return_value="checkpoint-id"
-        )
+        framework.checkpoint_manager.save_checkpoint = Mock(return_value="checkpoint-id")
 
         async def work_func(iteration: int, state: dict, fw: LoopFramework) -> dict:
             state["count"] = state.get("count", 0) + 1
@@ -556,9 +554,7 @@ class TestCheckpointInterval:
         framework = await LoopFramework.initialize(config)
 
         # Mock the checkpoint manager
-        framework.checkpoint_manager.save_checkpoint = Mock(
-            return_value="checkpoint-id"
-        )
+        framework.checkpoint_manager.save_checkpoint = Mock(return_value="checkpoint-id")
 
         async def work_func(iteration: int, state: dict, fw: LoopFramework) -> dict:
             return state
@@ -582,9 +578,7 @@ class TestCheckpointInterval:
         framework = await LoopFramework.initialize(config)
 
         # Mock the checkpoint manager
-        framework.checkpoint_manager.save_checkpoint = Mock(
-            return_value="checkpoint-id"
-        )
+        framework.checkpoint_manager.save_checkpoint = Mock(return_value="checkpoint-id")
 
         async def work_func(iteration: int, state: dict, fw: LoopFramework) -> dict:
             return state
@@ -608,9 +602,7 @@ class TestCheckpointInterval:
         framework = await LoopFramework.initialize(config)
 
         # Mock the checkpoint manager
-        framework.checkpoint_manager.save_checkpoint = Mock(
-            return_value="checkpoint-id"
-        )
+        framework.checkpoint_manager.save_checkpoint = Mock(return_value="checkpoint-id")
 
         async def work_func(iteration: int, state: dict, fw: LoopFramework) -> dict:
             return state
@@ -629,16 +621,12 @@ class TestCheckpointInterval:
             agent_name="test-agent",
             max_iterations=20,
             checkpoint_interval=3,
-            exit_conditions=[
-                ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)
-            ],
+            exit_conditions=[ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)],
         )
         framework = await LoopFramework.initialize(config)
 
         # Mock the checkpoint manager
-        framework.checkpoint_manager.save_checkpoint = Mock(
-            return_value="checkpoint-id"
-        )
+        framework.checkpoint_manager.save_checkpoint = Mock(return_value="checkpoint-id")
 
         async def work_func(iteration: int, state: dict, fw: LoopFramework) -> dict:
             # Terminate after 7 iterations

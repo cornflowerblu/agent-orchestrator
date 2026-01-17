@@ -74,9 +74,7 @@ class TestCodeInterpreterIntegration:
     def test_real_code_interpreter_timeout(self, evaluator):
         """Should enforce timeout on long-running commands."""
         # Create evaluator with very short timeout
-        short_timeout_evaluator = ExitConditionEvaluator(
-            region=evaluator.region, timeout_seconds=2
-        )
+        short_timeout_evaluator = ExitConditionEvaluator(region=evaluator.region, timeout_seconds=2)
 
         config = ExitConditionConfig(
             type=ExitConditionType.ALL_TESTS_PASS,

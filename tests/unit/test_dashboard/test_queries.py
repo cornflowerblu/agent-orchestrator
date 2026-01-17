@@ -38,9 +38,7 @@ class TestObservabilityQueriesInit:
         mock_xray_client = Mock()
 
         queries = ObservabilityQueries(
-            region="us-east-1",
-            logs_client=mock_logs_client,
-            xray_client=mock_xray_client
+            region="us-east-1", logs_client=mock_logs_client, xray_client=mock_xray_client
         )
 
         assert queries.logs_client == mock_logs_client
@@ -68,7 +66,7 @@ class TestObservabilityQueriesGetLoopProgress:
                         "iteration.max": [{"AnnotationValue": {"NumberValue": 100}}],
                         "loop.agent_name": [{"AnnotationValue": {"StringValue": "test-agent"}}],
                         "loop.phase": [{"AnnotationValue": {"StringValue": "running"}}],
-                    }
+                    },
                 }
             ]
         }
@@ -102,7 +100,7 @@ class TestObservabilityQueriesGetLoopProgress:
                         "loop.phase": [{"AnnotationValue": {"StringValue": "running"}}],
                         "exit_conditions.met": [{"AnnotationValue": {"NumberValue": 2}}],
                         "exit_conditions.total": [{"AnnotationValue": {"NumberValue": 3}}],
-                    }
+                    },
                 }
             ]
         }
@@ -126,9 +124,7 @@ class TestObservabilityQueriesGetLoopProgress:
 
         # Setup mock with empty response
         mock_xray_client = Mock()
-        mock_xray_client.get_trace_summaries.return_value = {
-            "TraceSummaries": []
-        }
+        mock_xray_client.get_trace_summaries.return_value = {"TraceSummaries": []}
 
         queries = ObservabilityQueries(region="us-east-1", xray_client=mock_xray_client)
         progress = queries.get_loop_progress(session_id="nonexistent-session")
@@ -155,7 +151,7 @@ class TestObservabilityQueriesGetRecentEvents:
                     {"field": "event_type", "value": "loop.iteration.started"},
                     {"field": "iteration", "value": "10"},
                 ]
-            ]
+            ],
         }
 
         queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
@@ -188,8 +184,8 @@ class TestObservabilityQueriesGetRecentEvents:
                     {"field": "event_type", "value": "loop.iteration.completed"},
                     {"field": "iteration", "value": "10"},
                     {"field": "session_id", "value": "loop-session-456"},
-                ]
-            ]
+                ],
+            ],
         }
 
         queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
@@ -207,10 +203,7 @@ class TestObservabilityQueriesGetRecentEvents:
         # Setup mock with no results
         mock_logs_client = Mock()
         mock_logs_client.start_query.return_value = {"queryId": "query-789"}
-        mock_logs_client.get_query_results.return_value = {
-            "status": "Complete",
-            "results": []
-        }
+        mock_logs_client.get_query_results.return_value = {"status": "Complete", "results": []}
 
         queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
         events = queries.get_recent_events(session_id="nonexistent-session", limit=10)
@@ -237,7 +230,7 @@ class TestObservabilityQueriesListCheckpoints:
                     {"field": "iteration", "value": "10"},
                     {"field": "checkpoint_id", "value": "cp-10"},
                 ]
-            ]
+            ],
         }
 
         queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
@@ -256,10 +249,7 @@ class TestObservabilityQueriesListCheckpoints:
         # Setup mock with no results
         mock_logs_client = Mock()
         mock_logs_client.start_query.return_value = {"queryId": "query-cp2"}
-        mock_logs_client.get_query_results.return_value = {
-            "status": "Complete",
-            "results": []
-        }
+        mock_logs_client.get_query_results.return_value = {"status": "Complete", "results": []}
 
         queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
         checkpoints = queries.list_checkpoints(session_id="nonexistent-session")
@@ -287,7 +277,7 @@ class TestObservabilityQueriesGetExitConditionHistory:
                     {"field": "condition_type", "value": "all_tests_pass"},
                     {"field": "status", "value": "met"},
                 ]
-            ]
+            ],
         }
 
         queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
@@ -306,10 +296,7 @@ class TestObservabilityQueriesGetExitConditionHistory:
         # Setup mock with no results
         mock_logs_client = Mock()
         mock_logs_client.start_query.return_value = {"queryId": "query-ec2"}
-        mock_logs_client.get_query_results.return_value = {
-            "status": "Complete",
-            "results": []
-        }
+        mock_logs_client.get_query_results.return_value = {"status": "Complete", "results": []}
 
         queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
         history = queries.get_exit_condition_history(session_id="nonexistent-session")

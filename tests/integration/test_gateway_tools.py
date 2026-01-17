@@ -84,9 +84,7 @@ class TestGatewayIntegration:
         assert body["status"] == "registered"
         assert body["tool_name"] == "test_calculator"
 
-    def test_semantic_search_returns_relevant_tools(
-        self, lambda_client, gateway_lambda_arn
-    ):
+    def test_semantic_search_returns_relevant_tools(self, lambda_client, gateway_lambda_arn):
         """Should return semantically relevant tools for natural language query."""
         # List tools first
         response = lambda_client.invoke(

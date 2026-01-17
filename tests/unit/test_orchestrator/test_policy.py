@@ -166,10 +166,7 @@ class TestPolicyEnforcer:
         mock_client_instance.evaluate.return_value = "ALLOW"
 
         enforcer = PolicyEnforcer(config=config)
-        result = enforcer.check_iteration_allowed(
-            current_iteration=50,
-            session_id="session-123"
-        )
+        result = enforcer.check_iteration_allowed(current_iteration=50, session_id="session-123")
 
         # Should return True (allowed)
         assert result is True
@@ -203,10 +200,7 @@ class TestPolicyEnforcer:
 
         # Should raise PolicyViolationError
         with pytest.raises(PolicyViolationError) as exc_info:
-            enforcer.check_iteration_allowed(
-                current_iteration=100,
-                session_id="session-123"
-            )
+            enforcer.check_iteration_allowed(current_iteration=100, session_id="session-123")
 
         # Verify error details
         error = exc_info.value
@@ -236,10 +230,7 @@ class TestPolicyEnforcer:
 
         # Should raise PolicyViolationError when at limit
         with pytest.raises(PolicyViolationError):
-            enforcer.check_iteration_allowed(
-                current_iteration=100,
-                session_id="session-123"
-            )
+            enforcer.check_iteration_allowed(current_iteration=100, session_id="session-123")
 
     @patch("src.orchestrator.policy.PolicyClient")
     def test_update_policy(self, mock_policy_client):

@@ -72,7 +72,11 @@ async def test_checkpoint_memory_roundtrip() -> None:
     # Verify state is preserved
     assert restored_state.current_iteration == original_iteration
     # Note: phase may be SAVING_CHECKPOINT since that's when the snapshot was taken
-    assert restored_state.phase in [LoopPhase.SAVING_CHECKPOINT, LoopPhase.RUNNING, LoopPhase.COMPLETED]
+    assert restored_state.phase in [
+        LoopPhase.SAVING_CHECKPOINT,
+        LoopPhase.RUNNING,
+        LoopPhase.COMPLETED,
+    ]
     assert restored_state.agent_name == config.agent_name
     assert restored_state.max_iterations == config.max_iterations
     assert restored_state.session_id == framework.state.session_id
