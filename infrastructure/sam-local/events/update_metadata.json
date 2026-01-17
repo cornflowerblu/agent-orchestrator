@@ -8,7 +8,7 @@
   "headers": {
     "Content-Type": "application/json"
   },
-  "body": "{\"version\": \"1.0.0\", \"input_schemas\": [{\"name\": \"query\", \"semantic_type\": \"document\"}], \"output_schemas\": [{\"name\": \"result\", \"semantic_type\": \"artifact\", \"guaranteed\": true}]}",
+  "body": "{\"version\": \"1.0.0\", \"input_schemas\": [{\"name\": \"query\", \"semantic_type\": \"document\", \"description\": \"Query input\", \"required\": true}], \"output_schemas\": [{\"name\": \"result\", \"semantic_type\": \"artifact\", \"description\": \"Result output\", \"guaranteed\": true}]}",
   "isBase64Encoded": false,
   "requestContext": {
     "requestId": "test-request-id",
