@@ -7,8 +7,16 @@ set -e
 PROJECT_ROOT="$(cd ../.. && pwd)"
 BUILD_DIR=".aws-sam/build"
 
+# Use venv pip if available, otherwise system pip
+if [ -f "$PROJECT_ROOT/.venv/bin/pip" ]; then
+    PIP="$PROJECT_ROOT/.venv/bin/pip"
+else
+    PIP="pip"
+fi
+
 echo "Building Lambda packages..."
 echo "Project root: $PROJECT_ROOT"
+echo "Using pip: $PIP"
 
 # Clean previous build
 rm -rf "$BUILD_DIR"
@@ -21,7 +29,7 @@ for func in ListAgentsFunction GetAgentFunction UpdateMetadataFunction \
     mkdir -p "$BUILD_DIR/$func"
 
     # Install dependencies for Linux x86_64 Python 3.11 (Lambda runtime)
-    pip install pydantic boto3 \
+    $PIP install pydantic boto3 \
         --platform manylinux2014_x86_64 \
         --implementation cp \
         --python-version 3.11 \
