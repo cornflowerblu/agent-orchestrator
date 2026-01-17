@@ -200,22 +200,33 @@ class AgentRegistry:
             AgentNotFoundError: If either agent is not found
         """
         if self._metadata_storage is None:
-            raise AgentNotFoundError(source_agent)
+            logger.error("Cannot check compatibility: no metadata storage configured")
+            raise ValidationError(
+                "Agent registry is not configured with metadata storage",
+                details={"operation": "check_compatibility"}
+            )
 
+        # Fetch source metadata - preserve specific error types
         try:
             source_metadata = self._metadata_storage.get_metadata(source_agent)
-        except Exception:
-            raise AgentNotFoundError(source_agent)
+        except AgentNotFoundError:
+            # Expected error - re-raise as-is
+            raise
+        except ValidationError:
+            # Storage layer error - log and re-raise
+            logger.error(f"Failed to fetch metadata for '{source_agent}'")
+            raise
 
+        # Fetch target metadata - preserve specific error types
         try:
             target_metadata = self._metadata_storage.get_metadata(target_agent)
-        except Exception:
-            raise AgentNotFoundError(target_agent)
-
-        if source_metadata is None:
-            raise AgentNotFoundError(source_agent)
-        if target_metadata is None:
-            raise AgentNotFoundError(target_agent)
+        except AgentNotFoundError:
+            # Expected error - re-raise as-is
+            raise
+        except ValidationError:
+            # Storage layer error - log and re-raise
+            logger.error(f"Failed to fetch metadata for '{target_agent}'")
+            raise
 
         # Check if any output from source is compatible with any input of target
         compatible_pairs = []
