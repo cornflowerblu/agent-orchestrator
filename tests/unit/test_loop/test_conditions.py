@@ -147,3 +147,78 @@ class TestEvaluateTests:
         call_args = mock_execute.call_args[0][0]
         assert "tests/unit" in call_args
         assert "not integration" in call_args
+
+
+class TestEvaluateLinting:
+    """Test evaluate_linting() method (T056)."""
+
+    def test_evaluate_linting_success(self, mocker):
+        """Should mark condition as MET when linting passes."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+        config = ExitConditionConfig(
+            type=ExitConditionType.LINTING_CLEAN,
+            tool_arguments={"path": "src/"},
+        )
+
+        # Mock Code Interpreter to simulate clean ruff check
+        mock_execute = mocker.patch.object(
+            evaluator.code_interpreter,
+            "execute_code",
+            return_value={
+                "exit_code": 0,
+                "output": "All checks passed!",
+            },
+        )
+
+        status = evaluator.evaluate_linting(config, iteration=1)
+
+        # Verify status is MET
+        assert status.status == ExitConditionStatusValue.MET
+        assert status.tool_exit_code == 0
+        assert status.iteration_evaluated == 1
+
+        # Verify Code Interpreter was called with ruff command
+        call_args = mock_execute.call_args[0][0]
+        assert "ruff check" in call_args
+
+    def test_evaluate_linting_failure(self, mocker):
+        """Should mark condition as NOT_MET when linting fails."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+        config = ExitConditionConfig(type=ExitConditionType.LINTING_CLEAN)
+
+        # Mock Code Interpreter to simulate ruff errors
+        mock_execute = mocker.patch.object(
+            evaluator.code_interpreter,
+            "execute_code",
+            return_value={
+                "exit_code": 1,
+                "output": "Found 5 errors in 3 files",
+            },
+        )
+
+        status = evaluator.evaluate_linting(config, iteration=2)
+
+        # Verify status is NOT_MET
+        assert status.status == ExitConditionStatusValue.NOT_MET
+        assert status.tool_exit_code == 1
+        assert status.iteration_evaluated == 2
+
+    def test_evaluate_linting_with_custom_path(self, mocker):
+        """Should use custom path for ruff check."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+        config = ExitConditionConfig(
+            type=ExitConditionType.LINTING_CLEAN,
+            tool_arguments={"path": "src/loop/"},
+        )
+
+        mock_execute = mocker.patch.object(
+            evaluator.code_interpreter,
+            "execute_code",
+            return_value={"exit_code": 0, "output": "OK"},
+        )
+
+        status = evaluator.evaluate_linting(config, iteration=1)
+
+        # Verify custom path was used
+        call_args = mock_execute.call_args[0][0]
+        assert "src/loop/" in call_args

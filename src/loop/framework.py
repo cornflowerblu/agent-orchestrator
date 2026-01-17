@@ -186,8 +186,7 @@ class LoopFramework:
         trace.set_tracer_provider(provider)
 
         # Get tracer for this agent
-        tracer = trace.get_tracer(f"loop.framework.{agent_name}")
-        return tracer
+        return trace.get_tracer(f"loop.framework.{agent_name}")
 
     def get_state(self) -> LoopState:
         """Get current loop state.
@@ -236,7 +235,7 @@ class LoopFramework:
 
         Args:
             work_function: Async function to call each iteration.
-                Signature: async def work(iteration: int, state: dict, framework: LoopFramework) -> dict
+                Signature: async def work(iteration, state, framework) -> dict
             initial_state: Optional initial agent state dict
 
         Returns:
@@ -254,7 +253,9 @@ class LoopFramework:
         """
         # T033: Re-entry prevention
         if self.state.is_active:
-            raise LoopFrameworkError("Loop is already active. Cannot start a new run while executing.")
+            raise LoopFrameworkError(
+                "Loop is already active. Cannot start a new run while executing."
+            )
 
         # Initialize
         loop_start_time = datetime.now(UTC)

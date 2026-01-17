@@ -175,7 +175,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T076 [US4] Create PolicyConfig model in src/orchestrator/models.py
+- [x] T076 [US4] Create PolicyConfig model in src/orchestrator/models.py
 - [ ] T077 [US4] Implement PolicyConfig.generate_cedar_statement() in src/orchestrator/models.py
 - [ ] T078 [US4] Create PolicyEnforcer class skeleton in src/orchestrator/policy.py
 - [ ] T079 [US4] Implement Policy client wrapper in src/orchestrator/policy.py
@@ -211,8 +211,8 @@
 
 ### Implementation for User Story 5
 
-- [ ] T096 [US5] Create ObservabilityQueries class skeleton in src/dashboard/queries.py
-- [ ] T097 [US5] Implement CloudWatch/X-Ray client wrapper in src/dashboard/queries.py
+- [x] T096 [US5] Create ObservabilityQueries class skeleton in src/dashboard/queries.py
+- [x] T097 [US5] Implement CloudWatch/X-Ray client wrapper in src/dashboard/queries.py
 - [ ] T098 [US5] Implement ObservabilityQueries.get_loop_progress() in src/dashboard/queries.py
 - [ ] T099 [US5] Implement ObservabilityQueries.get_recent_events() in src/dashboard/queries.py
 - [ ] T100 [US5] Implement ObservabilityQueries.list_checkpoints() in src/dashboard/queries.py

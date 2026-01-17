@@ -218,7 +218,7 @@ class TestLoopFrameworkRun:
             state["iteration"] = iteration
             return state
 
-        result = await framework.run(work_function=work_func, initial_state={})
+        await framework.run(work_function=work_func, initial_state={})
 
         # Should execute for max_iterations (5)
         assert call_count == 5

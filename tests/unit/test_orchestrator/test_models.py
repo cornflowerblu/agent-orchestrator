@@ -81,3 +81,45 @@ class TestPolicyConfig:
         with pytest.raises(ValidationError) as exc_info:
             PolicyConfig(agent_name="a" * 65, max_iterations=100)
         assert "at most 64 characters" in str(exc_info.value)
+
+    def test_generate_cedar_statement_basic(self):
+        """Test generating Cedar policy statement."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+
+        cedar_statement = config.generate_cedar_statement()
+
+        # Should contain permit clause
+        assert "permit(" in cedar_statement
+        # Should reference iteration check
+        assert "current_iteration" in cedar_statement
+        assert "max_iterations" in cedar_statement
+        # Should include context conditions
+        assert "when" in cedar_statement
+        assert "<" in cedar_statement or "<=" in cedar_statement
+
+    def test_generate_cedar_statement_custom_action(self):
+        """Test Cedar statement with custom action."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=50,
+        )
+
+        cedar_statement = config.generate_cedar_statement(action="loop_iteration")
+
+        assert "loop_iteration" in cedar_statement
+
+    def test_generate_cedar_statement_includes_max_iterations(self):
+        """Test Cedar statement includes configured max_iterations."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=200,
+        )
+
+        cedar_statement = config.generate_cedar_statement()
+
+        # The statement should reference the max iterations somehow
+        # Either in context or as a literal
+        assert "max_iterations" in cedar_statement or "200" in cedar_statement
