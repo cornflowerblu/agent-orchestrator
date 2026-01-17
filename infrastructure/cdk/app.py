@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """AWS CDK app entry point for Agent Orchestrator infrastructure."""
 
+import os
 import sys
 from pathlib import Path
 
@@ -14,6 +15,16 @@ from stacks.metadata_stack import MetadataStack  # noqa: E402
 
 app = cdk.App()
 
+# Determine environment (priority: env var > CI detection > CDK context > default)
+environment = (
+    os.getenv("ENVIRONMENT")  # Explicit override
+    or ("ci" if os.getenv("GITHUB_ACTIONS") else None)  # Auto-detect CI
+    or app.node.try_get_context("environment")  # CDK context
+    or "development"  # Safe default
+)
+
+print(f"🌍 Deploying to environment: {environment}")
+
 # Environment configuration
 env = cdk.Environment(
     account=app.node.try_get_context("account"),
@@ -24,6 +35,7 @@ env = cdk.Environment(
 metadata_stack = MetadataStack(
     app,
     "AgentOrchestratorMetadata",
+    environment=environment,
     env=env,
     description="DynamoDB tables for agent custom metadata and status tracking",
 )
@@ -42,5 +54,6 @@ api_stack.add_dependency(metadata_stack)
 # Add tags to all resources
 cdk.Tags.of(app).add("Project", "AgentOrchestrator")
 cdk.Tags.of(app).add("ManagedBy", "CDK")
+cdk.Tags.of(app).add("Environment", environment)
 
 app.synth()
