@@ -73,11 +73,10 @@ class PolicyConfig(BaseModel):
             };
         """
         # Cedar policy statement following the research.md pattern
-        cedar_statement = f"""permit(
+        return f"""permit(
   principal,
   action == Action::"{action}",
   resource
 ) when {{
   context.current_iteration < context.max_iterations
 }};"""
-        return cedar_statement

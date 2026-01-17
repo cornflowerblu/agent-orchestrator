@@ -22,11 +22,9 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
-from src.exceptions import CheckpointRecoveryError, LoopFrameworkError, PolicyViolationError
+from src.exceptions import LoopFrameworkError, PolicyViolationError
 from src.loop.checkpoint import CheckpointManager
 from src.loop.conditions import ExitConditionEvaluator
-from src.orchestrator.models import PolicyConfig
-from src.orchestrator.policy import PolicyEnforcer
 from src.loop.models import (
     ExitConditionStatus,
     ExitConditionStatusValue,
@@ -38,6 +36,8 @@ from src.loop.models import (
     LoopResult,
     LoopState,
 )
+from src.orchestrator.models import PolicyConfig
+from src.orchestrator.policy import PolicyEnforcer
 
 
 class LoopFramework:
@@ -256,7 +256,7 @@ class LoopFramework:
         """
         return self.state.exit_conditions
 
-    async def run(
+    async def run(  # noqa: PLR0915
         self,
         work_function: Callable[[int, dict[str, Any], "LoopFramework"], dict[str, Any]],
         initial_state: dict[str, Any] | None = None,
@@ -568,11 +568,10 @@ class LoopFramework:
             return False
 
         all_met = True
-        for i, condition_config in enumerate(self.config.exit_conditions):
+        for _i, condition_config in enumerate(self.config.exit_conditions):
             # Evaluate the condition
             status = self.evaluator.evaluate(
-                condition_config,
-                iteration=self.state.current_iteration
+                condition_config, iteration=self.state.current_iteration
             )
 
             # Update state - find matching condition by type and update it

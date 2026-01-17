@@ -75,7 +75,7 @@ class AlertManager:
             # Log warning
             logger.warning(
                 f"Agent '{self.agent_name}' approaching iteration limit: "
-                f"{current_iteration}/{max_iterations} ({progress*100:.1f}%) "
+                f"{current_iteration}/{max_iterations} ({progress * 100:.1f}%) "
                 f"[session: {session_id or 'N/A'}]"
             )
 

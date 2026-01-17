@@ -11,10 +11,7 @@ Maps to FR-004: Support standard exit conditions (tests, build, linting, securit
 Maps to SC-002: Verification timeout of 30 seconds per tool.
 """
 
-import asyncio
 import logging
-from functools import wraps
-from typing import Callable
 
 from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
 
@@ -123,15 +120,13 @@ class ExitConditionEvaluator:
             TimeoutError: If execution exceeds timeout
         """
         import concurrent.futures
-        import threading
 
         # Use ThreadPoolExecutor for timeout enforcement
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(self.code_interpreter.execute_code, command)
 
             try:
-                result = future.result(timeout=self.timeout_seconds)
-                return result
+                return future.result(timeout=self.timeout_seconds)
             except concurrent.futures.TimeoutError as e:
                 error_msg = f"Code execution timeout after {self.timeout_seconds}s"
                 logger.warning(error_msg)
@@ -139,9 +134,7 @@ class ExitConditionEvaluator:
                 future.cancel()
                 raise TimeoutError(error_msg) from e
 
-    def evaluate_tests(
-        self, config: ExitConditionConfig, iteration: int
-    ) -> ExitConditionStatus:
+    def evaluate_tests(self, config: ExitConditionConfig, iteration: int) -> ExitConditionStatus:
         """Evaluate ALL_TESTS_PASS exit condition (T043).
 
         Executes pytest via Code Interpreter and checks exit code.
@@ -202,9 +195,7 @@ class ExitConditionEvaluator:
 
         return status
 
-    def evaluate_linting(
-        self, config: ExitConditionConfig, iteration: int
-    ) -> ExitConditionStatus:
+    def evaluate_linting(self, config: ExitConditionConfig, iteration: int) -> ExitConditionStatus:
         """Evaluate LINTING_CLEAN exit condition (T044).
 
         Executes ruff check via Code Interpreter and checks exit code.
@@ -259,9 +250,7 @@ class ExitConditionEvaluator:
 
         return status
 
-    def evaluate_build(
-        self, config: ExitConditionConfig, iteration: int
-    ) -> ExitConditionStatus:
+    def evaluate_build(self, config: ExitConditionConfig, iteration: int) -> ExitConditionStatus:
         """Evaluate BUILD_SUCCEEDS exit condition (T045).
 
         Executes build command via Code Interpreter and checks exit code.
@@ -367,9 +356,7 @@ class ExitConditionEvaluator:
 
         return status
 
-    def evaluate_custom(
-        self, config: ExitConditionConfig, iteration: int
-    ) -> ExitConditionStatus:
+    def evaluate_custom(self, config: ExitConditionConfig, iteration: int) -> ExitConditionStatus:
         """Evaluate CUSTOM exit condition (T047).
 
         Imports and executes user-provided custom evaluator function.
@@ -436,9 +423,7 @@ class ExitConditionEvaluator:
 
         return status
 
-    def evaluate(
-        self, config: ExitConditionConfig, iteration: int
-    ) -> ExitConditionStatus:
+    def evaluate(self, config: ExitConditionConfig, iteration: int) -> ExitConditionStatus:
         """Evaluate an exit condition based on its type (T048).
 
         Dispatcher method that routes to the appropriate evaluation method.
@@ -460,17 +445,16 @@ class ExitConditionEvaluator:
         # Route to appropriate evaluation method
         if config.type == ExitConditionType.ALL_TESTS_PASS:
             return self.evaluate_tests(config, iteration)
-        elif config.type == ExitConditionType.LINTING_CLEAN:
+        if config.type == ExitConditionType.LINTING_CLEAN:
             return self.evaluate_linting(config, iteration)
-        elif config.type == ExitConditionType.BUILD_SUCCEEDS:
+        if config.type == ExitConditionType.BUILD_SUCCEEDS:
             return self.evaluate_build(config, iteration)
-        elif config.type == ExitConditionType.SECURITY_SCAN_CLEAN:
+        if config.type == ExitConditionType.SECURITY_SCAN_CLEAN:
             return self.evaluate_security_scan(config, iteration)
-        elif config.type == ExitConditionType.CUSTOM:
+        if config.type == ExitConditionType.CUSTOM:
             return self.evaluate_custom(config, iteration)
-        else:
-            error_msg = f"Unsupported exit condition type: {config.type}"
-            logger.error(error_msg)
-            status = ExitConditionStatus(type=config.type)
-            status.mark_error(error=error_msg, iteration=iteration)
-            return status
+        error_msg = f"Unsupported exit condition type: {config.type}"
+        logger.error(error_msg)
+        status = ExitConditionStatus(type=config.type)
+        status.mark_error(error=error_msg, iteration=iteration)
+        return status

@@ -10,10 +10,10 @@ try:
     from bedrock_agentcore_starter_toolkit.operations.policy.client import PolicyClient
 except ImportError:
     # For testing and when SDK is not installed
-    PolicyClient = None  # type: ignore
+    PolicyClient = None  # type: ignore[assignment]
 
-from src.orchestrator.models import PolicyConfig
 from src.exceptions import PolicyViolationError
+from src.orchestrator.models import PolicyConfig
 
 
 class PolicyEnforcer:
@@ -67,7 +67,7 @@ class PolicyEnforcer:
         Example response:
             {
                 "policyEngineId": "engine-123",
-                "policyEngineArn": "arn:aws:bedrock-agentcore:us-east-1:123456789:policy-engine/engine-123"
+                "policyEngineArn": "arn:aws:bedrock-agentcore:...:policy-engine/engine-123"
             }
         """
         engine_name = self.config.policy_engine_name

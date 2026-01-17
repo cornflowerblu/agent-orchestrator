@@ -151,14 +151,13 @@ class CheckpointManager:
         # Reconstruct checkpoint and loop state
         try:
             checkpoint = Checkpoint(**checkpoint_data)
-            loop_state = checkpoint.to_loop_state()
-            return loop_state
+            return checkpoint.to_loop_state()
         except Exception as e:
             raise CheckpointRecoveryError(
                 checkpoint_id=key,
                 reason=f"Invalid checkpoint data: {e!s}",
                 session_id=self.session_id,
-            )
+            ) from e
 
     def list_checkpoints(self) -> list[dict[str, Any]]:
         """List all checkpoints for this session.
@@ -174,6 +173,4 @@ class CheckpointManager:
 
         # List all checkpoints for this session
         prefix = f"checkpoint/{self.session_id}/"
-        checkpoints = self._memory.list(prefix=prefix)  # type: ignore[union-attr]
-
-        return checkpoints
+        return self._memory.list(prefix=prefix)  # type: ignore[union-attr]

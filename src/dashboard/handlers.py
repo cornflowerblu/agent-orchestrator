@@ -9,7 +9,6 @@ Maps to User Story 5 (FR-013): Dashboard queries for real-time progress.
 from typing import Any
 
 from src.dashboard.queries import ObservabilityQueries
-from src.dashboard.models import LoopProgress
 
 
 class DashboardHandlers:
@@ -61,7 +60,7 @@ class DashboardHandlers:
                 return {
                     "status": "not_found",
                     "data": None,
-                    "message": f"No progress data found for session {session_id}"
+                    "message": f"No progress data found for session {session_id}",
                 }
 
             # Convert LoopProgress model to dict for JSON response
@@ -71,11 +70,7 @@ class DashboardHandlers:
             }
 
         except Exception as e:
-            return {
-                "status": "error",
-                "data": None,
-                "error": str(e)
-            }
+            return {"status": "error", "data": None, "error": str(e)}
 
     def get_events(
         self,
@@ -104,10 +99,7 @@ class DashboardHandlers:
                 print(f"{event['timestamp']}: {event['event_type']}")
         """
         try:
-            events = self.queries.get_recent_events(
-                session_id=session_id,
-                limit=limit
-            )
+            events = self.queries.get_recent_events(session_id=session_id, limit=limit)
 
             return {
                 "status": "success",
@@ -116,12 +108,7 @@ class DashboardHandlers:
             }
 
         except Exception as e:
-            return {
-                "status": "error",
-                "data": [],
-                "count": 0,
-                "error": str(e)
-            }
+            return {"status": "error", "data": [], "count": 0, "error": str(e)}
 
     def get_checkpoints(
         self,
@@ -150,10 +137,7 @@ class DashboardHandlers:
                 print(f"Checkpoint at iteration {cp['iteration']}")
         """
         try:
-            checkpoints = self.queries.list_checkpoints(
-                session_id=session_id,
-                limit=limit
-            )
+            checkpoints = self.queries.list_checkpoints(session_id=session_id, limit=limit)
 
             return {
                 "status": "success",
@@ -162,9 +146,4 @@ class DashboardHandlers:
             }
 
         except Exception as e:
-            return {
-                "status": "error",
-                "data": [],
-                "count": 0,
-                "error": str(e)
-            }
+            return {"status": "error", "data": [], "count": 0, "error": str(e)}

@@ -6,8 +6,9 @@ AgentCore Observability and Memory for loop progress.
 Maps to User Story 5 (FR-013): Dashboard queries for real-time progress.
 """
 
-from pydantic import BaseModel, Field
 from typing import Any
+
+from pydantic import BaseModel, Field
 
 
 class LoopProgress(BaseModel):

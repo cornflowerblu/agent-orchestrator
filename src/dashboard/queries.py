@@ -7,9 +7,10 @@ and X-Ray traces.
 Maps to User Story 5 (FR-013): Dashboard queries for real-time progress.
 """
 
-import boto3
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
+
+import boto3
 
 from src.dashboard.models import LoopProgress
 
@@ -98,7 +99,7 @@ class ObservabilityQueries:
                 return annotation_value.get(value_type)
 
             # Build LoopProgress from trace data
-            progress = LoopProgress(
+            return LoopProgress(
                 session_id=get_annotation("session_id") or session_id,
                 agent_name=get_annotation("loop.agent_name") or "unknown",
                 current_iteration=int(get_annotation("iteration.number", "NumberValue") or 0),
@@ -106,12 +107,12 @@ class ObservabilityQueries:
                 phase=get_annotation("loop.phase") or "unknown",
                 started_at=latest_trace.get("StartTime", datetime.now(UTC)).isoformat(),
                 exit_conditions_met=int(get_annotation("exit_conditions.met", "NumberValue") or 0),
-                exit_conditions_total=int(get_annotation("exit_conditions.total", "NumberValue") or 0),
+                exit_conditions_total=int(
+                    get_annotation("exit_conditions.total", "NumberValue") or 0
+                ),
             )
 
-            return progress
-
-        except Exception as e:
+        except Exception:
             # Log error but don't crash - return None to indicate no data available
             # In production, this would use proper logging
             return None
@@ -168,8 +169,9 @@ class ObservabilityQueries:
             # Poll for query results (simple implementation - waits for completion)
             # In production, this should use exponential backoff or async polling
             import time
+
             max_attempts = 10
-            for attempt in range(max_attempts):
+            for _attempt in range(max_attempts):
                 results_response = self.logs_client.get_query_results(queryId=query_id)
 
                 if results_response["status"] == "Complete":
@@ -197,7 +199,7 @@ class ObservabilityQueries:
             # Query timed out
             return []
 
-        except Exception as e:
+        except Exception:
             # Log error but don't crash - return empty list
             return []
 
@@ -252,8 +254,9 @@ class ObservabilityQueries:
 
             # Poll for query results
             import time
+
             max_attempts = 10
-            for attempt in range(max_attempts):
+            for _attempt in range(max_attempts):
                 results_response = self.logs_client.get_query_results(queryId=query_id)
 
                 if results_response["status"] == "Complete":
@@ -275,7 +278,7 @@ class ObservabilityQueries:
 
             return []
 
-        except Exception as e:
+        except Exception:
             return []
 
     def get_exit_condition_history(
@@ -329,8 +332,9 @@ class ObservabilityQueries:
 
             # Poll for query results
             import time
+
             max_attempts = 10
-            for attempt in range(max_attempts):
+            for _attempt in range(max_attempts):
                 results_response = self.logs_client.get_query_results(queryId=query_id)
 
                 if results_response["status"] == "Complete":
@@ -352,7 +356,7 @@ class ObservabilityQueries:
 
             return []
 
-        except Exception as e:
+        except Exception:
             return []
 
     def stream_progress(
