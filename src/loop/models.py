@@ -769,6 +769,8 @@ class LoopState(BaseModel):
         Returns:
             Progress percentage (0-100)
         """
+        if self.max_iterations <= 0:
+            return 0.0
         return (self.current_iteration / self.max_iterations) * 100
 
     def at_warning_threshold(self, threshold: float = 0.8) -> bool:

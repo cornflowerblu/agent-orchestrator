@@ -47,12 +47,14 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
         # Write to CloudWatch Logs
         try:
+            import time
+
             logs_client.put_log_events(
                 logGroupName=LOG_GROUP_NAME,
                 logStreamName=f"loop-{loop_id}",
                 logEvents=[
                     {
-                        "timestamp": int(context.get_remaining_time_in_millis()),
+                        "timestamp": int(time.time() * 1000),
                         "message": json.dumps(log_message),
                     }
                 ],

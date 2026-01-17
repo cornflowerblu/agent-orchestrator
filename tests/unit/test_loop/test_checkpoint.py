@@ -30,7 +30,7 @@ class TestCheckpointManager:
         assert manager.session_id == "test-session"
         assert manager.region == "us-west-2"
 
-    def test_create_memory_for_session(self) -> None:
+    def test_create_memory_for_session(self, mock_memory) -> None:
         """Test CheckpointManager.create_memory() creates Memory instance."""
         manager = CheckpointManager(session_id="test-session")
         memory = manager.create_memory()
@@ -41,7 +41,7 @@ class TestCheckpointManager:
         assert hasattr(memory, "get")
         assert hasattr(memory, "list")
 
-    def test_save_checkpoint(self) -> None:
+    def test_save_checkpoint(self, mock_memory) -> None:
         """Test CheckpointManager.save_checkpoint() saves to Memory."""
         manager = CheckpointManager(session_id="test-session")
 
@@ -61,7 +61,7 @@ class TestCheckpointManager:
         assert checkpoint_id is not None
         assert checkpoint_id.startswith("checkpoint-")
 
-    def test_load_checkpoint_success(self) -> None:
+    def test_load_checkpoint_success(self, mock_memory) -> None:
         """Test CheckpointManager.load_checkpoint() loads from Memory."""
         manager = CheckpointManager(session_id="test-session")
 
@@ -84,7 +84,7 @@ class TestCheckpointManager:
         assert loaded_state.current_iteration == 10
         assert loaded_state.agent_name == "test-agent"
 
-    def test_load_checkpoint_not_found(self) -> None:
+    def test_load_checkpoint_not_found(self, mock_memory) -> None:
         """Test CheckpointManager.load_checkpoint() raises error if not found."""
         manager = CheckpointManager(session_id="test-session")
 
@@ -95,7 +95,7 @@ class TestCheckpointManager:
         assert "Checkpoint not found" in str(exc_info.value)
         assert exc_info.value.checkpoint_id is not None
 
-    def test_load_checkpoint_invalid_data(self) -> None:
+    def test_load_checkpoint_invalid_data(self, mock_memory) -> None:
         """Test CheckpointManager.load_checkpoint() raises error for invalid data."""
         manager = CheckpointManager(session_id="test-session")
 
@@ -113,7 +113,7 @@ class TestCheckpointManager:
 
         assert "Invalid checkpoint data" in str(exc_info.value)
 
-    def test_list_checkpoints(self) -> None:
+    def test_list_checkpoints(self, mock_memory) -> None:
         """Test CheckpointManager.list_checkpoints() lists all checkpoints."""
         manager = CheckpointManager(session_id="test-session")
 
@@ -136,7 +136,7 @@ class TestCheckpointManager:
         assert 5 in iterations
         assert 10 in iterations
 
-    def test_save_checkpoint_preserves_exit_conditions(self) -> None:
+    def test_save_checkpoint_preserves_exit_conditions(self, mock_memory) -> None:
         """Test that save_checkpoint preserves exit condition state."""
         manager = CheckpointManager(session_id="test-session")
 
@@ -168,7 +168,7 @@ class TestCheckpointManager:
         assert loaded_state.exit_conditions[0].status == ExitConditionStatusValue.MET
         assert loaded_state.exit_conditions[0].tool_name == "pytest"
 
-    def test_checkpoint_manager_with_custom_region(self) -> None:
+    def test_checkpoint_manager_with_custom_region(self, mock_memory) -> None:
         """Test CheckpointManager uses custom AWS region."""
         manager = CheckpointManager(session_id="test-session", region="eu-west-1")
 
@@ -178,7 +178,7 @@ class TestCheckpointManager:
         assert hasattr(memory, "region")
         assert memory.region == "eu-west-1"
 
-    def test_checkpoint_roundtrip_preserves_all_state(self) -> None:
+    def test_checkpoint_roundtrip_preserves_all_state(self, mock_memory) -> None:
         """Test full roundtrip preserves all loop state."""
         manager = CheckpointManager(session_id="test-session")
 

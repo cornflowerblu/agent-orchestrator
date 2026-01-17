@@ -14,7 +14,7 @@ Example:
 """
 
 import uuid
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -258,7 +258,7 @@ class LoopFramework:
 
     async def run(  # noqa: PLR0915
         self,
-        work_function: Callable[[int, dict[str, Any], "LoopFramework"], dict[str, Any]],
+        work_function: Callable[[int, dict[str, Any], "LoopFramework"], Awaitable[dict[str, Any]]],
         initial_state: dict[str, Any] | None = None,
         resume_from: int | None = None,
     ) -> LoopResult:

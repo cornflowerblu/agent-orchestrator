@@ -10,10 +10,19 @@ Maps to:
 - SC-006: Recovery within one iteration of checkpoint
 """
 
+import logging
 from typing import Any
 
 from src.exceptions import CheckpointRecoveryError
 from src.loop.models import Checkpoint, LoopState
+
+logger = logging.getLogger(__name__)
+
+# Import Memory at module level for easier mocking in tests
+try:
+    from bedrock_agentcore import Memory
+except ImportError:
+    Memory = None  # type: ignore[assignment,misc]
 
 
 class CheckpointManager:
@@ -61,33 +70,25 @@ class CheckpointManager:
             This method initializes the AgentCore Memory service client.
             The actual Memory class will be imported from bedrock-agentcore
             when the SDK is available.
+
+        Raises:
+            CheckpointRecoveryError: If bedrock-agentcore SDK is not installed
         """
-        # TODO: Replace with actual Memory import when bedrock-agentcore is available
-        # from bedrock_agentcore import Memory
-        # self._memory = Memory(region=self.region)
-
-        # For now, create a mock Memory object for testing
-        class MockMemory:
-            def __init__(self, region: str = "us-east-1"):
-                self.region = region
-                self._storage: dict[str, Any] = {}
-
-            def put(self, key: str, value: dict[str, Any]) -> None:
-                """Store checkpoint data."""
-                self._storage[key] = value
-
-            def get(self, key: str) -> dict[str, Any] | None:
-                """Retrieve checkpoint data."""
-                return self._storage.get(key)
-
-            def list(self, prefix: str | None = None) -> list[dict[str, Any]]:
-                """List checkpoint metadata."""
-                if prefix:
-                    return [v for k, v in self._storage.items() if k.startswith(prefix)]
-                return list(self._storage.values())
-
         if self._memory is None:
-            self._memory = MockMemory(region=self.region)
+            if Memory is None:
+                error_msg = (
+                    "bedrock-agentcore SDK is not installed or Memory class not available. "
+                    "Install it with: pip install bedrock-agentcore"
+                )
+                logger.error(error_msg)
+                raise CheckpointRecoveryError(
+                    checkpoint_id="N/A",
+                    reason=error_msg,
+                    session_id=self.session_id,
+                )
+
+            self._memory = Memory(region=self.region)
+            logger.info(f"Initialized Memory service in region {self.region}")
 
         return self._memory
 
