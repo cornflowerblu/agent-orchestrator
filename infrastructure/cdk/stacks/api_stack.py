@@ -3,17 +3,23 @@
 Task T075: Create API stack with Lambda + API Gateway
 """
 
-from constructs import Construct
 from aws_cdk import (
     Duration,
-    RemovalPolicy,
     Stack,
-    aws_apigateway as apigw,
-    aws_dynamodb as dynamodb,
-    aws_iam as iam,
-    aws_lambda as lambda_,
-    aws_logs as logs,
 )
+from aws_cdk import (
+    aws_apigateway as apigw,
+)
+from aws_cdk import (
+    aws_dynamodb as dynamodb,
+)
+from aws_cdk import (
+    aws_iam as iam,
+)
+from aws_cdk import (
+    aws_lambda as lambda_,
+)
+from constructs import Construct
 
 
 class ApiStack(Stack):

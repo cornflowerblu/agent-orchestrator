@@ -229,7 +229,7 @@ def main():
         print("Error: --repo is required (or set GITHUB_REPO env var)")
         sys.exit(1)
 
-    print(f"\nSetting up GitHub Actions OIDC for:")
+    print("\nSetting up GitHub Actions OIDC for:")
     print(f"  AWS Account: {args.account_id}")
     print(f"  AWS Region:  {args.region}")
     print(f"  GitHub Repo: {args.repo}")

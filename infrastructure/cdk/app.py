@@ -8,10 +8,9 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-import aws_cdk as cdk
-
-from stacks.metadata_stack import MetadataStack
-from stacks.api_stack import ApiStack
+import aws_cdk as cdk  # noqa: E402
+from stacks.api_stack import ApiStack  # noqa: E402
+from stacks.metadata_stack import MetadataStack  # noqa: E402
 
 app = cdk.App()
 
