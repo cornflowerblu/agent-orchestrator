@@ -8,3 +8,20 @@ Modules:
     policy: PolicyEnforcer for Cedar rule management
     alerts: AlertManager for iteration limit warnings
 """
+
+# Policy enforcement
+from src.orchestrator.alerts import AlertManager
+
+# Models
+from src.orchestrator.models import PolicyConfig
+
+# Monitoring and alerts
+from src.orchestrator.monitor import ObservabilityMonitor
+from src.orchestrator.policy import PolicyEnforcer
+
+__all__ = [
+    "AlertManager",
+    "ObservabilityMonitor",
+    "PolicyConfig",
+    "PolicyEnforcer",
+]
