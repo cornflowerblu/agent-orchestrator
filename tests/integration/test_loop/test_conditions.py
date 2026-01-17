@@ -4,7 +4,10 @@ These tests require actual AWS credentials and Code Interpreter access.
 They are marked with @pytest.mark.integration to be skipped in CI.
 """
 
+import os
+
 import pytest
+from botocore.exceptions import NoCredentialsError
 
 from src.loop.conditions import ExitConditionEvaluator
 from src.loop.models import (
@@ -12,6 +15,27 @@ from src.loop.models import (
     ExitConditionStatusValue,
     ExitConditionType,
 )
+
+
+def _check_code_interpreter_available(region: str) -> bool:
+    """Check if Code Interpreter service is available with current credentials.
+
+    Returns:
+        True if Code Interpreter can be accessed, False otherwise
+    """
+    try:
+        from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
+
+        ci = CodeInterpreter(region=region, integration_source="test-check")
+        # Try to start a session - this will fail fast if credentials are invalid
+        ci.start()
+        ci.stop()
+        return True
+    except (NoCredentialsError, Exception) as e:
+        # NoCredentialsError: OIDC credentials not available for Code Interpreter
+        # Other exceptions: Code Interpreter service not enabled/accessible
+        print(f"Code Interpreter not available: {e}")
+        return False
 
 
 @pytest.mark.integration
@@ -22,10 +46,8 @@ class TestCodeInterpreterIntegration:
     def evaluator(self):
         """Create evaluator with real Code Interpreter client."""
         # Skip if AWS credentials not available
-        import os
-
         if not os.getenv("AWS_REGION"):
-            pytest.skip("AWS credentials not configured")
+            pytest.skip("AWS_REGION not configured")
 
         # Clear any moto mock credentials that might interfere
         # Code Interpreter needs real AWS credentials
@@ -42,6 +64,13 @@ class TestCodeInterpreterIntegration:
                 original_values[key] = os.environ.pop(key)
 
         region = os.getenv("AWS_REGION", "us-east-1")
+
+        # Skip if Code Interpreter service is not available
+        # This handles CI environments where OIDC credentials don't have
+        # Code Interpreter permissions
+        if not _check_code_interpreter_available(region):
+            pytest.skip("Code Interpreter service not available with current credentials")
+
         evaluator = ExitConditionEvaluator(region=region, timeout_seconds=60)
 
         # Yield evaluator - credentials stay cleared during test execution
@@ -123,12 +152,15 @@ class TestCodeInterpreterIntegration:
 @pytest.mark.integration
 def test_code_interpreter_session_lifecycle():
     """Test Code Interpreter session lifecycle."""
-    import os
-
     if not os.getenv("AWS_REGION"):
-        pytest.skip("AWS credentials not configured")
+        pytest.skip("AWS_REGION not configured")
 
     region = os.getenv("AWS_REGION", "us-east-1")
+
+    # Skip if Code Interpreter service is not available
+    if not _check_code_interpreter_available(region):
+        pytest.skip("Code Interpreter service not available with current credentials")
+
     evaluator = ExitConditionEvaluator(region=region)
 
     # Code Interpreter should not be initialized yet
