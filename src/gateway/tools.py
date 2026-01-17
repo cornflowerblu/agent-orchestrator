@@ -182,12 +182,7 @@ class GatewayClient:
 
         logger.warning(f"Tool '{tool_name}' error handled: {error}")
 
-        # Trace error in AgentCore Observability (if available)
-        try:
-            # Future: Add Observability tracing here
-            pass
-        except Exception as trace_error:
-            logger.debug(f"Failed to trace tool error: {trace_error}")
+        # Future: Add AgentCore Observability tracing here
 
         return error_response
 
