@@ -12,6 +12,7 @@ from botocore.exceptions import ClientError
 from src.agents.models import AgentCapabilities, AgentCard, Skill
 from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 from src.exceptions import AgentNotFoundError
+from src.metadata.models import CustomAgentMetadata
 from src.registry.models import AgentStatus, AgentStatusValue, HealthCheckStatus
 from src.registry.query import CompatibilityResult
 
@@ -40,17 +41,28 @@ def sample_agent_card():
     )
 
 
+@pytest.fixture
+def sample_metadata():
+    """Create sample agent metadata."""
+    return CustomAgentMetadata(
+        agent_name="test-agent",
+        version="1.0.0",
+        input_schemas=[],
+        output_schemas=[],
+    )
+
+
 class TestListAgentsHandler:
     """Tests for list_agents_handler (T076)."""
 
-    def test_list_agents_success(self, mock_context, sample_agent_card):
+    def test_list_agents_success(self, mock_context, sample_metadata):
         """Test listing agents successfully."""
         from src.registry.handlers import list_agents_handler
 
-        with patch("src.registry.handlers.get_registry") as mock_get:
-            mock_registry = MagicMock()
-            mock_registry.list_all_agents.return_value = [sample_agent_card]
-            mock_get.return_value = mock_registry
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get:
+            mock_storage = MagicMock()
+            mock_storage.list_all_metadata.return_value = [sample_metadata]
+            mock_get.return_value = mock_storage
 
             response = list_agents_handler({}, mock_context)
 
@@ -58,15 +70,16 @@ class TestListAgentsHandler:
             body = json.loads(response["body"])
             assert body["count"] == 1
             assert len(body["agents"]) == 1
+            assert body["agents"][0]["agent_name"] == "test-agent"
 
     def test_list_agents_empty(self, mock_context):
         """Test listing when no agents exist."""
         from src.registry.handlers import list_agents_handler
 
-        with patch("src.registry.handlers.get_registry") as mock_get:
-            mock_registry = MagicMock()
-            mock_registry.list_all_agents.return_value = []
-            mock_get.return_value = mock_registry
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get:
+            mock_storage = MagicMock()
+            mock_storage.list_all_metadata.return_value = []
+            mock_get.return_value = mock_storage
 
             response = list_agents_handler({}, mock_context)
 
@@ -78,7 +91,7 @@ class TestListAgentsHandler:
         """Test error handling in list_agents."""
         from src.registry.handlers import list_agents_handler
 
-        with patch("src.registry.handlers.get_registry") as mock_get:
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get:
             mock_get.side_effect = Exception("Test error")
 
             response = list_agents_handler({}, mock_context)
@@ -89,14 +102,14 @@ class TestListAgentsHandler:
         """Test ClientError handling in list_agents."""
         from src.registry.handlers import list_agents_handler
 
-        with patch("src.registry.handlers.get_registry") as mock_get:
-            mock_registry = MagicMock()
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get:
+            mock_storage = MagicMock()
             # Mock boto3 ClientError
             error_response = {
                 "Error": {"Code": "ServiceUnavailable", "Message": "Service unavailable"}
             }
-            mock_registry.list_all_agents.side_effect = ClientError(error_response, "Scan")
-            mock_get.return_value = mock_registry
+            mock_storage.list_all_metadata.side_effect = ClientError(error_response, "Scan")
+            mock_get.return_value = mock_storage
 
             response = list_agents_handler({}, mock_context)
 
@@ -108,22 +121,22 @@ class TestListAgentsHandler:
 class TestGetAgentHandler:
     """Tests for get_agent_handler (T077)."""
 
-    def test_get_agent_success(self, mock_context, sample_agent_card):
+    def test_get_agent_success(self, mock_context, sample_metadata):
         """Test getting an agent successfully."""
         from src.registry.handlers import get_agent_handler
 
         event = {"pathParameters": {"agent_name": "test-agent"}}
 
-        with patch("src.registry.handlers.get_registry") as mock_get:
-            mock_registry = MagicMock()
-            mock_registry.get_agent_card.return_value = sample_agent_card
-            mock_get.return_value = mock_registry
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get:
+            mock_storage = MagicMock()
+            mock_storage.get_metadata.return_value = sample_metadata
+            mock_get.return_value = mock_storage
 
             response = get_agent_handler(event, mock_context)
 
             assert response["statusCode"] == 200
             body = json.loads(response["body"])
-            assert body["name"] == "test-agent"
+            assert body["agent_name"] == "test-agent"
 
     def test_get_agent_not_found(self, mock_context):
         """Test getting a non-existent agent."""
@@ -131,10 +144,10 @@ class TestGetAgentHandler:
 
         event = {"pathParameters": {"agent_name": "missing-agent"}}
 
-        with patch("src.registry.handlers.get_registry") as mock_get:
-            mock_registry = MagicMock()
-            mock_registry.get_agent_card.side_effect = AgentNotFoundError("missing-agent")
-            mock_get.return_value = mock_registry
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get:
+            mock_storage = MagicMock()
+            mock_storage.get_metadata.side_effect = AgentNotFoundError("missing-agent")
+            mock_get.return_value = mock_storage
 
             response = get_agent_handler(event, mock_context)
 
@@ -156,13 +169,13 @@ class TestGetAgentHandler:
 
         event = {"pathParameters": {"agent_name": "test-agent"}}
 
-        with patch("src.registry.handlers.get_registry") as mock_get:
-            mock_registry = MagicMock()
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get:
+            mock_storage = MagicMock()
             error_response = {
                 "Error": {"Code": "ServiceUnavailable", "Message": "Service unavailable"}
             }
-            mock_registry.get_agent_card.side_effect = ClientError(error_response, "GetItem")
-            mock_get.return_value = mock_registry
+            mock_storage.get_metadata.side_effect = ClientError(error_response, "GetItem")
+            mock_get.return_value = mock_storage
 
             response = get_agent_handler(event, mock_context)
 

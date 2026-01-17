@@ -121,6 +121,9 @@ def list_agents_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     Task T076: Implement listAgents Lambda handler
 
+    Returns agents from DynamoDB metadata storage. For in-memory registered
+    AgentCards, use the registry directly.
+
     Args:
         event: API Gateway event
         context: Lambda context
@@ -131,14 +134,15 @@ def list_agents_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     try:
         logger.info("Handling listAgents request")
 
-        registry = get_registry()
-        agents = registry.list_all_agents()
+        # Query DynamoDB for all agent metadata
+        storage = get_metadata_storage()
+        metadata_list = storage.list_all_metadata()
 
         return _create_response(
             200,
             {
-                "agents": [a.model_dump() for a in agents],
-                "count": len(agents),
+                "agents": [m.model_dump() for m in metadata_list],
+                "count": len(metadata_list),
             },
         )
 
@@ -156,6 +160,9 @@ def get_agent_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     Task T077: Implement getAgent Lambda handler
 
+    Returns agent metadata from DynamoDB storage. For in-memory registered
+    AgentCards, use the registry directly.
+
     Args:
         event: API Gateway event
         context: Lambda context
@@ -170,10 +177,11 @@ def get_agent_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
         logger.info(f"Handling getAgent request for '{agent_name}'")
 
-        registry = get_registry()
-        card = registry.get_agent_card(agent_name)
+        # Query DynamoDB for agent metadata
+        storage = get_metadata_storage()
+        metadata = storage.get_metadata(agent_name)
 
-        return _create_response(200, card.model_dump())
+        return _create_response(200, metadata.model_dump())
 
     except AgentNotFoundError as e:
         return _create_response(404, {"error": str(e)})
