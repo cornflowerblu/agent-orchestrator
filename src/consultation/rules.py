@@ -12,7 +12,7 @@ Task T055: ConsultationOutcome model
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -26,6 +26,7 @@ class ConsultationPhase(str, Enum):
     - pre-completion: Before marking work complete
     - on-error: When an error occurs
     """
+
     PRE_EXECUTION = "pre-execution"
     DESIGN_REVIEW = "design-review"
     PRE_COMPLETION = "pre-completion"
@@ -44,18 +45,12 @@ class ConsultationCondition(BaseModel):
 
     Task T053: Create ConsultationCondition Pydantic model
     """
+
     field: str = Field(
-        ...,
-        description="The field path to evaluate (e.g., 'task.type', 'task.tags')"
+        ..., description="The field path to evaluate (e.g., 'task.type', 'task.tags')"
     )
-    operator: str = Field(
-        ...,
-        description="The comparison operator to use"
-    )
-    value: Any = Field(
-        ...,
-        description="The value to compare against"
-    )
+    operator: str = Field(..., description="The comparison operator to use")
+    value: Any = Field(..., description="The value to compare against")
 
     @field_validator("operator")
     @classmethod
@@ -74,25 +69,23 @@ class ConsultationRequirement(BaseModel):
 
     Task T054: Create ConsultationRequirement Pydantic model
     """
+
     agent_name: str = Field(
-        ...,
-        description="Name of the agent to consult (must match Agent Card name)"
+        ..., description="Name of the agent to consult (must match Agent Card name)"
     )
     phase: ConsultationPhase = Field(
-        ...,
-        description="The phase during which consultation should occur"
+        ..., description="The phase during which consultation should occur"
     )
     mandatory: bool = Field(
         default=False,
-        description="Whether this consultation is required (blocks completion if missing)"
+        description="Whether this consultation is required (blocks completion if missing)",
     )
     condition: ConsultationCondition | None = Field(
         default=None,
-        description="Optional condition that must be met for consultation to be required"
+        description="Optional condition that must be met for consultation to be required",
     )
     description: str | None = Field(
-        default=None,
-        description="Human-readable description of why this consultation is needed"
+        default=None, description="Human-readable description of why this consultation is needed"
     )
 
 
@@ -108,29 +101,20 @@ class ConsultationOutcome(BaseModel):
 
     Task T055: Create ConsultationOutcome Pydantic model
     """
+
     requirement_id: str = Field(
-        ...,
-        description="Unique identifier linking to the ConsultationRequirement"
+        ..., description="Unique identifier linking to the ConsultationRequirement"
     )
-    agent_name: str = Field(
-        ...,
-        description="Name of the agent that was consulted"
-    )
-    status: str = Field(
-        ...,
-        description="Outcome status: pending, approved, rejected, or skipped"
-    )
+    agent_name: str = Field(..., description="Name of the agent that was consulted")
+    status: str = Field(..., description="Outcome status: pending, approved, rejected, or skipped")
     comments: str | None = Field(
-        default=None,
-        description="Feedback or comments from the consulted agent"
+        default=None, description="Feedback or comments from the consulted agent"
     )
     trace_id: str | None = Field(
-        default=None,
-        description="AgentCore Observability trace ID for audit"
+        default=None, description="AgentCore Observability trace ID for audit"
     )
     timestamp: datetime = Field(
-        default_factory=datetime.now,
-        description="When the consultation occurred"
+        default_factory=datetime.now, description="When the consultation occurred"
     )
 
     @field_validator("status")

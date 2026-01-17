@@ -29,9 +29,7 @@ class DiscoveryResult(BaseModel):
     """Result of discovering an agent."""
 
     endpoint: str = Field(..., description="The agent endpoint URL")
-    agent_card: AgentCard | None = Field(
-        default=None, description="The discovered agent card"
-    )
+    agent_card: AgentCard | None = Field(default=None, description="The discovered agent card")
     success: bool = Field(..., description="Whether discovery succeeded")
     error: str | None = Field(default=None, description="Error message if failed")
 

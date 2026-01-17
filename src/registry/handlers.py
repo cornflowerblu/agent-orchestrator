@@ -132,10 +132,13 @@ def list_agents_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         registry = get_registry()
         agents = registry.list_all_agents()
 
-        return _create_response(200, {
-            "agents": [a.model_dump() for a in agents],
-            "count": len(agents),
-        })
+        return _create_response(
+            200,
+            {
+                "agents": [a.model_dump() for a in agents],
+                "count": len(agents),
+            },
+        )
 
     except Exception as e:
         logger.error(f"Error listing agents: {e}")
@@ -219,9 +222,7 @@ def update_agent_metadata_handler(event: dict[str, Any], context: Any) -> dict[s
         return _create_response(500, {"error": str(e)})
 
 
-def get_consultation_requirements_handler(
-    event: dict[str, Any], context: Any
-) -> dict[str, Any]:
+def get_consultation_requirements_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """Get consultation requirements for an agent.
 
     Task T079: Implement getConsultationRequirements Lambda handler
@@ -243,11 +244,14 @@ def get_consultation_requirements_handler(
         registry = get_registry()
         requirements = registry.get_consultation_requirements(agent_name)
 
-        return _create_response(200, {
-            "agent_name": agent_name,
-            "requirements": [r.model_dump() for r in requirements],
-            "count": len(requirements),
-        })
+        return _create_response(
+            200,
+            {
+                "agent_name": agent_name,
+                "requirements": [r.model_dump() for r in requirements],
+                "count": len(requirements),
+            },
+        )
 
     except AgentNotFoundError as e:
         return _create_response(404, {"error": str(e)})
@@ -275,13 +279,9 @@ def check_compatibility_handler(event: dict[str, Any], context: Any) -> dict[str
         target_agent = body.get("target_agent")
 
         if not source_agent or not target_agent:
-            return _create_response(400, {
-                "error": "source_agent and target_agent are required"
-            })
+            return _create_response(400, {"error": "source_agent and target_agent are required"})
 
-        logger.info(
-            f"Handling checkCompatibility request: {source_agent} -> {target_agent}"
-        )
+        logger.info(f"Handling checkCompatibility request: {source_agent} -> {target_agent}")
 
         registry = get_registry()
         result = registry.check_compatibility(source_agent, target_agent)
@@ -299,9 +299,7 @@ def check_compatibility_handler(event: dict[str, Any], context: Any) -> dict[str
         return _create_response(500, {"error": str(e)})
 
 
-def find_compatible_agents_handler(
-    event: dict[str, Any], context: Any
-) -> dict[str, Any]:
+def find_compatible_agents_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     """Find agents compatible with a given input type.
 
     Task T081: Implement findCompatibleAgents Lambda handler
@@ -324,20 +322,21 @@ def find_compatible_agents_handler(
         try:
             input_type = SemanticType(input_type_str)
         except ValueError:
-            return _create_response(400, {
-                "error": f"Invalid input_type: {input_type_str}"
-            })
+            return _create_response(400, {"error": f"Invalid input_type: {input_type_str}"})
 
         logger.info(f"Handling findCompatibleAgents request for type '{input_type}'")
 
         registry = get_registry()
         agents = registry.find_by_input_compatibility(input_type)
 
-        return _create_response(200, {
-            "input_type": input_type_str,
-            "agents": [a.model_dump() for a in agents],
-            "count": len(agents),
-        })
+        return _create_response(
+            200,
+            {
+                "input_type": input_type_str,
+                "agents": [a.model_dump() for a in agents],
+                "count": len(agents),
+            },
+        )
 
     except json.JSONDecodeError as e:
         return _create_response(400, {"error": f"Invalid JSON: {e}"})
@@ -405,18 +404,16 @@ def update_agent_status_handler(event: dict[str, Any], context: Any) -> dict[str
             try:
                 status = AgentStatusValue(body["status"])
             except ValueError:
-                return _create_response(400, {
-                    "error": f"Invalid status: {body['status']}"
-                })
+                return _create_response(400, {"error": f"Invalid status: {body['status']}"})
 
         health_check = None
         if "health_check" in body:
             try:
                 health_check = HealthCheckStatus(body["health_check"])
             except ValueError:
-                return _create_response(400, {
-                    "error": f"Invalid health_check: {body['health_check']}"
-                })
+                return _create_response(
+                    400, {"error": f"Invalid health_check: {body['health_check']}"}
+                )
 
         storage = get_status_storage()
         updated = storage.update_status(

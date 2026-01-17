@@ -3,7 +3,6 @@
 from src.exceptions import IncompatibleTypeError
 from src.metadata.models import SemanticType
 
-
 # Compatibility matrix: which output types can be used as which input types
 COMPATIBILITY_MATRIX = {
     SemanticType.DOCUMENT: [SemanticType.DOCUMENT],
@@ -39,9 +38,7 @@ def is_type_compatible(output_type: SemanticType, input_type: SemanticType) -> b
     return input_type in compatible_types
 
 
-def validate_input_compatibility(
-    input_schema, output_type: SemanticType
-) -> bool:
+def validate_input_compatibility(input_schema, output_type: SemanticType) -> bool:
     """
     Validate that an output type is compatible with an input requirement.
 
@@ -65,9 +62,7 @@ def validate_input_compatibility(
     return True
 
 
-def validate_output_compatibility(
-    output_schema, expected_input_type: SemanticType
-) -> bool:
+def validate_output_compatibility(output_schema, expected_input_type: SemanticType) -> bool:
     """
     Validate that an output can satisfy an expected input type.
 

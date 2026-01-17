@@ -15,7 +15,7 @@ from src.agents.models import AgentCard
 from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 from src.exceptions import AgentNotFoundError
 from src.logging_config import get_logger
-from src.metadata.models import CustomAgentMetadata, SemanticType
+from src.metadata.models import SemanticType
 from src.metadata.validation import is_type_compatible
 
 logger = get_logger(__name__)
@@ -27,9 +27,7 @@ class CompatibilityResult(BaseModel):
     is_compatible: bool = Field(..., description="Whether the agents are compatible")
     source_agent: str = Field(..., description="Source agent name")
     target_agent: str = Field(..., description="Target agent name")
-    details: dict[str, Any] = Field(
-        default_factory=dict, description="Details about compatibility"
-    )
+    details: dict[str, Any] = Field(default_factory=dict, description="Details about compatibility")
 
 
 class AgentRegistry:
@@ -224,12 +222,14 @@ class AgentRegistry:
         for output_schema in source_metadata.output_schemas:
             for input_schema in target_metadata.input_schemas:
                 if is_type_compatible(output_schema.semantic_type, input_schema.semantic_type):
-                    compatible_pairs.append({
-                        "output": output_schema.name,
-                        "output_type": output_schema.semantic_type.value,
-                        "input": input_schema.name,
-                        "input_type": input_schema.semantic_type.value,
-                    })
+                    compatible_pairs.append(
+                        {
+                            "output": output_schema.name,
+                            "output_type": output_schema.semantic_type.value,
+                            "input": input_schema.name,
+                            "input_type": input_schema.semantic_type.value,
+                        }
+                    )
 
         is_compatible = len(compatible_pairs) > 0
 
@@ -269,7 +269,5 @@ class AgentRegistry:
         if phase is not None:
             requirements = [r for r in requirements if r.phase == phase]
 
-        logger.debug(
-            f"Found {len(requirements)} consultation requirements for '{agent_name}'"
-        )
+        logger.debug(f"Found {len(requirements)} consultation requirements for '{agent_name}'")
         return requirements

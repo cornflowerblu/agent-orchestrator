@@ -12,9 +12,7 @@ class Skill(BaseModel):
         pattern=r"^[a-z][a-z0-9-]{0,63}$",
     )
     name: str = Field(..., description="Human-readable skill name", min_length=3, max_length=100)
-    description: str = Field(
-        ..., description="What this skill does", min_length=10, max_length=500
-    )
+    description: str = Field(..., description="What this skill does", min_length=10, max_length=500)
     tags: list[str] = Field(
         default_factory=list,
         description="Categorization tags",
@@ -91,7 +89,7 @@ class AgentCard(BaseModel):
             "examples": [
                 {
                     "name": "requirements-agent",
-                    "description": "Agent specialized in gathering and documenting user requirements",
+                    "description": "Agent for gathering and documenting user requirements",
                     "version": "1.0.0",
                     "url": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/req-agent/invocations/",
                     "protocolVersion": "0.3.0",
