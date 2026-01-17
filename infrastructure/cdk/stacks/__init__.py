@@ -1,8 +1,8 @@
 """CDK stack definitions for the agent framework."""
 
-from infrastructure.cdk.stacks.api_stack import ApiStack
-from infrastructure.cdk.stacks.metadata_stack import MetadataStack
-from infrastructure.cdk.stacks.test_stack import (
+from stacks.api_stack import ApiStack
+from stacks.metadata_stack import MetadataStack
+from stacks.test_stack import (
     TestStack,
     TestCleanup,
     get_test_stack_name,
