@@ -81,15 +81,13 @@ class TestEvaluateTests:
             tool_arguments={"path": "tests/"},
         )
 
-        # Mock Code Interpreter to simulate successful pytest run
-        mock_execute = mocker.patch.object(
-            evaluator.code_interpreter,
-            "execute_code",
-            return_value={
-                "exit_code": 0,
-                "output": "===== 15 passed in 2.3s =====",
-            },
-        )
+        # Mock Code Interpreter BEFORE accessing it
+        mock_code_interpreter = mocker.Mock()
+        mock_code_interpreter.execute_code.return_value = {
+            "exit_code": 0,
+            "output": "===== 15 passed in 2.3s =====",
+        }
+        evaluator._code_interpreter = mock_code_interpreter
 
         status = evaluator.evaluate_tests(config, iteration=1)
 
@@ -100,22 +98,20 @@ class TestEvaluateTests:
         assert status.iteration_evaluated == 1
 
         # Verify Code Interpreter was called with pytest command
-        mock_execute.assert_called_once()
+        mock_code_interpreter.execute_code.assert_called_once()
 
     def test_evaluate_tests_failure(self, mocker):
         """Should mark condition as NOT_MET when tests fail."""
         evaluator = ExitConditionEvaluator(region="us-east-1")
         config = ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)
 
-        # Mock Code Interpreter to simulate failed pytest run
-        mocker.patch.object(
-            evaluator.code_interpreter,
-            "execute_code",
-            return_value={
-                "exit_code": 1,
-                "output": "===== 3 failed, 12 passed in 2.5s =====",
-            },
-        )
+        # Mock Code Interpreter BEFORE accessing it
+        mock_code_interpreter = mocker.Mock()
+        mock_code_interpreter.execute_code.return_value = {
+            "exit_code": 1,
+            "output": "===== 3 failed, 12 passed in 2.5s =====",
+        }
+        evaluator._code_interpreter = mock_code_interpreter
 
         status = evaluator.evaluate_tests(config, iteration=2)
 
@@ -133,16 +129,15 @@ class TestEvaluateTests:
             tool_arguments={"path": "tests/unit", "markers": "not integration"},
         )
 
-        mock_execute = mocker.patch.object(
-            evaluator.code_interpreter,
-            "execute_code",
-            return_value={"exit_code": 0, "output": "10 passed"},
-        )
+        # Mock Code Interpreter BEFORE accessing it
+        mock_code_interpreter = mocker.Mock()
+        mock_code_interpreter.execute_code.return_value = {"exit_code": 0, "output": "10 passed"}
+        evaluator._code_interpreter = mock_code_interpreter
 
         evaluator.evaluate_tests(config, iteration=1)
 
         # Verify custom arguments were included
-        call_args = mock_execute.call_args[0][0]
+        call_args = mock_code_interpreter.execute_code.call_args[0][0]
         assert "tests/unit" in call_args
         assert "not integration" in call_args
 
@@ -158,15 +153,13 @@ class TestEvaluateLinting:
             tool_arguments={"path": "src/"},
         )
 
-        # Mock Code Interpreter to simulate clean ruff check
-        mock_execute = mocker.patch.object(
-            evaluator.code_interpreter,
-            "execute_code",
-            return_value={
-                "exit_code": 0,
-                "output": "All checks passed!",
-            },
-        )
+        # Mock Code Interpreter BEFORE accessing it
+        mock_code_interpreter = mocker.Mock()
+        mock_code_interpreter.execute_code.return_value = {
+            "exit_code": 0,
+            "output": "All checks passed!",
+        }
+        evaluator._code_interpreter = mock_code_interpreter
 
         status = evaluator.evaluate_linting(config, iteration=1)
 
@@ -176,7 +169,7 @@ class TestEvaluateLinting:
         assert status.iteration_evaluated == 1
 
         # Verify Code Interpreter was called with ruff command
-        call_args = mock_execute.call_args[0][0]
+        call_args = mock_code_interpreter.execute_code.call_args[0][0]
         assert "ruff check" in call_args
 
     def test_evaluate_linting_failure(self, mocker):
@@ -184,15 +177,13 @@ class TestEvaluateLinting:
         evaluator = ExitConditionEvaluator(region="us-east-1")
         config = ExitConditionConfig(type=ExitConditionType.LINTING_CLEAN)
 
-        # Mock Code Interpreter to simulate ruff errors
-        mocker.patch.object(
-            evaluator.code_interpreter,
-            "execute_code",
-            return_value={
-                "exit_code": 1,
-                "output": "Found 5 errors in 3 files",
-            },
-        )
+        # Mock Code Interpreter BEFORE accessing it
+        mock_code_interpreter = mocker.Mock()
+        mock_code_interpreter.execute_code.return_value = {
+            "exit_code": 1,
+            "output": "Found 5 errors in 3 files",
+        }
+        evaluator._code_interpreter = mock_code_interpreter
 
         status = evaluator.evaluate_linting(config, iteration=2)
 
@@ -209,16 +200,15 @@ class TestEvaluateLinting:
             tool_arguments={"path": "src/loop/"},
         )
 
-        mock_execute = mocker.patch.object(
-            evaluator.code_interpreter,
-            "execute_code",
-            return_value={"exit_code": 0, "output": "OK"},
-        )
+        # Mock Code Interpreter BEFORE accessing it
+        mock_code_interpreter = mocker.Mock()
+        mock_code_interpreter.execute_code.return_value = {"exit_code": 0, "output": "OK"}
+        evaluator._code_interpreter = mock_code_interpreter
 
         evaluator.evaluate_linting(config, iteration=1)
 
         # Verify custom path was used
-        call_args = mock_execute.call_args[0][0]
+        call_args = mock_code_interpreter.execute_code.call_args[0][0]
         assert "src/loop/" in call_args
 
 
@@ -318,10 +308,10 @@ class TestTimeoutHandling:
         evaluator = ExitConditionEvaluator(region="us-east-1", timeout_seconds=1)
         config = ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)
 
-        # Mock execute_code to raise TimeoutError
-        mocker.patch.object(
-            evaluator.code_interpreter, "execute_code", side_effect=TimeoutError("Timeout")
-        )
+        # Mock Code Interpreter BEFORE accessing it
+        mock_code_interpreter = mocker.Mock()
+        mock_code_interpreter.execute_code.side_effect = TimeoutError("Timeout")
+        evaluator._code_interpreter = mock_code_interpreter
 
         # Mock ThreadPoolExecutor to simulate timeout
         def mock_submit(func, *args):
