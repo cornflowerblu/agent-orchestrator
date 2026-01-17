@@ -8,7 +8,7 @@
   "headers": {
     "Content-Type": "application/json"
   },
-  "body": "{\"status\": \"active\", \"health_check\": \"healthy\", \"endpoint\": \"https://api.example.com/agent\"}",
+  "body": "{\"status\": \"active\", \"health_check\": \"passing\", \"endpoint\": \"https://api.example.com/agent\"}",
   "isBase64Encoded": false,
   "requestContext": {
     "requestId": "test-request-id",

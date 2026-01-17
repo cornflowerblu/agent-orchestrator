@@ -227,8 +227,8 @@ class TestUpdateStatusHandler:
             "headers": {"Content-Type": "application/json"},
             "body": json.dumps(
                 {
-                    "status": "running",
-                    "health": "healthy",
+                    "status": "active",
+                    "health_check": "passing",
                 }
             ),
         }
