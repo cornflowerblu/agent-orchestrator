@@ -3,7 +3,7 @@
 Fast feedback loop for development - no AWS deployment needed.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -27,7 +27,7 @@ def sample_status():
     return AgentStatus(
         agent_name="test-status-agent",
         status=AgentStatusValue.ACTIVE,
-        last_ping=datetime.now(tz=timezone.utc),
+        last_ping=datetime.now(tz=UTC),
         health_check=HealthCheckStatus.PASSING,
     )
 
@@ -113,7 +113,7 @@ class TestStatusStorageLocal:
         status2 = AgentStatus(
             agent_name="agent-2",
             status=AgentStatusValue.INACTIVE,
-            last_ping=datetime.now(tz=timezone.utc),
+            last_ping=datetime.now(tz=UTC),
             health_check=HealthCheckStatus.PASSING,
         )
         status_storage.put_status(status2)
@@ -121,7 +121,7 @@ class TestStatusStorageLocal:
         status3 = AgentStatus(
             agent_name="agent-3",
             status=AgentStatusValue.ACTIVE,
-            last_ping=datetime.now(tz=timezone.utc),
+            last_ping=datetime.now(tz=UTC),
             health_check=HealthCheckStatus.FAILING,
         )
         status_storage.put_status(status3)
@@ -161,7 +161,7 @@ class TestStatusStorageLocal:
         passing_status = AgentStatus(
             agent_name="passing-agent",
             status=AgentStatusValue.ACTIVE,
-            last_ping=datetime.now(tz=timezone.utc),
+            last_ping=datetime.now(tz=UTC),
             health_check=HealthCheckStatus.PASSING,
         )
         status_storage.put_status(passing_status)
@@ -179,7 +179,7 @@ class TestStatusStorageLocal:
         status = AgentStatus(
             agent_name="toggle-agent",
             status=AgentStatusValue.INACTIVE,
-            last_ping=datetime.now(tz=timezone.utc),
+            last_ping=datetime.now(tz=UTC),
             health_check=HealthCheckStatus.PASSING,
         )
         status_storage.put_status(status)

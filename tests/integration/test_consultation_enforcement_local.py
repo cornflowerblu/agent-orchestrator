@@ -5,7 +5,7 @@ Fast comments loop for development - no AWS deployment needed.
 
 import pytest
 
-from src.consultation.enforcement import ConsultationEngine, ValidationResult
+from src.consultation.enforcement import ConsultationEngine
 from src.consultation.rules import (
     ConsultationCondition,
     ConsultationOutcome,

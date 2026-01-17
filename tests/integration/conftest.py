@@ -4,7 +4,7 @@ Provides both moto-based local fixtures and real AWS fixtures.
 """
 
 import os
-from typing import Iterator
+from collections.abc import Iterator
 
 import boto3
 import pytest
