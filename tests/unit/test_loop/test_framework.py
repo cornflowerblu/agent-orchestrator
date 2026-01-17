@@ -21,7 +21,6 @@ from src.loop.models import (
     LoopState,
 )
 
-
 # =============================================================================
 # Module-level fixture to mock Memory for all framework tests
 # =============================================================================
@@ -33,7 +32,7 @@ def mock_memory_for_framework(mock_memory):
 
     LoopFramework uses CheckpointManager which needs Memory mocked.
     """
-    yield mock_memory
+    return mock_memory
 
 
 # =============================================================================

@@ -14,7 +14,7 @@ Maps to:
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -40,9 +40,9 @@ def _convert_floats_to_decimal(obj: Any) -> Any:
     """Convert floats to Decimals for DynamoDB compatibility."""
     if isinstance(obj, float):
         return Decimal(str(obj))
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         return {k: _convert_floats_to_decimal(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
+    if isinstance(obj, list):
         return [_convert_floats_to_decimal(v) for v in obj]
     return obj
 
@@ -240,15 +240,18 @@ class CheckpointManager:
 
         if self._determine_backend():
             return self._save_to_memory(checkpoint, loop_state)
-        else:
-            return self._save_to_dynamodb(checkpoint, loop_state)
+        return self._save_to_dynamodb(checkpoint, loop_state)
 
     def _save_to_memory(self, checkpoint: Checkpoint, loop_state: LoopState) -> str:
         """Save checkpoint to AgentCore Memory."""
         try:
             client = self._try_memory_client()
             if client is None:
-                raise Exception("Memory client unavailable")
+                raise CheckpointRecoveryError(
+                    checkpoint_id=checkpoint.checkpoint_id,
+                    reason="Memory client unavailable",
+                    session_id=self.session_id,
+                )
 
             blob_data = {
                 "checkpoint_id": checkpoint.checkpoint_id,
@@ -289,7 +292,7 @@ class CheckpointManager:
                 "checkpoint_id": checkpoint.checkpoint_id,
                 "agent_name": self.agent_name,
                 "checkpoint_data": checkpoint_data,
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
             }
 
             table.put_item(Item=item)
@@ -326,15 +329,18 @@ class CheckpointManager:
         """
         if self._determine_backend():
             return self._load_from_memory(iteration)
-        else:
-            return self._load_from_dynamodb(iteration)
+        return self._load_from_dynamodb(iteration)
 
     def _load_from_memory(self, iteration: int) -> LoopState:
         """Load checkpoint from AgentCore Memory."""
         try:
             client = self._try_memory_client()
             if client is None:
-                raise Exception("Memory client unavailable")
+                raise CheckpointRecoveryError(
+                    checkpoint_id=f"{self.session_id}/{iteration}",
+                    reason="Memory client unavailable",
+                    session_id=self.session_id,
+                )
 
             events = client.list_events(
                 memory_id=self._memory_id,
@@ -452,8 +458,7 @@ class CheckpointManager:
         """
         if self._determine_backend():
             return self._list_from_memory()
-        else:
-            return self._list_from_dynamodb()
+        return self._list_from_dynamodb()
 
     def _list_from_memory(self) -> list[dict[str, Any]]:
         """List checkpoints from AgentCore Memory."""

@@ -9,14 +9,12 @@ These tests verify the complete user stories from spec 002-autonomous-loop:
 Unlike component-level tests, these run the ACTUAL loop against real AWS services.
 """
 
-import asyncio
 import os
 import uuid
 
 import pytest
 
 from src.loop.checkpoint import CheckpointManager
-from src.loop.conditions import ExitConditionEvaluator
 from src.loop.framework import LoopFramework
 from src.loop.models import (
     ExitConditionConfig,
@@ -24,7 +22,6 @@ from src.loop.models import (
     ExitConditionType,
     LoopConfig,
     LoopOutcome,
-    LoopPhase,
 )
 
 # Mark all tests as integration tests
@@ -248,7 +245,7 @@ class TestAutonomousLoopE2E:
         # Print results for visibility
         print(f"\n✅ Loop completed: {result.iterations_completed} iterations")
         print(f"✅ Outcome: {result.outcome}")
-        print(f"✅ Exit condition evaluations:")
+        print("✅ Exit condition evaluations:")
         for eval_result in evaluation_results:
             print(f"   Iteration {eval_result['iteration']}: {eval_result['status']} (exit code: {eval_result['exit_code']})")
 
@@ -289,7 +286,7 @@ class TestAutonomousLoopE2E:
             if iteration >= 3:
                 # Force save checkpoint before "crash"
                 fw.checkpoint_manager.save_checkpoint(fw.state)
-                raise Exception("Simulated crash at iteration 3")
+                raise RuntimeError("Simulated crash at iteration 3")
 
             return state
 
@@ -398,7 +395,7 @@ class TestLoopObservability:
         # For now we just verify the loop ran with tracer attached
 
         print(f"\n✅ Loop with tracing completed: {result.iterations_completed} iterations")
-        print(f"✅ Tracer was active throughout execution")
+        print("✅ Tracer was active throughout execution")
 
 
 class TestLoopEdgeCases:
@@ -450,7 +447,7 @@ class TestLoopEdgeCases:
         # State should reflect we got to iteration 2
         assert framework.state.current_iteration >= 1
 
-        print(f"\n✅ Exception at iteration 2 handled gracefully")
+        print("\n✅ Exception at iteration 2 handled gracefully")
         print(f"✅ Outcome: {result.outcome}")
         print(f"✅ State preserved: iteration {framework.state.current_iteration}")
 
@@ -483,7 +480,7 @@ class TestLoopEdgeCases:
                 # Try to call run() again from within the work function
                 try:
                     await fw.run(
-                        work_function=lambda i, s, f: s,
+                        work_function=lambda _i, s, _f: s,
                         initial_state={},
                     )
                 except Exception as e:
@@ -504,5 +501,5 @@ class TestLoopEdgeCases:
         # Re-entry should have been blocked
         assert reentry_error is not None
 
-        print(f"\n✅ Re-entry was attempted and blocked")
+        print("\n✅ Re-entry was attempted and blocked")
         print(f"✅ Error: {type(reentry_error).__name__}")

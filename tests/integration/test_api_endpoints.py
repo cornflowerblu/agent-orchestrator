@@ -359,7 +359,7 @@ class TestFindCompatibleAgentsEndpoint:
         data = response.json()
         assert "agents" in data
 
-        print(f"\n✅ Find compatible agents for 'document' input")
+        print("\n✅ Find compatible agents for 'document' input")
         print(f"✅ Found {len(data['agents'])} compatible agents")
 
 
