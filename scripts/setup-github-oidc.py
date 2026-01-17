@@ -46,7 +46,11 @@ def setup_oidc_provider(iam_client, account_id: str) -> str:
         response = iam_client.create_open_id_connect_provider(
             Url=oidc_url,
             ClientIDList=["sts.amazonaws.com"],
-            # GitHub's OIDC thumbprint
+            # GitHub's OIDC thumbprint - NOTE: This thumbprint may become stale if GitHub
+            # rotates their certificate. AWS now validates OIDC tokens without requiring
+            # thumbprints for most providers, but we include it for compatibility.
+            # If authentication fails, verify the current thumbprint at:
+            # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
             ThumbprintList=["6938fd4d98bab03faadb97b34396831e3780aea1"],
             Tags=[
                 {"Key": "Purpose", "Value": "GitHub-Actions-OIDC"},
@@ -57,9 +61,7 @@ def setup_oidc_provider(iam_client, account_id: str) -> str:
         return response["OpenIDConnectProviderArn"]
 
 
-def setup_iam_role(
-    iam_client, account_id: str, region: str, repo: str, oidc_arn: str
-) -> str:
+def setup_iam_role(iam_client, account_id: str, region: str, repo: str, oidc_arn: str) -> str:
     """Create or update the IAM role for GitHub Actions."""
     role_name = "GitHubActions-AgentFramework"
 
@@ -74,24 +76,30 @@ def setup_iam_role(
                     "StringEquals": {
                         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
                     },
-                    "StringLike": {
-                        "token.actions.githubusercontent.com:sub": f"repo:{repo}:*"
-                    },
+                    "StringLike": {"token.actions.githubusercontent.com:sub": f"repo:{repo}:*"},
                 },
             }
         ],
     }
 
+    # SECURITY NOTE: These permissions are scoped for CDK deployments of the Agent Framework.
+    # Broad permissions (e.g., cloudformation:*, apigateway:*) are required because CDK
+    # generates dynamic resource names. Resource constraints are applied where possible.
+    # Review and tighten these permissions based on your security requirements.
     permissions_policy = {
         "Version": "2012-10-17",
         "Statement": [
             {
+                # CloudFormation needs broad access to manage stacks and resources.
+                # Resource "*" is required because CDK creates resources with dynamic names.
                 "Sid": "CloudFormationAccess",
                 "Effect": "Allow",
                 "Action": ["cloudformation:*"],
                 "Resource": "*",
             },
             {
+                # DynamoDB access is scoped to Agent* tables only.
+                # This limits access to the specific tables used by this framework.
                 "Sid": "DynamoDBAccess",
                 "Effect": "Allow",
                 "Action": ["dynamodb:*"],
@@ -101,18 +109,24 @@ def setup_iam_role(
                 ],
             },
             {
+                # Lambda access for all functions in the account.
+                # Consider scoping to specific function name patterns if possible.
                 "Sid": "LambdaAccess",
                 "Effect": "Allow",
                 "Action": ["lambda:*"],
                 "Resource": f"arn:aws:lambda:{region}:{account_id}:function:*",
             },
             {
+                # API Gateway requires Resource "*" due to API ID being generated at deploy time.
+                # This is a known CDK limitation for API Gateway deployments.
                 "Sid": "APIGatewayAccess",
                 "Effect": "Allow",
                 "Action": ["apigateway:*"],
                 "Resource": "*",
             },
             {
+                # IAM permissions are scoped to AgentFramework* roles only.
+                # PassRole is required for Lambda execution roles.
                 "Sid": "IAMPassRole",
                 "Effect": "Allow",
                 "Action": [
@@ -128,6 +142,8 @@ def setup_iam_role(
                 "Resource": f"arn:aws:iam::{account_id}:role/AgentFramework*",
             },
             {
+                # S3 access is scoped to CDK asset buckets only.
+                # These buckets store deployment artifacts.
                 "Sid": "S3Access",
                 "Effect": "Allow",
                 "Action": ["s3:*"],
@@ -137,12 +153,14 @@ def setup_iam_role(
                 ],
             },
             {
+                # SSM read-only access for CDK bootstrap parameters.
                 "Sid": "SSMAccess",
                 "Effect": "Allow",
                 "Action": ["ssm:GetParameter"],
                 "Resource": f"arn:aws:ssm:{region}:{account_id}:parameter/cdk-bootstrap/*",
             },
             {
+                # ECR access is scoped to CDK repositories for container deployments.
                 "Sid": "ECRAccess",
                 "Effect": "Allow",
                 "Action": ["ecr:*"],

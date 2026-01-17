@@ -102,7 +102,10 @@ class BaseAgent:
         """
         # Validate version format
         if not re.match(r"^\d+\.\d+\.\d+$", new_version):
-            raise ValidationError(f"Invalid version: {new_version}")
+            raise ValidationError(
+                f"Invalid version format '{new_version}'. "
+                "Expected semantic version (X.Y.Z where X, Y, Z are integers)"
+            )
 
         old_version = self.version
         self.version = new_version
