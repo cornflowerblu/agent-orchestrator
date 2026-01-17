@@ -125,8 +125,8 @@ def setup_iam_role(iam_client, account_id: str, region: str, repo: str, oidc_arn
                 "Resource": "*",
             },
             {
-                # IAM permissions are scoped to AgentFramework* roles only.
-                # PassRole is required for Lambda execution roles.
+                # IAM permissions are scoped to AgentFramework* and CDK bootstrap roles.
+                # PassRole is required for Lambda execution roles and CDK deployments.
                 "Sid": "IAMPassRole",
                 "Effect": "Allow",
                 "Action": [
@@ -139,7 +139,10 @@ def setup_iam_role(iam_client, account_id: str, region: str, repo: str, oidc_arn
                     "iam:PutRolePolicy",
                     "iam:DeleteRolePolicy",
                 ],
-                "Resource": f"arn:aws:iam::{account_id}:role/AgentFramework*",
+                "Resource": [
+                    f"arn:aws:iam::{account_id}:role/AgentFramework*",
+                    f"arn:aws:iam::{account_id}:role/cdk-*",
+                ],
             },
             {
                 # S3 access is scoped to CDK asset buckets only.
