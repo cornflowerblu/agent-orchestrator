@@ -95,7 +95,7 @@ class CheckpointManager:
                 logger.info(f"Connected to DynamoDB table {self.table_name}")
             except ClientError as e:
                 error_msg = f"Failed to access DynamoDB table {self.table_name}: {e}"
-                logger.error(error_msg)
+                logger.exception(error_msg)
                 raise CheckpointRecoveryError(
                     checkpoint_id="N/A",
                     reason=error_msg,
@@ -140,7 +140,7 @@ class CheckpointManager:
             )
         except ClientError as e:
             error_msg = f"Failed to save checkpoint: {e}"
-            logger.error(error_msg)
+            logger.exception(error_msg)
             raise CheckpointRecoveryError(
                 checkpoint_id=checkpoint.checkpoint_id,
                 reason=error_msg,
@@ -233,6 +233,6 @@ class CheckpointManager:
             return checkpoints
         except ClientError as e:
             error_msg = f"Failed to list checkpoints: {e}"
-            logger.error(error_msg)
+            logger.exception(error_msg)
             # Return empty list instead of raising to be more forgiving
             return []

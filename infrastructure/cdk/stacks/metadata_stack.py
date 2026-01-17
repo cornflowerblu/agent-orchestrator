@@ -71,7 +71,8 @@ class MetadataStack(cdk.Stack):
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.AWS_MANAGED,
             point_in_time_recovery=is_production,  # Enable PITR for production
-            removal_policy=metadata_removal_policy,  # Same as metadata (RETAIN/DESTROY based on env)
+            # Same as metadata (RETAIN/DESTROY based on env)
+            removal_policy=metadata_removal_policy,
         )
 
         # Outputs
