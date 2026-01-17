@@ -21,6 +21,21 @@ from src.loop.models import (
     LoopState,
 )
 
+
+# =============================================================================
+# Module-level fixture to mock Memory for all framework tests
+# =============================================================================
+
+
+@pytest.fixture(autouse=True)
+def mock_memory_for_framework(mock_memory):
+    """Auto-use mock_memory for all framework tests.
+
+    LoopFramework uses CheckpointManager which needs Memory mocked.
+    """
+    yield mock_memory
+
+
 # =============================================================================
 # T037: LoopFramework Initialization Tests
 # =============================================================================
