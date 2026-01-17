@@ -22,8 +22,10 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
-from src.exceptions import CheckpointRecoveryError, LoopFrameworkError
+from src.exceptions import CheckpointRecoveryError, LoopFrameworkError, PolicyViolationError
 from src.loop.checkpoint import CheckpointManager
+from src.orchestrator.models import PolicyConfig
+from src.orchestrator.policy import PolicyEnforcer
 from src.loop.models import (
     ExitConditionStatus,
     ExitConditionStatusValue,
@@ -73,6 +75,19 @@ class LoopFramework:
             session_id=state.session_id,
             region=config.region,
         )
+
+        # T089: Initialize PolicyEnforcer if policy engine is configured
+        self.policy_enforcer: PolicyEnforcer | None = None
+        if config.policy_engine_arn:
+            policy_config = PolicyConfig(
+                agent_name=config.agent_name,
+                max_iterations=config.max_iterations,
+                session_id=state.session_id,
+            )
+            self.policy_enforcer = PolicyEnforcer(
+                config=policy_config,
+                region=config.region,
+            )
 
     @classmethod
     async def initialize(cls, config: LoopConfig) -> "LoopFramework":
@@ -300,6 +315,27 @@ class LoopFramework:
             for iteration in range(start_iteration, self.config.max_iterations):
                 self.state.current_iteration = iteration
                 self.state.phase = LoopPhase.RUNNING
+
+                # T090: Check policy before each iteration
+                if self.policy_enforcer is not None:
+                    try:
+                        self.policy_enforcer.check_iteration_allowed(
+                            current_iteration=iteration,
+                            session_id=self.state.session_id,
+                        )
+                    except PolicyViolationError as e:
+                        # Emit policy violation event
+                        await self.emit_event(
+                            event_type=IterationEventType.POLICY_VIOLATION,
+                            details={
+                                "iteration": iteration,
+                                "max_iterations": self.config.max_iterations,
+                                "policy_arn": e.policy_arn,
+                            },
+                        )
+                        # Set outcome and break
+                        outcome = LoopOutcome.ITERATION_LIMIT
+                        break
 
                 # Emit iteration started event
                 await self.emit_event(
