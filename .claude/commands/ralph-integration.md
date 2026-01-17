@@ -12,6 +12,7 @@ Autonomous loop for deploying CDK infrastructure, running integration tests, aut
 ```bash
 /ralph-integration
 /ralph-integration --max-iterations=15
+/ralph-integration --profile=sandbox
 /ralph-integration --promise=INTEGRATION_TESTS_PASS
 /ralph-integration --skip-destroy  # Keep infra up for debugging
 ```
@@ -35,6 +36,7 @@ Autonomous loop for deploying CDK infrastructure, running integration tests, aut
 - `--max-iterations=N` - Maximum deployment attempts (default: 10)
 - `--promise=NAME` - Success promise to output (default: INTEGRATION_TESTS_PASS)
 - `--skip-destroy` - Keep infrastructure deployed (for debugging)
+- `--profile=PROFILE` - AWS CLI profile to use (e.g., sandbox, production)
 - `--region=REGION` - AWS region (default: us-east-1)
 - `--account-id=ID` - AWS account ID (auto-detected from AWS CLI)
 
@@ -46,11 +48,14 @@ Before starting the loop:
 
 1. **Check AWS Credentials**
    ```bash
+   # Export AWS_PROFILE if --profile was provided
+   export AWS_PROFILE=sandbox  # if --profile=sandbox
    aws sts get-caller-identity
    ```
    - Verify AWS credentials are configured
    - Confirm account ID matches expected
    - Check region is set
+   - Note: If `--profile` is specified, export `AWS_PROFILE` before all AWS/CDK commands
 
 2. **Check CDK Bootstrap**
    ```bash
@@ -82,6 +87,7 @@ Before starting the loop:
 
 ```bash
 cd infrastructure/cdk
+export AWS_PROFILE=sandbox  # if --profile was provided
 source ../../.venv/bin/activate
 cdk synth --all
 ```
@@ -98,6 +104,7 @@ cdk synth --all
 #### Step 2: CDK Deploy
 
 ```bash
+export AWS_PROFILE=sandbox  # if --profile was provided
 source ../../.venv/bin/activate
 cdk deploy --all --require-approval never --outputs-file outputs.json
 ```
@@ -122,6 +129,8 @@ cdk deploy --all --require-approval never --outputs-file outputs.json
 
 ```bash
 cd ../..  # Back to project root
+export AWS_PROFILE=sandbox  # if --profile was provided
+export AWS_REGION=us-east-1
 source .venv/bin/activate
 # Integration tests use 60% coverage threshold (vs 80% for unit tests)
 # Industry standard: integration tests 70-80%, unit tests 80-95%
@@ -189,6 +198,7 @@ If tests fail:
 
 ```bash
 cd infrastructure/cdk
+export AWS_PROFILE=sandbox  # if --profile was provided
 source ../../.venv/bin/activate
 cdk destroy --all --force
 ```
@@ -407,6 +417,13 @@ This skill implements:
 
 ```bash
 /ralph-integration --region=us-west-2
+```
+
+### Different AWS Profile
+
+```bash
+/ralph-integration --profile=sandbox
+/ralph-integration --profile=production --region=us-west-2
 ```
 
 ### Preserve Infrastructure
