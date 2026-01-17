@@ -111,7 +111,7 @@ class TestStatusStorageLocal:
         status_storage.put_status(sample_status)
 
         status2 = AgentStatus(
-            agent_name="agent-2",
+            agent_name="test-agent-2",
             status=AgentStatusValue.INACTIVE,
             last_ping=datetime.now(tz=UTC),
             health_check=HealthCheckStatus.PASSING,
@@ -119,7 +119,7 @@ class TestStatusStorageLocal:
         status_storage.put_status(status2)
 
         status3 = AgentStatus(
-            agent_name="agent-3",
+            agent_name="test-agent-3",
             status=AgentStatusValue.ACTIVE,
             last_ping=datetime.now(tz=UTC),
             health_check=HealthCheckStatus.FAILING,
@@ -159,25 +159,25 @@ class TestStatusStorageLocal:
         """Test AgentStatus is_healthy() method with real data."""
         # Create active+passing status
         passing_status = AgentStatus(
-            agent_name="passing-agent",
+            agent_name="test-passing-agent",
             status=AgentStatusValue.ACTIVE,
             last_ping=datetime.now(tz=UTC),
             health_check=HealthCheckStatus.PASSING,
         )
         status_storage.put_status(passing_status)
 
-        retrieved = status_storage.get_status("passing-agent")
+        retrieved = status_storage.get_status("test-passing-agent")
         assert retrieved.is_healthy() is True
 
         # Update to failing
-        status_storage.update_status("passing-agent", health_check=HealthCheckStatus.FAILING)
-        retrieved = status_storage.get_status("passing-agent")
+        status_storage.update_status("test-passing-agent", health_check=HealthCheckStatus.FAILING)
+        retrieved = status_storage.get_status("test-passing-agent")
         assert retrieved.is_healthy() is False
 
     def test_mark_active_and_inactive(self, status_storage):
         """Test mark_active() and mark_inactive() helper methods."""
         status = AgentStatus(
-            agent_name="toggle-agent",
+            agent_name="test-toggle-agent",
             status=AgentStatusValue.INACTIVE,
             last_ping=datetime.now(tz=UTC),
             health_check=HealthCheckStatus.PASSING,
@@ -185,16 +185,16 @@ class TestStatusStorageLocal:
         status_storage.put_status(status)
 
         # Mark active
-        retrieved = status_storage.get_status("toggle-agent")
+        retrieved = status_storage.get_status("test-toggle-agent")
         retrieved.mark_active()
         status_storage.put_status(retrieved)
 
-        retrieved = status_storage.get_status("toggle-agent")
+        retrieved = status_storage.get_status("test-toggle-agent")
         assert retrieved.status == AgentStatusValue.ACTIVE
 
         # Mark inactive
         retrieved.mark_inactive()
         status_storage.put_status(retrieved)
 
-        retrieved = status_storage.get_status("toggle-agent")
+        retrieved = status_storage.get_status("test-toggle-agent")
         assert retrieved.status == AgentStatusValue.INACTIVE
