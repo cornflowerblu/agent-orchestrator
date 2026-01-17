@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-orchestrator.example.com/schemas/custom-metadata.json",
+  "title": "Custom Agent Metadata",
+  "description": "Platform-specific extensions to Agent Cards for enhanced validation and consultation requirements",
+  "type": "object",
+  "required": ["agent_name", "version", "input_schemas", "output_schemas", "consultation_requirements"],
+  "properties": {
+    "agent_name": {
+      "type": "string",
+      "description": "Links to Agent Card name (must match existing agent)",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9-]{0,63}$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Should match Agent Card version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "input_schemas": {
+      "type": "array",
+      "description": "Enhanced semantic type declarations for inputs",
+      "items": {
+        "$ref": "#/$defs/InputSchema"
+      }
+    },
+    "output_schemas": {
+      "type": "array",
+      "description": "Enhanced semantic type declarations for outputs",
+      "items": {
+        "$ref": "#/$defs/OutputSchema"
+      }
+    },
+    "consultation_requirements": {
+      "type": "array",
+      "description": "Inter-agent consultation rules",
+      "items": {
+        "$ref": "#/$defs/ConsultationRequirement"
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "description": "Creation timestamp",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "description": "Last update timestamp",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "SemanticType": {
+      "type": "string",
+      "description": "Semantic type category for inputs/outputs",
+      "enum": ["document", "artifact", "collection", "reference", "comment"]
+    },
+    "InputSchema": {
+      "type": "object",
+      "description": "Semantic type declaration for an agent input",
+      "required": ["name", "semantic_type", "description", "required"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Input identifier",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$",
+          "examples": ["technical-specification", "source-code", "user-requirements"]
+        },
+        "semantic_type": {
+          "$ref": "#/$defs/SemanticType"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this input represents",
+          "minLength": 10,
+          "maxLength": 500
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Must be provided for task assignment"
+        },
+        "validation_rules": {
+          "type": "array",
+          "description": "Optional validation rules",
+          "items": {
+            "$ref": "#/$defs/ValidationRule"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "OutputSchema": {
+      "type": "object",
+      "description": "Semantic type declaration for an agent output",
+      "required": ["name", "semantic_type", "description", "guaranteed"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Output identifier",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$",
+          "examples": ["user-stories", "reviewed-code", "security-report"]
+        },
+        "semantic_type": {
+          "$ref": "#/$defs/SemanticType"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this output represents",
+          "minLength": 10,
+          "maxLength": 500
+        },
+        "guaranteed": {
+          "type": "boolean",
+          "description": "Always produced vs conditional"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ValidationRule": {
+      "type": "object",
+      "description": "Validation rule for input data",
+      "required": ["type", "value", "message"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["format", "length", "pattern", "enum"]
+        },
+        "value": {
+          "description": "Value to validate against (type depends on rule type)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message if validation fails"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConsultationPhase": {
+      "type": "string",
+      "description": "When consultation must occur",
+      "enum": ["pre-execution", "design-review", "pre-completion", "on-error"]
+    },
+    "ConsultationCondition": {
+      "type": "object",
+      "description": "Condition for when consultation rule applies",
+      "required": ["attribute", "operator", "value"],
+      "properties": {
+        "attribute": {
+          "type": "string",
+          "description": "Task attribute to check",
+          "examples": ["handling_sensitive_data", "modifies_infrastructure", "file_count"]
+        },
+        "operator": {
+          "type": "string",
+          "enum": ["equals", "contains", "greater_than", "exists"]
+        },
+        "value": {
+          "description": "Value to compare against"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConsultationRequirement": {
+      "type": "object",
+      "description": "Declaration of inter-agent consultation rule",
+      "required": ["id", "target_agent", "phase", "mandatory"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique rule identifier",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$"
+        },
+        "target_agent": {
+          "type": "string",
+          "description": "Agent that must be consulted",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9-]{0,63}$"
+        },
+        "phase": {
+          "$ref": "#/$defs/ConsultationPhase"
+        },
+        "mandatory": {
+          "type": "boolean",
+          "description": "Required (true) vs recommended (false)"
+        },
+        "condition": {
+          "$ref": "#/$defs/ConsultationCondition",
+          "description": "When rule applies (null = always)"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

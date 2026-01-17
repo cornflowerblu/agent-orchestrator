@@ -1,0 +1,624 @@
+openapi: 3.1.0
+info:
+  title: Agent Registry API
+  description: |
+    Orchestrator-facing API for discovering agents, querying capabilities,
+    and validating task assignments. Works alongside AgentCore A2A discovery.
+  version: 1.0.0
+  contact:
+    name: Agent Orchestrator Platform
+
+servers:
+  - url: https://api.{region}.agent-orchestrator.example.com/v1
+    description: Production API
+    variables:
+      region:
+        default: us-east-1
+        enum: [us-east-1, us-west-2, eu-west-1]
+
+tags:
+  - name: Agents
+    description: Agent discovery and metadata operations
+  - name: Compatibility
+    description: Agent compatibility and validation
+  - name: Status
+    description: Agent runtime status
+
+paths:
+  /agents:
+    get:
+      operationId: listAgents
+      summary: List all registered agents
+      description: |
+        Returns all agents discovered via A2A Agent Cards along with their
+        custom metadata. Supports filtering by skill, status, and input compatibility.
+      tags: [Agents]
+      parameters:
+        - name: skill
+          in: query
+          description: Filter by skill ID
+          schema:
+            type: string
+            example: code-review
+        - name: status
+          in: query
+          description: Filter by runtime status
+          schema:
+            type: string
+            enum: [available, busy, unavailable, error]
+        - name: accepts_input
+          in: query
+          description: Filter by compatible semantic input type
+          schema:
+            type: string
+            example: technical-specification
+        - name: limit
+          in: query
+          description: Maximum number of agents to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: cursor
+          in: query
+          description: Pagination cursor from previous response
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /agents/{agent_name}:
+    get:
+      operationId: getAgent
+      summary: Get agent details
+      description: |
+        Returns complete information about an agent including Agent Card
+        data (from A2A discovery) and custom metadata (from DynamoDB).
+      tags: [Agents]
+      parameters:
+        - $ref: '#/components/parameters/AgentName'
+      responses:
+        '200':
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /agents/{agent_name}/metadata:
+    put:
+      operationId: updateAgentMetadata
+      summary: Update custom agent metadata
+      description: |
+        Creates or updates custom metadata for an agent. Agent must already
+        exist (Agent Card deployed to AgentCore Runtime).
+      tags: [Agents]
+      parameters:
+        - $ref: '#/components/parameters/AgentName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomMetadataInput'
+      responses:
+        '200':
+          description: Metadata updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomMetadata'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Agent not found (no Agent Card deployed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /agents/{agent_name}/consultations:
+    get:
+      operationId: getConsultationRequirements
+      summary: Get consultation requirements for an agent
+      description: |
+        Returns all consultation requirements configured for an agent,
+        including mandatory and optional consultations with their conditions.
+      tags: [Agents]
+      parameters:
+        - $ref: '#/components/parameters/AgentName'
+      responses:
+        '200':
+          description: Consultation requirements
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultationRequirementsResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /compatibility/check:
+    post:
+      operationId: checkCompatibility
+      summary: Check agent compatibility with task
+      description: |
+        Validates whether a task can be assigned to an agent based on:
+        - Agent skills matching task requirements
+        - Input semantic type compatibility
+        - Agent availability status
+      tags: [Compatibility]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompatibilityCheckRequest'
+      responses:
+        '200':
+          description: Compatibility check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompatibilityCheckResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /compatibility/find-agents:
+    post:
+      operationId: findCompatibleAgents
+      summary: Find agents compatible with task requirements
+      description: |
+        Returns a ranked list of agents that can handle a task based on
+        skill requirements and input availability.
+      tags: [Compatibility]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindAgentsRequest'
+      responses:
+        '200':
+          description: Compatible agents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindAgentsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /status/{agent_name}:
+    get:
+      operationId: getAgentStatus
+      summary: Get agent runtime status
+      description: |
+        Returns current runtime status of an agent including availability
+        and current task if busy.
+      tags: [Status]
+      parameters:
+        - $ref: '#/components/parameters/AgentName'
+      responses:
+        '200':
+          description: Agent status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    put:
+      operationId: updateAgentStatus
+      summary: Update agent runtime status
+      description: |
+        Updates the runtime status of an agent. Typically called by the
+        agent itself or the orchestrator when assigning/completing tasks.
+      tags: [Status]
+      parameters:
+        - $ref: '#/components/parameters/AgentName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentStatusUpdate'
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentStatus'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  parameters:
+    AgentName:
+      name: agent_name
+      in: path
+      required: true
+      description: Unique agent identifier (matches Agent Card name)
+      schema:
+        type: string
+        pattern: '^[a-zA-Z][a-zA-Z0-9-]{0,63}$'
+        example: development-agent
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: AGENT_NOT_FOUND
+        message:
+          type: string
+          example: Agent 'unknown-agent' not found
+        details:
+          type: object
+          additionalProperties: true
+
+    AgentListResponse:
+      type: object
+      required: [agents]
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentSummary'
+        next_cursor:
+          type: string
+          description: Pagination cursor for next page
+
+    AgentSummary:
+      type: object
+      required: [name, version, status, skills]
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+          enum: [available, busy, unavailable, error]
+        skills:
+          type: array
+          items:
+            type: string
+          description: List of skill IDs
+
+    AgentDetail:
+      type: object
+      required: [agent_card, custom_metadata, status]
+      properties:
+        agent_card:
+          $ref: '#/components/schemas/AgentCard'
+        custom_metadata:
+          $ref: '#/components/schemas/CustomMetadata'
+        status:
+          $ref: '#/components/schemas/AgentStatus'
+
+    AgentCard:
+      type: object
+      description: Native A2A Agent Card (read from /.well-known/agent-card.json)
+      required: [name, version, url, skills]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        url:
+          type: string
+          format: uri
+        protocolVersion:
+          type: string
+        capabilities:
+          type: object
+          properties:
+            streaming:
+              type: boolean
+        defaultInputModes:
+          type: array
+          items:
+            type: string
+        defaultOutputModes:
+          type: array
+          items:
+            type: string
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+
+    Skill:
+      type: object
+      required: [id, name, description]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    CustomMetadata:
+      type: object
+      required: [agent_name, version, input_schemas, output_schemas, consultation_requirements]
+      properties:
+        agent_name:
+          type: string
+        version:
+          type: string
+        input_schemas:
+          type: array
+          items:
+            $ref: '#/components/schemas/InputSchema'
+        output_schemas:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutputSchema'
+        consultation_requirements:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsultationRequirement'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CustomMetadataInput:
+      type: object
+      required: [input_schemas, output_schemas, consultation_requirements]
+      properties:
+        input_schemas:
+          type: array
+          items:
+            $ref: '#/components/schemas/InputSchema'
+        output_schemas:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutputSchema'
+        consultation_requirements:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsultationRequirement'
+
+    InputSchema:
+      type: object
+      required: [name, semantic_type, description, required]
+      properties:
+        name:
+          type: string
+        semantic_type:
+          type: string
+          enum: [document, artifact, collection, reference, comment]
+        description:
+          type: string
+        required:
+          type: boolean
+
+    OutputSchema:
+      type: object
+      required: [name, semantic_type, description, guaranteed]
+      properties:
+        name:
+          type: string
+        semantic_type:
+          type: string
+          enum: [document, artifact, collection, reference, comment]
+        description:
+          type: string
+        guaranteed:
+          type: boolean
+
+    ConsultationRequirement:
+      type: object
+      required: [id, target_agent, phase, mandatory]
+      properties:
+        id:
+          type: string
+        target_agent:
+          type: string
+        phase:
+          type: string
+          enum: [pre-execution, design-review, pre-completion, on-error]
+        mandatory:
+          type: boolean
+        condition:
+          $ref: '#/components/schemas/ConsultationCondition'
+
+    ConsultationCondition:
+      type: object
+      required: [attribute, operator, value]
+      properties:
+        attribute:
+          type: string
+        operator:
+          type: string
+          enum: [equals, contains, greater_than, exists]
+        value: {}
+
+    ConsultationRequirementsResponse:
+      type: object
+      required: [agent_name, requirements]
+      properties:
+        agent_name:
+          type: string
+        requirements:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsultationRequirement'
+
+    AgentStatus:
+      type: object
+      required: [agent_name, status, last_heartbeat]
+      properties:
+        agent_name:
+          type: string
+        status:
+          type: string
+          enum: [available, busy, unavailable, error]
+        current_task_id:
+          type: string
+        last_heartbeat:
+          type: string
+          format: date-time
+        error_message:
+          type: string
+
+    AgentStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [available, busy, unavailable, error]
+        current_task_id:
+          type: string
+        error_message:
+          type: string
+
+    CompatibilityCheckRequest:
+      type: object
+      required: [agent_name, task]
+      properties:
+        agent_name:
+          type: string
+        task:
+          $ref: '#/components/schemas/TaskRequirements'
+
+    TaskRequirements:
+      type: object
+      required: [required_skill]
+      properties:
+        required_skill:
+          type: string
+          description: Skill ID required for the task
+        available_inputs:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              semantic_type:
+                type: string
+          description: Inputs available for the task
+
+    CompatibilityCheckResponse:
+      type: object
+      required: [compatible, agent_name]
+      properties:
+        compatible:
+          type: boolean
+        agent_name:
+          type: string
+        reasons:
+          type: array
+          items:
+            type: string
+          description: Reasons for incompatibility (if not compatible)
+        required_consultations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsultationRequirement'
+          description: Consultations required if task assigned
+
+    FindAgentsRequest:
+      type: object
+      required: [required_skill]
+      properties:
+        required_skill:
+          type: string
+        available_inputs:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              semantic_type:
+                type: string
+        prefer_available:
+          type: boolean
+          default: true
+          description: Prefer agents with 'available' status
+
+    FindAgentsResponse:
+      type: object
+      required: [agents]
+      properties:
+        agents:
+          type: array
+          items:
+            type: object
+            properties:
+              agent_name:
+                type: string
+              compatibility_score:
+                type: number
+                minimum: 0
+                maximum: 1
+              status:
+                type: string
+              required_consultations:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsultationRequirement'
