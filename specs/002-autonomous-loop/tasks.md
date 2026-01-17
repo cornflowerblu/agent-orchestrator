@@ -181,8 +181,8 @@
 - [x] T079 [US4] Implement Policy client wrapper in src/orchestrator/policy.py
 - [x] T080 [US4] Implement PolicyEnforcer.create_iteration_policy() in src/orchestrator/policy.py
 - [x] T081 [US4] Implement PolicyEnforcer.check_iteration_allowed() in src/orchestrator/policy.py
-- [ ] T082 [US4] Implement PolicyEnforcer.update_policy() in src/orchestrator/policy.py
-- [ ] T083 [US4] Implement PolicyEnforcer.get_policy() in src/orchestrator/policy.py
+- [x] T082 [US4] Implement PolicyEnforcer.update_policy() in src/orchestrator/policy.py
+- [x] T083 [US4] Implement PolicyEnforcer.get_policy() in src/orchestrator/policy.py
 - [ ] T084 [US4] Create AlertManager class in src/orchestrator/alerts.py
 - [ ] T085 [US4] Implement AlertManager.send_warning() for 80% threshold in src/orchestrator/alerts.py
 - [ ] T086 [US4] Create ObservabilityMonitor class skeleton in src/orchestrator/monitor.py
@@ -194,7 +194,7 @@
 ### Unit Tests for User Story 4
 
 - [x] T091 [P] [US4] Write unit tests for PolicyConfig in tests/unit/test_orchestrator/test_models.py
-- [ ] T092 [P] [US4] Write unit tests for PolicyEnforcer in tests/unit/test_orchestrator/test_policy.py
+- [x] T092 [P] [US4] Write unit tests for PolicyEnforcer in tests/unit/test_orchestrator/test_policy.py
 - [ ] T093 [P] [US4] Write unit tests for AlertManager in tests/unit/test_orchestrator/test_alerts.py
 - [ ] T094 [US4] Write unit tests for ObservabilityMonitor in tests/unit/test_orchestrator/test_monitor.py
 - [ ] T095 [US4] Write integration test for Policy service in tests/integration/test_orchestrator/test_policy.py
@@ -229,7 +229,7 @@
 - [x] T108 [P] [US5] Write unit tests for ObservabilityQueries in tests/unit/test_dashboard/test_queries.py
 - [x] T109 [P] [US5] Write unit tests for LoopProgress model in tests/unit/test_dashboard/test_models.py
 - [x] T110 [US5] Write unit tests for API handlers in tests/unit/test_dashboard/test_handlers.py
-- [ ] T111 [US5] Write integration test for Observability API in tests/integration/test_dashboard/test_queries.py
+- [x] T111 [US5] Write integration test for Observability API in tests/integration/test_dashboard/test_queries.py
 
 **Checkpoint**: User Story 5 complete - dashboard can query progress via Observability
 
