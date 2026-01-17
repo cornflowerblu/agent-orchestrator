@@ -224,10 +224,17 @@ jobs:
 
       - name: Run integration tests
         run: |
-          pytest -v -m integration
+          pytest -v -m integration --cov=src --cov-report=xml --cov-report=term-missing
         env:
           AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
           AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: Upload integration test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-coverage
+          path: coverage.xml
+          retention-days: 30
 
   cdk-destroy:
     name: CDK Destroy (Cleanup)
