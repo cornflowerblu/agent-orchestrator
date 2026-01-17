@@ -143,3 +143,129 @@ class TestObservabilityQueriesIntegration:
         assert result["data"] is not None
         assert result["data"]["session_id"] == "loop-handler-789"
         assert result["data"]["current_iteration"] == 75
+
+    @patch("src.dashboard.queries.boto3")
+    def test_list_checkpoints_flow(self, mock_boto3):
+        """Test checkpoint listing from CloudWatch Logs."""
+        from src.dashboard.queries import ObservabilityQueries
+
+        # Setup mock CloudWatch Logs client with checkpoint data
+        mock_logs_client = Mock()
+        mock_logs_client.start_query.return_value = {"queryId": "checkpoint-query-123"}
+        mock_logs_client.get_query_results.return_value = {
+            "status": "Complete",
+            "results": [
+                [
+                    {"field": "@timestamp", "value": "2026-01-17T10:00:00Z"},
+                    {"field": "event_type", "value": "loop.checkpoint.saved"},
+                    {"field": "iteration", "value": "5"},
+                    {"field": "checkpoint_id", "value": "checkpoint-1"},
+                ],
+                [
+                    {"field": "@timestamp", "value": "2026-01-17T10:05:00Z"},
+                    {"field": "event_type", "value": "loop.checkpoint.saved"},
+                    {"field": "iteration", "value": "10"},
+                    {"field": "checkpoint_id", "value": "checkpoint-2"},
+                ],
+            ]
+        }
+
+        # Initialize queries and list checkpoints
+        queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
+        checkpoints = queries.list_checkpoints(session_id="loop-checkpoint-test")
+
+        # Verify checkpoints were retrieved
+        assert checkpoints is not None
+        assert isinstance(checkpoints, list)
+        assert len(checkpoints) == 2
+        assert checkpoints[0]["iteration"] == "5"
+        assert checkpoints[1]["iteration"] == "10"
+
+    @patch("src.dashboard.queries.boto3")
+    def test_get_exit_condition_history_flow(self, mock_boto3):
+        """Test exit condition history retrieval."""
+        from src.dashboard.queries import ObservabilityQueries
+
+        # Setup mock CloudWatch Logs client with exit condition data
+        mock_logs_client = Mock()
+        mock_logs_client.start_query.return_value = {"queryId": "exit-condition-query-456"}
+        mock_logs_client.get_query_results.return_value = {
+            "status": "Complete",
+            "results": [
+                [
+                    {"field": "@timestamp", "value": "2026-01-17T10:00:00Z"},
+                    {"field": "condition_type", "value": "all_tests_pass"},
+                    {"field": "status", "value": "not_met"},
+                    {"field": "iteration", "value": "1"},
+                ],
+                [
+                    {"field": "@timestamp", "value": "2026-01-17T10:05:00Z"},
+                    {"field": "condition_type", "value": "all_tests_pass"},
+                    {"field": "status", "value": "met"},
+                    {"field": "iteration", "value": "15"},
+                ],
+            ]
+        }
+
+        # Initialize queries and get history
+        queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
+        history = queries.get_exit_condition_history(session_id="loop-exit-condition-test")
+
+        # Verify history was retrieved
+        assert history is not None
+        assert isinstance(history, list)
+        assert len(history) == 2
+        assert history[0]["condition_type"] == "all_tests_pass"
+        assert history[0]["status"] == "not_met"
+        assert history[1]["status"] == "met"
+
+    @patch("src.dashboard.queries.boto3")
+    def test_stream_progress_yields_updates(self, mock_boto3):
+        """Test progress streaming with generator."""
+        from src.dashboard.queries import ObservabilityQueries
+
+        # Setup mock X-Ray client to return different progress on each call
+        mock_xray_client = Mock()
+        call_count = 0
+
+        def mock_get_trace_summaries(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return {
+                "TraceSummaries": [
+                    {
+                        "Id": f"trace-stream-{call_count}",
+                        "StartTime": datetime(2026, 1, 17, 10, 0, 0, tzinfo=UTC),
+                        "Annotations": {
+                            "session_id": [{"AnnotationValue": {"StringValue": "loop-stream-test"}}],
+                            "iteration.number": [{"AnnotationValue": {"NumberValue": call_count * 10}}],
+                            "iteration.max": [{"AnnotationValue": {"NumberValue": 100}}],
+                            "loop.agent_name": [{"AnnotationValue": {"StringValue": "stream-test-agent"}}],
+                            "loop.phase": [{"AnnotationValue": {"StringValue": "running"}}],
+                        }
+                    }
+                ]
+            }
+
+        mock_xray_client.get_trace_summaries.side_effect = mock_get_trace_summaries
+
+        # Initialize queries and stream progress
+        queries = ObservabilityQueries(region="us-east-1", xray_client=mock_xray_client)
+        progress_generator = queries.stream_progress(
+            session_id="loop-stream-test",
+            poll_interval=0.1,
+            max_duration=1  # 1 second max duration, will get ~3 updates at 0.1s intervals
+        )
+
+        # Collect streamed progress updates (limit to 3 for test)
+        progress_updates = []
+        for i, progress in enumerate(progress_generator):
+            progress_updates.append(progress)
+            if i >= 2:  # Stop after 3 updates
+                break
+
+        # Verify streaming behavior
+        assert len(progress_updates) == 3
+        assert progress_updates[0].current_iteration == 10
+        assert progress_updates[1].current_iteration == 20
+        assert progress_updates[2].current_iteration == 30
