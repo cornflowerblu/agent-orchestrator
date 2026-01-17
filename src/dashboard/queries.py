@@ -354,3 +354,54 @@ class ObservabilityQueries:
 
         except Exception as e:
             return []
+
+    def stream_progress(
+        self,
+        session_id: str,
+        poll_interval: float = 2.0,
+        max_duration: int = 300,
+    ):
+        """Stream loop progress updates via polling.
+
+        Maps to T103: Implement streaming/subscription logic.
+
+        This is a basic implementation that polls get_loop_progress() at
+        intervals and yields updates as they occur.
+
+        Args:
+            session_id: Loop session ID to monitor
+            poll_interval: Seconds between polls (default 2.0)
+            max_duration: Maximum duration in seconds to stream (default 300)
+
+        Yields:
+            LoopProgress updates as they occur
+
+        Example:
+            for progress in queries.stream_progress("loop-session-123"):
+                print(f"Iteration {progress.current_iteration}/{progress.max_iterations}")
+                if progress.phase == "completed":
+                    break
+        """
+        import time
+
+        start_time = time.time()
+        last_iteration = -1
+
+        while (time.time() - start_time) < max_duration:
+            progress = self.get_loop_progress(session_id)
+
+            if progress is None:
+                # No progress yet, wait and retry
+                time.sleep(poll_interval)
+                continue
+
+            # Only yield if we have new progress
+            if progress.current_iteration != last_iteration:
+                last_iteration = progress.current_iteration
+                yield progress
+
+            # Stop if loop is complete
+            if progress.phase in ["completed", "error"]:
+                break
+
+            time.sleep(poll_interval)
