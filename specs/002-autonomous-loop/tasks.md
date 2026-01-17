@@ -19,9 +19,9 @@
 
 **Purpose**: Create new module directories and extend existing structure
 
-- [x] T001 Create src/loop/ directory structure with __init__.py
-- [x] T002 [P] Create src/orchestrator/ directory structure with __init__.py
-- [x] T003 [P] Create src/dashboard/ directory structure with __init__.py
+- [x] T001 Create src/loop/ directory structure with **init**.py
+- [x] T002 [P] Create src/orchestrator/ directory structure with **init**.py
+- [x] T003 [P] Create src/dashboard/ directory structure with **init**.py
 - [x] T004 [P] Create tests/unit/test_loop/ directory structure
 - [x] T005 [P] Create tests/integration/test_loop/ directory structure
 - [x] T006 Add loop framework dependencies to pyproject.toml (opentelemetry-api, opentelemetry-sdk)
@@ -85,7 +85,7 @@
 - [x] T031 [US1] Implement iteration execution with work_function callback in src/loop/framework.py
 - [x] T032 [US1] Implement loop termination logic (conditions met, iteration limit) in src/loop/framework.py
 - [x] T033 [US1] Implement re-entry prevention (is_active flag) in src/loop/framework.py
-- [x] T034 [US1] Add OTEL tracer setup in LoopFramework.__init__ in src/loop/framework.py
+- [x] T034 [US1] Add OTEL tracer setup in LoopFramework.**init** in src/loop/framework.py
 - [x] T035 [US1] Implement LoopFramework.emit_event() for Observability in src/loop/framework.py
 
 ### Unit Tests for User Story 1
@@ -239,17 +239,17 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T112 [P] Add type hints and docstrings to all public APIs in src/loop/
-- [ ] T113 [P] Add type hints and docstrings to all public APIs in src/orchestrator/
-- [ ] T114 [P] Add type hints and docstrings to all public APIs in src/dashboard/
-- [ ] T115 [P] Create src/loop/__init__.py with public exports
-- [ ] T116 [P] Create src/orchestrator/__init__.py with public exports
-- [ ] T117 [P] Create src/dashboard/__init__.py with public exports
-- [ ] T118 Run ruff format on all new files
-- [ ] T119 Run ruff check and fix any linting issues
-- [ ] T120 Validate quickstart.md examples work with implementation
-- [ ] T121 Run full test suite and ensure 80% coverage on new code
-- [ ] T122 Create infrastructure/cdk/stacks/loop_stack.py for Cedar policies
+- [x] T112 [P] Add type hints and docstrings to all public APIs in src/loop/
+- [x] T113 [P] Add type hints and docstrings to all public APIs in src/orchestrator/
+- [x] T114 [P] Add type hints and docstrings to all public APIs in src/dashboard/
+- [x] T115 [P] Create src/loop/**init**.py with public exports
+- [x] T116 [P] Create src/orchestrator/**init**.py with public exports
+- [x] T117 [P] Create src/dashboard/**init**.py with public exports
+- [x] T118 Run ruff format on all new files
+- [x] T119 Run ruff check and fix any linting issues
+- [x] T120 Validate quickstart.md examples work with implementation
+- [x] T121 Run full test suite and ensure 80% coverage on new code
+- [x] T122 Create infrastructure/cdk/stacks/loop_stack.py for Cedar policies
 
 ---
 
@@ -285,28 +285,31 @@ Phase 5     Phase 6   ← US2 and US4 can run in PARALLEL (both P2)
 
 ### User Story Dependencies
 
-| Story | Priority | Depends On | Can Parallel With |
-|-------|----------|------------|-------------------|
-| US1 | P1 | Foundational only | US3 |
-| US3 | P1 | Foundational only | US1 |
-| US2 | P2 | US1 (LoopState) | US4 |
-| US4 | P2 | US1 (LoopFramework) | US2 |
-| US5 | P3 | US1, US2, US4 (needs data) | None |
+| Story | Priority | Depends On                 | Can Parallel With |
+| ----- | -------- | -------------------------- | ----------------- |
+| US1   | P1       | Foundational only          | US3               |
+| US3   | P1       | Foundational only          | US1               |
+| US2   | P2       | US1 (LoopState)            | US4               |
+| US4   | P2       | US1 (LoopFramework)        | US2               |
+| US5   | P3       | US1, US2, US4 (needs data) | None              |
 
 ### Parallel Execution Opportunities
 
 **Phase 1 Setup**: T002, T003, T004, T005 (different directories)
 
 **Phase 2 Foundational**:
+
 - T007-T011 (all enums, different definitions)
 - T012-T016 (models, after enums)
 - T017-T020 (exceptions, independent)
 - T021-T023 (tests, after models)
 
 **After Foundational**:
+
 - US1 + US3 in parallel (both P1, different modules)
 
 **After US1+US3**:
+
 - US2 + US4 in parallel (both P2, different modules)
 
 ---
@@ -361,17 +364,17 @@ With 2-3 developers:
 
 ## Task Summary
 
-| Phase | Story | Task Count | Parallel Tasks |
-|-------|-------|------------|----------------|
-| 1 | Setup | 6 | 4 |
-| 2 | Foundational | 17 | 14 |
-| 3 | US1 | 17 | 2 |
-| 4 | US3 | 18 | 3 |
-| 5 | US2 | 17 | 2 |
-| 6 | US4 | 20 | 3 |
-| 7 | US5 | 16 | 2 |
-| 8 | Polish | 11 | 6 |
-| **Total** | | **122** | **36** |
+| Phase     | Story        | Task Count | Parallel Tasks |
+| --------- | ------------ | ---------- | -------------- |
+| 1         | Setup        | 6          | 4              |
+| 2         | Foundational | 17         | 14             |
+| 3         | US1          | 17         | 2              |
+| 4         | US3          | 18         | 3              |
+| 5         | US2          | 17         | 2              |
+| 6         | US4          | 20         | 3              |
+| 7         | US5          | 16         | 2              |
+| 8         | Polish       | 11         | 6              |
+| **Total** |              | **122**    | **36**         |
 
 ---
 
