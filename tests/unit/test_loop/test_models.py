@@ -22,6 +22,7 @@ from src.loop.models import (
     LoopOutcome,
     LoopPhase,
     LoopResult,
+    LoopState,
 )
 
 # =============================================================================
@@ -724,3 +725,275 @@ class TestLoopResult:
         assert summary["error"] == 1
         assert summary["pending"] == 0
         assert summary["skipped"] == 0
+
+
+# =============================================================================
+# T036: LoopState Model Tests
+# =============================================================================
+
+
+class TestLoopState:
+    """Tests for LoopState model (T024)."""
+
+    def test_create_minimal_loop_state(self) -> None:
+        """Test creating LoopState with minimal required fields."""
+        state = LoopState(
+            session_id="test-session-123",
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+
+        assert state.session_id == "test-session-123"
+        assert state.agent_name == "test-agent"
+        assert state.current_iteration == 0
+        assert state.max_iterations == 100
+        assert state.phase == LoopPhase.INITIALIZING
+        assert state.is_active is False
+        assert state.exit_conditions == []
+        assert state.agent_state == {}
+
+    def test_loop_state_defaults(self) -> None:
+        """Test LoopState default values."""
+        state = LoopState(
+            session_id="test-session",
+            agent_name="agent",
+            max_iterations=50,
+        )
+
+        assert state.current_iteration == 0
+        assert state.phase == LoopPhase.INITIALIZING
+        assert state.last_iteration_at is None
+        assert state.last_checkpoint_at is None
+        assert state.last_checkpoint_iteration is None
+        assert state.is_active is False
+        assert isinstance(state.started_at, str)  # ISO timestamp
+        assert state.exit_conditions == []
+        assert state.agent_state == {}
+
+    def test_loop_state_with_exit_conditions(self) -> None:
+        """Test LoopState with exit conditions."""
+        conditions = [
+            ExitConditionStatus(
+                type=ExitConditionType.ALL_TESTS_PASS,
+                status=ExitConditionStatusValue.PENDING,
+            ),
+            ExitConditionStatus(
+                type=ExitConditionType.LINTING_CLEAN,
+                status=ExitConditionStatusValue.PENDING,
+            ),
+        ]
+
+        state = LoopState(
+            session_id="test-session",
+            agent_name="agent",
+            max_iterations=100,
+            exit_conditions=conditions,
+        )
+
+        assert len(state.exit_conditions) == 2
+        assert state.exit_conditions[0].type == ExitConditionType.ALL_TESTS_PASS
+        assert state.exit_conditions[1].type == ExitConditionType.LINTING_CLEAN
+
+    def test_all_conditions_met_with_no_conditions(self) -> None:
+        """Test all_conditions_met returns False when no conditions."""
+        state = LoopState(
+            session_id="test-session",
+            agent_name="agent",
+            max_iterations=100,
+            exit_conditions=[],
+        )
+
+        assert state.all_conditions_met() is False
+
+    def test_all_conditions_met_with_pending_conditions(self) -> None:
+        """Test all_conditions_met returns False when conditions pending."""
+        state = LoopState(
+            session_id="test-session",
+            agent_name="agent",
+            max_iterations=100,
+            exit_conditions=[
+                ExitConditionStatus(
+                    type=ExitConditionType.ALL_TESTS_PASS,
+                    status=ExitConditionStatusValue.PENDING,
+                ),
+            ],
+        )
+
+        assert state.all_conditions_met() is False
+
+    def test_all_conditions_met_with_some_met(self) -> None:
+        """Test all_conditions_met returns False when only some conditions met."""
+        state = LoopState(
+            session_id="test-session",
+            agent_name="agent",
+            max_iterations=100,
+            exit_conditions=[
+                ExitConditionStatus(
+                    type=ExitConditionType.ALL_TESTS_PASS,
+                    status=ExitConditionStatusValue.MET,
+                ),
+                ExitConditionStatus(
+                    type=ExitConditionType.LINTING_CLEAN,
+                    status=ExitConditionStatusValue.PENDING,
+                ),
+            ],
+        )
+
+        assert state.all_conditions_met() is False
+
+    def test_all_conditions_met_with_all_met(self) -> None:
+        """Test all_conditions_met returns True when all conditions met."""
+        state = LoopState(
+            session_id="test-session",
+            agent_name="agent",
+            max_iterations=100,
+            exit_conditions=[
+                ExitConditionStatus(
+                    type=ExitConditionType.ALL_TESTS_PASS,
+                    status=ExitConditionStatusValue.MET,
+                ),
+                ExitConditionStatus(
+                    type=ExitConditionType.LINTING_CLEAN,
+                    status=ExitConditionStatusValue.MET,
+                ),
+            ],
+        )
+
+        assert state.all_conditions_met() is True
+
+    def test_progress_percentage(self) -> None:
+        """Test progress_percentage calculation."""
+        state = LoopState(
+            session_id="test-session",
+            agent_name="agent",
+            max_iterations=100,
+            current_iteration=25,
+        )
+
+        assert state.progress_percentage() == 25.0
+
+        state.current_iteration = 50
+        assert state.progress_percentage() == 50.0
+
+        state.current_iteration = 100
+        assert state.progress_percentage() == 100.0
+
+    def test_progress_percentage_zero_iterations(self) -> None:
+        """Test progress_percentage when current_iteration is 0."""
+        state = LoopState(
+            session_id="test-session",
+            agent_name="agent",
+            max_iterations=100,
+            current_iteration=0,
+        )
+
+        assert state.progress_percentage() == 0.0
+
+    def test_at_warning_threshold_default(self) -> None:
+        """Test at_warning_threshold with default 80% threshold."""
+        state = LoopState(
+            session_id="test-session",
+            agent_name="agent",
+            max_iterations=100,
+            current_iteration=79,
+        )
+
+        assert state.at_warning_threshold() is False
+
+        state.current_iteration = 80
+        assert state.at_warning_threshold() is True
+
+        state.current_iteration = 90
+        assert state.at_warning_threshold() is True
+
+    def test_at_warning_threshold_custom(self) -> None:
+        """Test at_warning_threshold with custom threshold."""
+        state = LoopState(
+            session_id="test-session",
+            agent_name="agent",
+            max_iterations=100,
+            current_iteration=60,
+        )
+
+        assert state.at_warning_threshold(threshold=0.5) is True
+        assert state.at_warning_threshold(threshold=0.7) is False
+
+        state.current_iteration = 70
+        assert state.at_warning_threshold(threshold=0.7) is True
+
+    def test_loop_state_serialization(self) -> None:
+        """Test LoopState can be serialized to dict/JSON."""
+        state = LoopState(
+            session_id="test-session",
+            agent_name="agent",
+            max_iterations=100,
+            current_iteration=10,
+            phase=LoopPhase.RUNNING,
+            is_active=True,
+            agent_state={"key": "value"},
+        )
+
+        data = state.model_dump()
+
+        assert data["session_id"] == "test-session"
+        assert data["agent_name"] == "agent"
+        assert data["max_iterations"] == 100
+        assert data["current_iteration"] == 10
+        assert data["phase"] == "running"
+        assert data["is_active"] is True
+        assert data["agent_state"] == {"key": "value"}
+
+    def test_loop_state_deserialization(self) -> None:
+        """Test LoopState can be created from dict."""
+        data = {
+            "session_id": "test-session",
+            "agent_name": "agent",
+            "max_iterations": 100,
+            "current_iteration": 10,
+            "phase": "running",
+            "is_active": True,
+            "started_at": "2026-01-17T10:00:00Z",
+            "agent_state": {"key": "value"},
+            "exit_conditions": [],
+        }
+
+        state = LoopState(**data)
+
+        assert state.session_id == "test-session"
+        assert state.current_iteration == 10
+        assert state.phase == LoopPhase.RUNNING
+        assert state.is_active is True
+
+    def test_loop_state_validation_negative_iteration(self) -> None:
+        """Test LoopState validation rejects negative current_iteration."""
+        with pytest.raises(ValidationError) as exc_info:
+            LoopState(
+                session_id="test-session",
+                agent_name="agent",
+                max_iterations=100,
+                current_iteration=-1,
+            )
+
+        assert "current_iteration" in str(exc_info.value)
+
+    def test_loop_state_validation_zero_max_iterations(self) -> None:
+        """Test LoopState validation rejects zero max_iterations."""
+        with pytest.raises(ValidationError) as exc_info:
+            LoopState(
+                session_id="test-session",
+                agent_name="agent",
+                max_iterations=0,
+            )
+
+        assert "max_iterations" in str(exc_info.value)
+
+    def test_loop_state_validation_negative_max_iterations(self) -> None:
+        """Test LoopState validation rejects negative max_iterations."""
+        with pytest.raises(ValidationError) as exc_info:
+            LoopState(
+                session_id="test-session",
+                agent_name="agent",
+                max_iterations=-10,
+            )
+
+        assert "max_iterations" in str(exc_info.value)

@@ -663,3 +663,120 @@ class LoopResult(BaseModel):
         for condition in self.final_exit_conditions:
             summary[condition.status.value] += 1
         return summary
+
+
+# =============================================================================
+# T024: LoopState
+# =============================================================================
+
+
+class LoopState(BaseModel):
+    """Current state of loop execution.
+
+    Internal model managed by LoopFramework. Serialized into Checkpoint.
+
+    Maps to FR-006: Checkpoint MUST include iteration number, state, timestamp.
+    Maps to FR-013: Prevent re-entry during active execution.
+
+    Example:
+        state = LoopState(
+            session_id="loop-session-123",
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+        state.current_iteration = 5
+        state.phase = LoopPhase.RUNNING
+    """
+
+    session_id: str = Field(
+        ...,
+        description="Unique identifier for this loop session",
+    )
+
+    agent_name: str = Field(
+        ...,
+        description="Name of the executing agent",
+    )
+
+    current_iteration: int = Field(
+        default=0,
+        description="Current iteration number (0-indexed)",
+        ge=0,
+    )
+
+    max_iterations: int = Field(
+        ...,
+        description="Maximum iterations allowed by Policy",
+        ge=1,
+    )
+
+    phase: LoopPhase = Field(
+        default=LoopPhase.INITIALIZING,
+        description="Current execution phase",
+    )
+
+    started_at: str = Field(
+        default_factory=lambda: datetime.now(UTC).isoformat(),
+        description="ISO timestamp when loop started (FR-014)",
+    )
+
+    last_iteration_at: str | None = Field(
+        default=None,
+        description="ISO timestamp of last completed iteration",
+    )
+
+    last_checkpoint_at: str | None = Field(
+        default=None,
+        description="ISO timestamp of last checkpoint save",
+    )
+
+    last_checkpoint_iteration: int | None = Field(
+        default=None,
+        description="Iteration number of last checkpoint",
+    )
+
+    exit_conditions: list[ExitConditionStatus] = Field(
+        default_factory=list,
+        description="Current status of each exit condition",
+    )
+
+    is_active: bool = Field(
+        default=False,
+        description="True if loop is currently executing (prevents re-entry)",
+    )
+
+    agent_state: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Agent-specific state data",
+    )
+
+    def all_conditions_met(self) -> bool:
+        """Check if all exit conditions are met.
+
+        Maps to FR-007: Agent MUST terminate when all conditions met.
+
+        Returns:
+            True if all exit conditions are MET, False otherwise
+        """
+        if not self.exit_conditions:
+            return False
+        return all(c.status == ExitConditionStatusValue.MET for c in self.exit_conditions)
+
+    def progress_percentage(self) -> float:
+        """Calculate progress as percentage of max iterations.
+
+        Returns:
+            Progress percentage (0-100)
+        """
+        return (self.current_iteration / self.max_iterations) * 100
+
+    def at_warning_threshold(self, threshold: float = 0.8) -> bool:
+        """Check if approaching iteration limit (SC-008: 80% threshold).
+
+        Args:
+            threshold: Warning threshold as fraction (default 0.8 = 80%)
+
+        Returns:
+            True if progress >= threshold percentage
+        """
+        return self.progress_percentage() >= (threshold * 100)

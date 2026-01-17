@@ -75,7 +75,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T024 [US1] Create LoopState model in src/loop/models.py with state tracking methods
+- [x] T024 [US1] Create LoopState model in src/loop/models.py with state tracking methods
 - [ ] T025 [US1] Create LoopFramework class skeleton in src/loop/framework.py
 - [ ] T026 [US1] Implement LoopFramework.initialize() async method in src/loop/framework.py
 - [ ] T027 [US1] Implement LoopFramework.initialize_sync() method in src/loop/framework.py
@@ -90,7 +90,7 @@
 
 ### Unit Tests for User Story 1
 
-- [ ] T036 [P] [US1] Write unit tests for LoopState model in tests/unit/test_loop/test_models.py
+- [x] T036 [P] [US1] Write unit tests for LoopState model in tests/unit/test_loop/test_models.py
 - [ ] T037 [P] [US1] Write unit tests for LoopFramework initialization in tests/unit/test_loop/test_framework.py
 - [ ] T038 [US1] Write unit tests for LoopFramework.run() in tests/unit/test_loop/test_framework.py
 - [ ] T039 [US1] Write unit tests for loop termination conditions in tests/unit/test_loop/test_framework.py
