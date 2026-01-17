@@ -24,6 +24,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExport
 
 from src.exceptions import CheckpointRecoveryError, LoopFrameworkError, PolicyViolationError
 from src.loop.checkpoint import CheckpointManager
+from src.loop.conditions import ExitConditionEvaluator
 from src.orchestrator.models import PolicyConfig
 from src.orchestrator.policy import PolicyEnforcer
 from src.loop.models import (
@@ -58,7 +59,15 @@ class LoopFramework:
         tracer: OTEL tracer for observability
     """
 
-    def __init__(self, config: LoopConfig, state: LoopState, tracer: trace.Tracer) -> None:
+    def __init__(
+        self,
+        config: LoopConfig,
+        state: LoopState,
+        tracer: trace.Tracer,
+        checkpoint_manager: CheckpointManager | None = None,
+        policy_enforcer: PolicyEnforcer | None = None,
+        evaluator: ExitConditionEvaluator | None = None,
+    ) -> None:
         """Initialize LoopFramework (internal constructor).
 
         Use LoopFramework.initialize() or initialize_sync() instead.
@@ -67,18 +76,24 @@ class LoopFramework:
             config: Loop configuration
             state: Initial loop state
             tracer: OTEL tracer instance
+            checkpoint_manager: Optional checkpoint manager instance
+            policy_enforcer: Optional policy enforcer instance
+            evaluator: Optional exit condition evaluator instance
         """
         self.config = config
         self.state = state
         self.tracer = tracer
-        self.checkpoint_manager = CheckpointManager(
+
+        # T052: Initialize or use provided checkpoint manager
+        self.checkpoint_manager = checkpoint_manager or CheckpointManager(
             session_id=state.session_id,
             region=config.region,
         )
 
         # T089: Initialize PolicyEnforcer if policy engine is configured
-        self.policy_enforcer: PolicyEnforcer | None = None
-        if config.policy_engine_arn:
+        if policy_enforcer is not None:
+            self.policy_enforcer = policy_enforcer
+        elif config.policy_engine_arn:
             policy_config = PolicyConfig(
                 agent_name=config.agent_name,
                 max_iterations=config.max_iterations,
@@ -88,6 +103,11 @@ class LoopFramework:
                 config=policy_config,
                 region=config.region,
             )
+        else:
+            self.policy_enforcer = None
+
+        # T052: Initialize or use provided exit condition evaluator
+        self.evaluator = evaluator or ExitConditionEvaluator(region=config.region)
 
     @classmethod
     async def initialize(cls, config: LoopConfig) -> "LoopFramework":
@@ -524,3 +544,55 @@ class LoopFramework:
             loop_state = await framework.load_checkpoint(iteration=10)
         """
         return self.checkpoint_manager.load_checkpoint(iteration=iteration)
+
+    async def evaluate_all_conditions(self) -> bool:
+        """Evaluate all exit conditions and update state.
+
+        Maps to T053: Implement LoopFramework.evaluate_all_conditions().
+
+        This method:
+        1. Iterates through all configured exit conditions
+        2. Evaluates each condition using the ExitConditionEvaluator
+        3. Updates self.state.exit_conditions with the results
+        4. Emits OTEL events for each evaluation
+        5. Returns True if all conditions are met, False otherwise
+
+        Returns:
+            True if all conditions met, False otherwise
+
+        Example:
+            if await framework.evaluate_all_conditions():
+                print("All exit conditions met!")
+        """
+        if not self.config.exit_conditions:
+            return False
+
+        all_met = True
+        for i, condition_config in enumerate(self.config.exit_conditions):
+            # Evaluate the condition
+            status = self.evaluator.evaluate(
+                condition_config,
+                iteration=self.state.current_iteration
+            )
+
+            # Update state - find matching condition by type and update it
+            for j, existing_status in enumerate(self.state.exit_conditions):
+                if existing_status.type == condition_config.type:
+                    self.state.exit_conditions[j] = status
+                    break
+
+            # Emit event for this evaluation
+            await self.emit_event(
+                event_type=IterationEventType.EXIT_CONDITION_EVALUATED,
+                details={
+                    "condition": condition_config.type.value,
+                    "status": status.status.value,
+                    "message": status.message,
+                },
+            )
+
+            # Check if this condition is met
+            if status.status != ExitConditionStatusValue.MET:
+                all_met = False
+
+        return all_met
