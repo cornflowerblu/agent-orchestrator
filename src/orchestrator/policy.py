@@ -14,6 +14,8 @@ Maps to FR-007: Policy uses Cedar syntax to enforce iteration limits.
 Maps to FR-008: Agent MUST terminate when iteration limit reached.
 """
 
+from __future__ import annotations
+
 import logging
 import re
 from typing import Any
