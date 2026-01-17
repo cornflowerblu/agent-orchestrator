@@ -47,5 +47,40 @@ class PolicyEnforcer:
         self.config = config
         self.region = region
 
-        # Initialize Policy client (T079 will implement the actual client)
-        self.policy_client: Any = None  # Placeholder for now
+        # Initialize Policy client
+        if PolicyClient is not None:
+            self.policy_client = PolicyClient(region_name=region)
+        else:
+            self.policy_client = None  # For testing when SDK is not available
+
+        # Cache for policy engine and policy ARNs
+        self._policy_engine_cache: dict[str, Any] = {}
+        self._policy_cache: dict[str, Any] = {}
+
+    def _get_or_create_policy_engine(self) -> dict[str, Any]:
+        """Get or create a Cedar policy engine.
+
+        Returns:
+            Dictionary with policyEngineId and policyEngineArn
+
+        Example response:
+            {
+                "policyEngineId": "engine-123",
+                "policyEngineArn": "arn:aws:bedrock-agentcore:us-east-1:123456789:policy-engine/engine-123"
+            }
+        """
+        engine_name = self.config.policy_engine_name
+
+        # Check cache
+        if engine_name in self._policy_engine_cache:
+            return self._policy_engine_cache[engine_name]
+
+        # Create or get policy engine using AgentCore Policy service
+        result = self.policy_client.create_or_get_policy_engine(
+            name=engine_name,
+            description=f"Enforces iteration limits for {self.config.agent_name}",
+        )
+
+        # Cache the result
+        self._policy_engine_cache[engine_name] = result
+        return result

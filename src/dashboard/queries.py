@@ -115,3 +115,88 @@ class ObservabilityQueries:
             # Log error but don't crash - return None to indicate no data available
             # In production, this would use proper logging
             return None
+
+    def get_recent_events(
+        self,
+        session_id: str,
+        limit: int = 50,
+        time_range_minutes: int = 60,
+        log_group_name: str = "/aws/bedrock/agent-loops",
+    ) -> list[dict[str, Any]]:
+        """Query CloudWatch Logs for recent loop events by session ID.
+
+        Uses CloudWatch Logs Insights to query for loop events like
+        iteration started/completed, checkpoint saved, exit condition evaluated.
+
+        Args:
+            session_id: Loop session ID to query
+            limit: Maximum number of events to return (default 50)
+            time_range_minutes: How far back to search (default 60)
+            log_group_name: CloudWatch Log Group name (default /aws/bedrock/agent-loops)
+
+        Returns:
+            List of event dictionaries with timestamp, event_type, iteration, etc.
+
+        Example:
+            events = queries.get_recent_events("loop-session-123", limit=20)
+            for event in events:
+                print(f"{event['timestamp']}: {event['event_type']}")
+        """
+        # Calculate time range for query
+        end_time = datetime.now(UTC)
+        start_time = end_time - timedelta(minutes=time_range_minutes)
+
+        # CloudWatch Logs Insights query
+        query_string = f"""
+            fields @timestamp, event_type, iteration, session_id, phase, details
+            | filter session_id = "{session_id}"
+            | sort @timestamp desc
+            | limit {limit}
+        """
+
+        try:
+            # Start the query
+            start_response = self.logs_client.start_query(
+                logGroupName=log_group_name,
+                startTime=int(start_time.timestamp()),
+                endTime=int(end_time.timestamp()),
+                queryString=query_string.strip(),
+            )
+
+            query_id = start_response["queryId"]
+
+            # Poll for query results (simple implementation - waits for completion)
+            # In production, this should use exponential backoff or async polling
+            import time
+            max_attempts = 10
+            for attempt in range(max_attempts):
+                results_response = self.logs_client.get_query_results(queryId=query_id)
+
+                if results_response["status"] == "Complete":
+                    # Convert results to list of event dictionaries
+                    events = []
+                    for result in results_response.get("results", []):
+                        # Each result is a list of field/value pairs
+                        event = {}
+                        for field_data in result:
+                            field_name = field_data.get("field", "")
+                            field_value = field_data.get("value", "")
+                            # Remove @ prefix from CloudWatch field names
+                            clean_field_name = field_name.lstrip("@")
+                            event[clean_field_name] = field_value
+                        events.append(event)
+
+                    return events
+
+                if results_response["status"] == "Failed":
+                    return []
+
+                # Wait before polling again
+                time.sleep(0.5)
+
+            # Query timed out
+            return []
+
+        except Exception as e:
+            # Log error but don't crash - return empty list
+            return []
