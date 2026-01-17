@@ -39,9 +39,14 @@ class ConsultationRequiredError(AgentFrameworkError):
 class DuplicateAgentError(AgentFrameworkError):
     """Raised when attempting to deploy an agent with a duplicate name."""
 
-    def __init__(self, agent_name: str):
+    def __init__(self, agent_name: str, existing_version: str | None = None):
         self.agent_name = agent_name
-        super().__init__(f"Agent '{agent_name}' already exists")
+        self.existing_version = existing_version
+        if existing_version:
+            msg = f"Agent '{agent_name}' already deployed (version {existing_version})"
+        else:
+            msg = f"Agent '{agent_name}' already exists"
+        super().__init__(msg)
 
 
 class ToolUnavailableError(AgentFrameworkError):

@@ -1,13 +1,14 @@
 """Base agent class with AgentCore Runtime integration."""
 
 import json
+import re
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from bedrock_agentcore import BedrockAgentCoreApp
 
 from src.agents.models import AgentCard
-from src.exceptions import DuplicateAgentError
+from src.exceptions import DuplicateAgentError, ValidationError
 from src.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -25,7 +26,7 @@ class BaseAgent:
     """
 
     # Class-level registry to track deployed agents
-    _deployed_agents: dict[str, "BaseAgent"] = {}
+    _deployed_agents: ClassVar[dict[str, "BaseAgent"]] = {}
 
     def __init__(self, agent_card: AgentCard):
         """
@@ -44,10 +45,7 @@ class BaseAgent:
 
         # Check for duplicate names
         if self.name in self._deployed_agents:
-            existing_version = self._deployed_agents[self.name].version
-            raise DuplicateAgentError(
-                f"Agent '{self.name}' already deployed (version {existing_version})"
-            )
+            raise DuplicateAgentError(self.name, self._deployed_agents[self.name].version)
 
         # Register this agent
         self._deployed_agents[self.name] = self
@@ -75,7 +73,7 @@ class BaseAgent:
 
         logger.info(f"Loading Agent Card from {manifest_path}")
 
-        with open(manifest_path) as f:
+        with manifest_path.open() as f:
             card_data = json.load(f)
 
         # Pydantic will validate the structure
@@ -103,14 +101,8 @@ class BaseAgent:
             ValidationError: If version format is invalid
         """
         # Validate version format
-        import re
-
         if not re.match(r"^\d+\.\d+\.\d+$", new_version):
-            from src.exceptions import ValidationError
-
-            raise ValidationError(
-                f"Invalid version format: {new_version}. Must be X.Y.Z (e.g., 1.0.0)"
-            )
+            raise ValidationError(f"Invalid version: {new_version}")
 
         old_version = self.version
         self.version = new_version
@@ -164,8 +156,6 @@ def create_agent_runtime(agent: BaseAgent) -> BedrockAgentCoreApp:
     app = BedrockAgentCoreApp()
 
     # Agent Card will be served at /.well-known/agent-card.json by AgentCore
-    logger.info(
-        f"Created AgentCore Runtime for agent '{agent.name}' version {agent.version}"
-    )
+    logger.info(f"Created AgentCore Runtime for agent '{agent.name}' version {agent.version}")
 
     return app
