@@ -1,0 +1,223 @@
+name: Setup AWS OIDC
+
+on:
+  workflow_dispatch:
+    inputs:
+      aws_account_id:
+        description: 'AWS Account ID'
+        required: true
+        type: string
+      aws_region:
+        description: 'AWS Region'
+        required: false
+        default: 'us-east-1'
+        type: string
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  setup-oidc:
+    name: Setup OIDC Provider and IAM Role
+    runs-on: ubuntu-latest
+    # This job requires existing AWS credentials (e.g., from repository secrets)
+    # to bootstrap the OIDC setup
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (bootstrap)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install boto3
+        run: pip install boto3
+
+      - name: Create OIDC Provider and IAM Role
+        env:
+          AWS_ACCOUNT_ID: ${{ inputs.aws_account_id }}
+          AWS_REGION_INPUT: ${{ inputs.aws_region }}
+          GITHUB_REPO: ${{ github.repository }}
+        run: |
+          python << 'EOF'
+          import boto3
+          import json
+          import os
+
+          account_id = os.environ["AWS_ACCOUNT_ID"]
+          region = os.environ["AWS_REGION_INPUT"]
+          repo = os.environ["GITHUB_REPO"]
+
+          iam = boto3.client('iam')
+
+          # GitHub OIDC provider URL
+          oidc_url = "https://token.actions.githubusercontent.com"
+          oidc_arn = f"arn:aws:iam::{account_id}:oidc-provider/token.actions.githubusercontent.com"
+
+          # Check if OIDC provider exists
+          try:
+              iam.get_open_id_connect_provider(OpenIDConnectProviderArn=oidc_arn)
+              print(f"OIDC provider already exists: {oidc_arn}")
+          except iam.exceptions.NoSuchEntityException:
+              print("Creating OIDC provider...")
+              response = iam.create_open_id_connect_provider(
+                  Url=oidc_url,
+                  ClientIDList=["sts.amazonaws.com"],
+                  ThumbprintList=["6938fd4d98bab03faadb97b34396831e3780aea1"],
+                  Tags=[
+                      {"Key": "Purpose", "Value": "GitHub-Actions-OIDC"},
+                      {"Key": "ManagedBy", "Value": "GitHub-Actions"},
+                  ]
+              )
+              print(f"Created OIDC provider: {response['OpenIDConnectProviderArn']}")
+
+          # Define IAM role trust policy
+          trust_policy = {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Principal": {
+                          "Federated": oidc_arn
+                      },
+                      "Action": "sts:AssumeRoleWithWebIdentity",
+                      "Condition": {
+                          "StringEquals": {
+                              "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+                          },
+                          "StringLike": {
+                              "token.actions.githubusercontent.com:sub": f"repo:{repo}:*"
+                          }
+                      }
+                  }
+              ]
+          }
+
+          # Define IAM role permissions policy
+          permissions_policy = {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Sid": "CloudFormationAccess",
+                      "Effect": "Allow",
+                      "Action": ["cloudformation:*"],
+                      "Resource": "*"
+                  },
+                  {
+                      "Sid": "DynamoDBAccess",
+                      "Effect": "Allow",
+                      "Action": ["dynamodb:*"],
+                      "Resource": [
+                          f"arn:aws:dynamodb:{region}:{account_id}:table/AgentMetadata*",
+                          f"arn:aws:dynamodb:{region}:{account_id}:table/AgentStatus*"
+                      ]
+                  },
+                  {
+                      "Sid": "LambdaAccess",
+                      "Effect": "Allow",
+                      "Action": ["lambda:*"],
+                      "Resource": f"arn:aws:lambda:{region}:{account_id}:function:*"
+                  },
+                  {
+                      "Sid": "APIGatewayAccess",
+                      "Effect": "Allow",
+                      "Action": ["apigateway:*"],
+                      "Resource": "*"
+                  },
+                  {
+                      "Sid": "IAMPassRole",
+                      "Effect": "Allow",
+                      "Action": [
+                          "iam:PassRole", "iam:GetRole", "iam:CreateRole",
+                          "iam:DeleteRole", "iam:AttachRolePolicy", "iam:DetachRolePolicy",
+                          "iam:PutRolePolicy", "iam:DeleteRolePolicy"
+                      ],
+                      "Resource": f"arn:aws:iam::{account_id}:role/AgentFramework*"
+                  },
+                  {
+                      "Sid": "S3Access",
+                      "Effect": "Allow",
+                      "Action": ["s3:*"],
+                      "Resource": [
+                          f"arn:aws:s3:::cdk-*-assets-{account_id}-{region}",
+                          f"arn:aws:s3:::cdk-*-assets-{account_id}-{region}/*"
+                      ]
+                  },
+                  {
+                      "Sid": "SSMAccess",
+                      "Effect": "Allow",
+                      "Action": ["ssm:GetParameter"],
+                      "Resource": f"arn:aws:ssm:{region}:{account_id}:parameter/cdk-bootstrap/*"
+                  },
+                  {
+                      "Sid": "ECRAccess",
+                      "Effect": "Allow",
+                      "Action": ["ecr:*"],
+                      "Resource": f"arn:aws:ecr:{region}:{account_id}:repository/cdk-*"
+                  }
+              ]
+          }
+
+          role_name = "GitHubActions-AgentFramework"
+
+          # Check if role exists
+          try:
+              iam.get_role(RoleName=role_name)
+              print(f"IAM role already exists: {role_name}")
+              iam.update_assume_role_policy(
+                  RoleName=role_name,
+                  PolicyDocument=json.dumps(trust_policy)
+              )
+              print("Updated trust policy")
+          except iam.exceptions.NoSuchEntityException:
+              print(f"Creating IAM role: {role_name}")
+              iam.create_role(
+                  RoleName=role_name,
+                  AssumeRolePolicyDocument=json.dumps(trust_policy),
+                  Description="IAM role for GitHub Actions OIDC authentication",
+                  Tags=[
+                      {"Key": "Purpose", "Value": "GitHub-Actions-OIDC"},
+                      {"Key": "ManagedBy", "Value": "GitHub-Actions"},
+                  ]
+              )
+              print(f"Created IAM role: {role_name}")
+
+          iam.put_role_policy(
+              RoleName=role_name,
+              PolicyName="GitHubActionsPermissions",
+              PolicyDocument=json.dumps(permissions_policy)
+          )
+          print("Updated permissions policy")
+
+          role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+          print(f"\n{'='*60}")
+          print("SETUP COMPLETE!")
+          print(f"{'='*60}")
+          print(f"\nAdd this secret to your repository:")
+          print(f"  Secret name: AWS_ROLE_ARN")
+          print(f"  Secret value: {role_arn}")
+          print(f"\nAdd this variable to your repository:")
+          print(f"  Variable name: AWS_ACCOUNT_ID")
+          print(f"  Variable value: {account_id}")
+          EOF
+
+      - name: Output setup instructions
+        env:
+          AWS_ACCOUNT_ID: ${{ inputs.aws_account_id }}
+        run: |
+          echo "## OIDC Setup Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Add the following to your repository settings:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Secrets" >> "$GITHUB_STEP_SUMMARY"
+          echo "- \`AWS_ROLE_ARN\`: \`arn:aws:iam::${AWS_ACCOUNT_ID}:role/GitHubActions-AgentFramework\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Variables" >> "$GITHUB_STEP_SUMMARY"
+          echo "- \`AWS_ACCOUNT_ID\`: \`${AWS_ACCOUNT_ID}\`" >> "$GITHUB_STEP_SUMMARY"
