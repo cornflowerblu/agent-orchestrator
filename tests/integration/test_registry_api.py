@@ -9,6 +9,8 @@ import pytest
 import json
 from unittest.mock import MagicMock, patch
 
+from src.registry.models import AgentStatus, AgentStatusValue, HealthCheckStatus
+
 # Mark all tests in this module as integration tests
 pytestmark = pytest.mark.integration
 
@@ -259,7 +261,7 @@ class TestFindCompatibleAgentsHandler:
             "httpMethod": "POST",
             "path": "/agents/find-compatible",
             "body": json.dumps({
-                "input_type": "ARTIFACT"
+                "input_type": "artifact"
             })
         }
 
@@ -302,11 +304,12 @@ class TestGetAgentStatusHandler:
 
         with patch('src.registry.handlers.get_status_storage') as mock_get_storage:
             mock_storage = MagicMock()
-            mock_storage.get_status.return_value = {
-                "agent_name": "test-agent",
-                "status": "active",
-                "last_seen": "2024-01-01T00:00:00Z"
-            }
+            mock_storage.get_status.return_value = AgentStatus(
+                agent_name="test-agent",
+                status=AgentStatusValue.ACTIVE,
+                health_check=HealthCheckStatus.PASSING,
+                last_seen="2024-01-01T00:00:00Z"
+            )
             mock_get_storage.return_value = mock_storage
 
             response = get_agent_status_handler(event, mock_lambda_context)
@@ -335,10 +338,12 @@ class TestUpdateAgentStatusHandler:
 
         with patch('src.registry.handlers.get_status_storage') as mock_get_storage:
             mock_storage = MagicMock()
-            mock_storage.update_status.return_value = {
-                "agent_name": "test-agent",
-                "status": "active"
-            }
+            mock_storage.update_status.return_value = AgentStatus(
+                agent_name="test-agent",
+                status=AgentStatusValue.ACTIVE,
+                health_check=HealthCheckStatus.PASSING,
+                last_seen="2024-01-01T00:00:00Z"
+            )
             mock_get_storage.return_value = mock_storage
 
             response = update_agent_status_handler(event, mock_lambda_context)
