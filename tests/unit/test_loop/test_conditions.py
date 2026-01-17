@@ -222,3 +222,89 @@ class TestEvaluateLinting:
         # Verify custom path was used
         call_args = mock_execute.call_args[0][0]
         assert "src/loop/" in call_args
+
+
+class TestEvaluateDispatcher:
+    """Test evaluate() dispatcher method (T054)."""
+
+    def test_dispatcher_routes_to_tests(self, mocker):
+        """Should route ALL_TESTS_PASS to evaluate_tests()."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+        config = ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)
+
+        # Mock evaluate_tests
+        mock_evaluate = mocker.patch.object(
+            evaluator,
+            "evaluate_tests",
+            return_value=ExitConditionStatus(type=ExitConditionType.ALL_TESTS_PASS),
+        )
+
+        status = evaluator.evaluate(config, iteration=1)
+
+        mock_evaluate.assert_called_once_with(config, 1)
+
+    def test_dispatcher_routes_to_linting(self, mocker):
+        """Should route LINTING_CLEAN to evaluate_linting()."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+        config = ExitConditionConfig(type=ExitConditionType.LINTING_CLEAN)
+
+        # Mock evaluate_linting
+        mock_evaluate = mocker.patch.object(
+            evaluator,
+            "evaluate_linting",
+            return_value=ExitConditionStatus(type=ExitConditionType.LINTING_CLEAN),
+        )
+
+        status = evaluator.evaluate(config, iteration=1)
+
+        mock_evaluate.assert_called_once_with(config, 1)
+
+    def test_dispatcher_routes_to_build(self, mocker):
+        """Should route BUILD_SUCCEEDS to evaluate_build()."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+        config = ExitConditionConfig(type=ExitConditionType.BUILD_SUCCEEDS)
+
+        # Mock evaluate_build
+        mock_evaluate = mocker.patch.object(
+            evaluator,
+            "evaluate_build",
+            return_value=ExitConditionStatus(type=ExitConditionType.BUILD_SUCCEEDS),
+        )
+
+        status = evaluator.evaluate(config, iteration=1)
+
+        mock_evaluate.assert_called_once_with(config, 1)
+
+    def test_dispatcher_routes_to_security(self, mocker):
+        """Should route SECURITY_SCAN_CLEAN to evaluate_security_scan()."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+        config = ExitConditionConfig(type=ExitConditionType.SECURITY_SCAN_CLEAN)
+
+        # Mock evaluate_security_scan
+        mock_evaluate = mocker.patch.object(
+            evaluator,
+            "evaluate_security_scan",
+            return_value=ExitConditionStatus(type=ExitConditionType.SECURITY_SCAN_CLEAN),
+        )
+
+        status = evaluator.evaluate(config, iteration=1)
+
+        mock_evaluate.assert_called_once_with(config, 1)
+
+    def test_dispatcher_routes_to_custom(self, mocker):
+        """Should route CUSTOM to evaluate_custom()."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+        config = ExitConditionConfig(
+            type=ExitConditionType.CUSTOM, custom_evaluator="mymodule.check"
+        )
+
+        # Mock evaluate_custom
+        mock_evaluate = mocker.patch.object(
+            evaluator,
+            "evaluate_custom",
+            return_value=ExitConditionStatus(type=ExitConditionType.CUSTOM),
+        )
+
+        status = evaluator.evaluate(config, iteration=1)
+
+        mock_evaluate.assert_called_once_with(config, 1)

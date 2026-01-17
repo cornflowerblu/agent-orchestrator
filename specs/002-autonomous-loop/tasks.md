@@ -217,7 +217,7 @@
 - [ ] T099 [US5] Implement ObservabilityQueries.get_recent_events() in src/dashboard/queries.py
 - [ ] T100 [US5] Implement ObservabilityQueries.list_checkpoints() in src/dashboard/queries.py
 - [ ] T101 [US5] Implement ObservabilityQueries.get_exit_condition_history() in src/dashboard/queries.py
-- [ ] T102 [US5] Create LoopProgress response model in src/dashboard/models.py
+- [x] T102 [US5] Create LoopProgress response model in src/dashboard/models.py
 - [ ] T103 [US5] Implement streaming/subscription logic in src/dashboard/queries.py
 - [ ] T104 [US5] Create API handlers skeleton in src/dashboard/handlers.py
 - [ ] T105 [US5] Implement /progress/{session_id} handler in src/dashboard/handlers.py

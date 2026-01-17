@@ -224,3 +224,219 @@ class ExitConditionEvaluator:
             status.mark_error(error=error_msg, iteration=iteration)
 
         return status
+
+    def evaluate_build(
+        self, config: ExitConditionConfig, iteration: int
+    ) -> ExitConditionStatus:
+        """Evaluate BUILD_SUCCEEDS exit condition (T045).
+
+        Executes build command via Code Interpreter and checks exit code.
+
+        Args:
+            config: Exit condition configuration
+            iteration: Current iteration number
+
+        Returns:
+            ExitConditionStatus with evaluation result
+        """
+        status = ExitConditionStatus(type=config.type)
+
+        try:
+            # Build command (default to common Python build)
+            build_cmd = config.tool_arguments.get("command", "python -m build")
+
+            logger.debug(f"Evaluating build with command: {build_cmd}")
+
+            # Execute via Code Interpreter
+            result = self.code_interpreter.execute_code(build_cmd)
+
+            exit_code = result.get("exit_code", 1)
+            output = result.get("output", "")
+
+            # Mark status based on exit code
+            if exit_code == 0:
+                status.mark_met(
+                    tool_name="build",
+                    exit_code=exit_code,
+                    output=output,
+                    iteration=iteration,
+                )
+                logger.info(f"Build succeeded at iteration {iteration}")
+            else:
+                status.mark_not_met(
+                    tool_name="build",
+                    exit_code=exit_code,
+                    output=output,
+                    iteration=iteration,
+                )
+                logger.warning(f"Build failed at iteration {iteration}: exit code {exit_code}")
+
+        except Exception as e:
+            error_msg = f"Failed to execute build: {e}"
+            logger.exception(error_msg)
+            status.mark_error(error=error_msg, iteration=iteration)
+
+        return status
+
+    def evaluate_security_scan(
+        self, config: ExitConditionConfig, iteration: int
+    ) -> ExitConditionStatus:
+        """Evaluate SECURITY_SCAN_CLEAN exit condition (T046).
+
+        Executes security scanner via Code Interpreter and checks exit code.
+
+        Args:
+            config: Exit condition configuration
+            iteration: Current iteration number
+
+        Returns:
+            ExitConditionStatus with evaluation result
+        """
+        status = ExitConditionStatus(type=config.type)
+
+        try:
+            # Security scan command (default to bandit for Python)
+            scan_cmd = config.tool_arguments.get("command", "bandit -r .")
+
+            logger.debug(f"Evaluating security with command: {scan_cmd}")
+
+            # Execute via Code Interpreter
+            result = self.code_interpreter.execute_code(scan_cmd)
+
+            exit_code = result.get("exit_code", 1)
+            output = result.get("output", "")
+
+            # Mark status based on exit code
+            if exit_code == 0:
+                status.mark_met(
+                    tool_name="security-scanner",
+                    exit_code=exit_code,
+                    output=output,
+                    iteration=iteration,
+                )
+                logger.info(f"Security scan clean at iteration {iteration}")
+            else:
+                status.mark_not_met(
+                    tool_name="security-scanner",
+                    exit_code=exit_code,
+                    output=output,
+                    iteration=iteration,
+                )
+                logger.warning(
+                    f"Security scan found issues at iteration {iteration}: exit code {exit_code}"
+                )
+
+        except Exception as e:
+            error_msg = f"Failed to execute security scan: {e}"
+            logger.exception(error_msg)
+            status.mark_error(error=error_msg, iteration=iteration)
+
+        return status
+
+    def evaluate_custom(
+        self, config: ExitConditionConfig, iteration: int
+    ) -> ExitConditionStatus:
+        """Evaluate CUSTOM exit condition (T047).
+
+        Imports and executes user-provided custom evaluator function.
+
+        Args:
+            config: Exit condition configuration (must have custom_evaluator set)
+            iteration: Current iteration number
+
+        Returns:
+            ExitConditionStatus with evaluation result
+
+        Raises:
+            ExitConditionEvaluationError: If custom evaluator is not configured
+        """
+        status = ExitConditionStatus(type=config.type)
+
+        if not config.custom_evaluator:
+            error_msg = "CUSTOM exit condition requires custom_evaluator to be set"
+            logger.error(error_msg)
+            status.mark_error(error=error_msg, iteration=iteration)
+            return status
+
+        try:
+            # Import custom evaluator function
+            module_path, func_name = config.custom_evaluator.rsplit(".", 1)
+
+            logger.debug(f"Importing custom evaluator: {config.custom_evaluator}")
+
+            # Dynamic import
+            import importlib
+
+            module = importlib.import_module(module_path)
+            evaluator_func = getattr(module, func_name)
+
+            # Execute custom evaluator
+            # Custom evaluator should return dict with 'passed' boolean and optional 'output'
+            result = evaluator_func(config.tool_arguments)
+
+            passed = result.get("passed", False)
+            output = result.get("output", "Custom evaluator executed")
+
+            # Mark status based on result
+            if passed:
+                status.mark_met(
+                    tool_name="custom-evaluator",
+                    exit_code=0,
+                    output=output,
+                    iteration=iteration,
+                )
+                logger.info(f"Custom condition met at iteration {iteration}")
+            else:
+                status.mark_not_met(
+                    tool_name="custom-evaluator",
+                    exit_code=1,
+                    output=output,
+                    iteration=iteration,
+                )
+                logger.warning(f"Custom condition not met at iteration {iteration}")
+
+        except Exception as e:
+            error_msg = f"Failed to execute custom evaluator: {e}"
+            logger.exception(error_msg)
+            status.mark_error(error=error_msg, iteration=iteration)
+
+        return status
+
+    def evaluate(
+        self, config: ExitConditionConfig, iteration: int
+    ) -> ExitConditionStatus:
+        """Evaluate an exit condition based on its type (T048).
+
+        Dispatcher method that routes to the appropriate evaluation method.
+
+        Args:
+            config: Exit condition configuration
+            iteration: Current iteration number
+
+        Returns:
+            ExitConditionStatus with evaluation result
+
+        Raises:
+            ExitConditionEvaluationError: If condition type is not supported
+        """
+        from src.loop.models import ExitConditionType
+
+        logger.info(f"Evaluating exit condition: {config.type} (iteration {iteration})")
+
+        # Route to appropriate evaluation method
+        if config.type == ExitConditionType.ALL_TESTS_PASS:
+            return self.evaluate_tests(config, iteration)
+        elif config.type == ExitConditionType.LINTING_CLEAN:
+            return self.evaluate_linting(config, iteration)
+        elif config.type == ExitConditionType.BUILD_SUCCEEDS:
+            return self.evaluate_build(config, iteration)
+        elif config.type == ExitConditionType.SECURITY_SCAN_CLEAN:
+            return self.evaluate_security_scan(config, iteration)
+        elif config.type == ExitConditionType.CUSTOM:
+            return self.evaluate_custom(config, iteration)
+        else:
+            error_msg = f"Unsupported exit condition type: {config.type}"
+            logger.error(error_msg)
+            status = ExitConditionStatus(type=config.type)
+            status.mark_error(error=error_msg, iteration=iteration)
+            return status
