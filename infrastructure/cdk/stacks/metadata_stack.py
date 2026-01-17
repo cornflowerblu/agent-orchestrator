@@ -12,6 +12,7 @@ class MetadataStack(cdk.Stack):
     Tables:
     - AgentMetadata: Stores custom agent metadata (inputs, outputs, consultation requirements)
     - AgentStatus: Tracks agent runtime status for scheduling decisions
+    - LoopCheckpoints: Stores loop framework checkpoint state for recovery
     """
 
     def __init__(
@@ -60,6 +61,20 @@ class MetadataStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY,  # Safe to recreate
         )
 
+        # LoopCheckpoints Table
+        self.checkpoints_table = dynamodb.Table(
+            self,
+            "LoopCheckpoints",
+            table_name="LoopCheckpoints",
+            partition_key=dynamodb.Attribute(name="session_id", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="iteration", type=dynamodb.AttributeType.NUMBER),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            encryption=dynamodb.TableEncryption.AWS_MANAGED,
+            point_in_time_recovery=is_production,  # Enable PITR for production
+            # Same as metadata (RETAIN/DESTROY based on env)
+            removal_policy=metadata_removal_policy,
+        )
+
         # Outputs
         cdk.CfnOutput(
             self,
@@ -91,4 +106,20 @@ class MetadataStack(cdk.Stack):
             value=self.status_table.table_arn,
             description="ARN of agent status table",
             export_name="AgentStatusTableArn",
+        )
+
+        cdk.CfnOutput(
+            self,
+            "CheckpointsTableName",
+            value=self.checkpoints_table.table_name,
+            description="DynamoDB table for loop framework checkpoints",
+            export_name="LoopCheckpointsTableName",
+        )
+
+        cdk.CfnOutput(
+            self,
+            "CheckpointsTableArn",
+            value=self.checkpoints_table.table_arn,
+            description="ARN of loop checkpoints table",
+            export_name="LoopCheckpointsTableArn",
         )

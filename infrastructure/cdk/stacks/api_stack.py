@@ -4,6 +4,8 @@ Task T075: Create API stack with Lambda + API Gateway
 """
 
 from aws_cdk import (
+    BundlingOptions,
+    CfnOutput,
     Duration,
     Stack,
 )
@@ -76,14 +78,70 @@ class ApiStack(Stack):
             "LOG_LEVEL": "INFO",
         }
 
+        # Shared code asset for all API Lambdas
+        # Bundle project root with src/ directory structure and install dependencies
+        api_code = lambda_.Code.from_asset(
+            "../..",
+            exclude=[
+                ".venv",
+                ".venv/**",
+                "*.pyc",
+                "__pycache__",
+                "__pycache__/**",
+                ".pytest_cache",
+                ".pytest_cache/**",
+                ".coverage",
+                ".git",
+                ".git/**",
+                ".gitignore",
+                ".ruff_cache",
+                ".ruff_cache/**",
+                "*.egg-info",
+                "*.egg-info/**",
+                "tests",
+                "tests/**",
+                "infrastructure",
+                "infrastructure/**",
+                ".specify",
+                ".specify/**",
+                ".claude",
+                ".claude/**",
+                "*.md",
+                ".env",
+                ".DS_Store",
+                "node_modules",
+                "node_modules/**",
+                "cdk.out",
+                "cdk.out/**",
+                ".mypy_cache",
+                ".mypy_cache/**",
+                "*.egg",
+                "build",
+                "build/**",
+                "dist",
+                "dist/**",
+            ],
+            bundling=BundlingOptions(
+                image=lambda_.Runtime.PYTHON_3_11.bundling_image,
+                command=[
+                    "bash",
+                    "-c",
+                    # Install pydantic with correct platform for Lambda (x86_64 Linux)
+                    "pip install pydantic --platform manylinux2014_x86_64 "
+                    "--only-binary=:all: -t /asset-output && "
+                    "cp -r /asset-input/src /asset-output/",
+                ],
+            ),
+        )
+
         # Create Lambda layer for dependencies
         # Note: In production, create a layer with dependencies
         lambda_props = {
             "runtime": lambda_.Runtime.PYTHON_3_11,
-            "handler": "src.registry.handlers.{handler}",
             "role": lambda_role,
             "timeout": Duration.seconds(30),
             "memory_size": 256,
+            "tracing": lambda_.Tracing.ACTIVE,  # Enable X-Ray tracing
             "environment": lambda_env,
         }
 
@@ -91,72 +149,72 @@ class ApiStack(Stack):
         list_agents_fn = lambda_.Function(
             self,
             "ListAgentsFunction",
-            code=lambda_.Code.from_asset("../../src"),
+            code=api_code,
             handler="src.registry.handlers.list_agents_handler",
-            **{k: v for k, v in lambda_props.items() if k != "handler"},
+            **lambda_props,
         )
 
         # Get Agent Handler (T077)
         get_agent_fn = lambda_.Function(
             self,
             "GetAgentFunction",
-            code=lambda_.Code.from_asset("../../src"),
+            code=api_code,
             handler="src.registry.handlers.get_agent_handler",
-            **{k: v for k, v in lambda_props.items() if k != "handler"},
+            **lambda_props,
         )
 
         # Update Agent Metadata Handler (T078)
         update_metadata_fn = lambda_.Function(
             self,
             "UpdateMetadataFunction",
-            code=lambda_.Code.from_asset("../../src"),
+            code=api_code,
             handler="src.registry.handlers.update_agent_metadata_handler",
-            **{k: v for k, v in lambda_props.items() if k != "handler"},
+            **lambda_props,
         )
 
         # Get Consultation Requirements Handler (T079)
         get_consultation_fn = lambda_.Function(
             self,
             "GetConsultationFunction",
-            code=lambda_.Code.from_asset("../../src"),
+            code=api_code,
             handler="src.registry.handlers.get_consultation_requirements_handler",
-            **{k: v for k, v in lambda_props.items() if k != "handler"},
+            **lambda_props,
         )
 
         # Check Compatibility Handler (T080)
         check_compat_fn = lambda_.Function(
             self,
             "CheckCompatibilityFunction",
-            code=lambda_.Code.from_asset("../../src"),
+            code=api_code,
             handler="src.registry.handlers.check_compatibility_handler",
-            **{k: v for k, v in lambda_props.items() if k != "handler"},
+            **lambda_props,
         )
 
         # Find Compatible Agents Handler (T081)
         find_compat_fn = lambda_.Function(
             self,
             "FindCompatibleFunction",
-            code=lambda_.Code.from_asset("../../src"),
+            code=api_code,
             handler="src.registry.handlers.find_compatible_agents_handler",
-            **{k: v for k, v in lambda_props.items() if k != "handler"},
+            **lambda_props,
         )
 
         # Get Agent Status Handler (T082)
         get_status_fn = lambda_.Function(
             self,
             "GetStatusFunction",
-            code=lambda_.Code.from_asset("../../src"),
+            code=api_code,
             handler="src.registry.handlers.get_agent_status_handler",
-            **{k: v for k, v in lambda_props.items() if k != "handler"},
+            **lambda_props,
         )
 
         # Update Agent Status Handler (T083)
         update_status_fn = lambda_.Function(
             self,
             "UpdateStatusFunction",
-            code=lambda_.Code.from_asset("../../src"),
+            code=api_code,
             handler="src.registry.handlers.update_agent_status_handler",
-            **{k: v for k, v in lambda_props.items() if k != "handler"},
+            **lambda_props,
         )
 
         # Create API Gateway
@@ -173,6 +231,7 @@ class ApiStack(Stack):
                 stage_name="v1",
                 logging_level=apigw.MethodLoggingLevel.INFO,
                 data_trace_enabled=True,
+                tracing_enabled=True,  # Enable X-Ray tracing
             ),
         )
 
@@ -251,3 +310,12 @@ class ApiStack(Stack):
         self.find_compat_fn = find_compat_fn
         self.get_status_fn = get_status_fn
         self.update_status_fn = update_status_fn
+
+        # Export API URL for integration tests
+        CfnOutput(
+            self,
+            "ApiUrl",
+            value=api.url,
+            description="API Gateway URL for integration tests",
+            export_name=f"{construct_id}-ApiUrl",
+        )

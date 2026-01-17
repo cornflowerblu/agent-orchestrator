@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template for local Lambda testing with LocalStack
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: python3.11
+    Environment:
+      Variables:
+        LOG_LEVEL: DEBUG
+        AWS_ENDPOINT_URL: http://host.docker.internal:4566
+        AWS_ACCESS_KEY_ID: test
+        AWS_SECRET_ACCESS_KEY: test
+        AWS_DEFAULT_REGION: us-east-1
+
+Resources:
+  # ===================
+  # API Handler Lambdas - point to pre-built directories
+  # ===================
+
+  ListAgentsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .aws-sam/build/ListAgentsFunction
+      Handler: src.registry.handlers.list_agents_handler
+      Environment:
+        Variables:
+          AGENT_METADATA_TABLE: AgentMetadata
+          AGENT_STATUS_TABLE: AgentStatus
+
+  GetAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .aws-sam/build/GetAgentFunction
+      Handler: src.registry.handlers.get_agent_handler
+      Environment:
+        Variables:
+          AGENT_METADATA_TABLE: AgentMetadata
+          AGENT_STATUS_TABLE: AgentStatus
+
+  UpdateMetadataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .aws-sam/build/UpdateMetadataFunction
+      Handler: src.registry.handlers.update_agent_metadata_handler
+      Environment:
+        Variables:
+          AGENT_METADATA_TABLE: AgentMetadata
+          AGENT_STATUS_TABLE: AgentStatus
+
+  GetConsultationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .aws-sam/build/GetConsultationFunction
+      Handler: src.registry.handlers.get_consultation_requirements_handler
+      Environment:
+        Variables:
+          AGENT_METADATA_TABLE: AgentMetadata
+          AGENT_STATUS_TABLE: AgentStatus
+
+  CheckCompatibilityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .aws-sam/build/CheckCompatibilityFunction
+      Handler: src.registry.handlers.check_compatibility_handler
+      Environment:
+        Variables:
+          AGENT_METADATA_TABLE: AgentMetadata
+          AGENT_STATUS_TABLE: AgentStatus
+
+  FindCompatibleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .aws-sam/build/FindCompatibleFunction
+      Handler: src.registry.handlers.find_compatible_agents_handler
+      Environment:
+        Variables:
+          AGENT_METADATA_TABLE: AgentMetadata
+          AGENT_STATUS_TABLE: AgentStatus
+
+  GetStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .aws-sam/build/GetStatusFunction
+      Handler: src.registry.handlers.get_agent_status_handler
+      Environment:
+        Variables:
+          AGENT_METADATA_TABLE: AgentMetadata
+          AGENT_STATUS_TABLE: AgentStatus
+
+  UpdateStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .aws-sam/build/UpdateStatusFunction
+      Handler: src.registry.handlers.update_agent_status_handler
+      Environment:
+        Variables:
+          AGENT_METADATA_TABLE: AgentMetadata
+          AGENT_STATUS_TABLE: AgentStatus
+
+  # =======================
+  # Standalone Lambda Handlers
+  # =======================
+
+  ToolRegistryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .aws-sam/build/ToolRegistryFunction
+      Handler: tool_registry.handler
+      Environment:
+        Variables:
+          LOG_GROUP_NAME: /aws/bedrock/agent-gateway
+          GATEWAY_NAME: AgentOrchestratorGateway
+
+  PolicyEnforcerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .aws-sam/build/PolicyEnforcerFunction
+      Handler: policy_enforcer.handler
+      Environment:
+        Variables:
+          LOG_GROUP_NAME: /aws/bedrock/agent-loops
+          POLICY_ENGINE_NAME: LoopIterationPolicyEngine
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"

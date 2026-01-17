@@ -1,0 +1,520 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-orchestrator.example.com/schemas/loop-framework.schema.json",
+  "title": "Agent Loop Framework Schema",
+  "description": "JSON Schema for the Autonomous Loop Execution feature entities",
+  "version": "1.0.0",
+  "$defs": {
+    "ExitConditionType": {
+      "type": "string",
+      "enum": ["all_tests_pass", "build_succeeds", "linting_clean", "security_scan_clean", "custom"],
+      "description": "Standard exit condition types supported by the framework (FR-004)"
+    },
+
+    "ExitConditionStatusValue": {
+      "type": "string",
+      "enum": ["pending", "met", "not_met", "error", "skipped"],
+      "description": "Evaluation status of an exit condition"
+    },
+
+    "LoopPhase": {
+      "type": "string",
+      "enum": ["initializing", "running", "evaluating_conditions", "saving_checkpoint", "completing", "completed", "error"],
+      "description": "Phase of loop execution (FR-013)"
+    },
+
+    "LoopOutcome": {
+      "type": "string",
+      "enum": ["completed", "iteration_limit", "error", "cancelled", "timeout"],
+      "description": "Possible outcomes of loop execution (SC-005)"
+    },
+
+    "IterationEventType": {
+      "type": "string",
+      "enum": [
+        "loop.started",
+        "loop.iteration.started",
+        "loop.iteration.completed",
+        "loop.checkpoint.saved",
+        "loop.exit_condition.evaluated",
+        "loop.completed",
+        "loop.error",
+        "loop.policy.warning",
+        "loop.policy.violation"
+      ],
+      "description": "Types of events emitted to Observability (FR-014)"
+    },
+
+    "ExitConditionConfig": {
+      "type": "object",
+      "description": "Configuration for a single exit condition (FR-003, FR-004)",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ExitConditionType"
+        },
+        "tool_name": {
+          "type": ["string", "null"],
+          "description": "Specific tool to invoke (auto-detected if not provided)"
+        },
+        "tool_arguments": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Arguments to pass to verification tool"
+        },
+        "custom_evaluator": {
+          "type": ["string", "null"],
+          "description": "Python callable path for CUSTOM type"
+        },
+        "description": {
+          "type": "string",
+          "default": "",
+          "description": "Human-readable description"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "ExitConditionStatus": {
+      "type": "object",
+      "description": "Status of a single exit condition evaluation (FR-003, FR-006)",
+      "required": ["type", "status"],
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ExitConditionType"
+        },
+        "status": {
+          "$ref": "#/$defs/ExitConditionStatusValue"
+        },
+        "tool_name": {
+          "type": ["string", "null"],
+          "description": "Verification tool used (pytest, ruff, etc.)"
+        },
+        "tool_exit_code": {
+          "type": ["integer", "null"],
+          "description": "Exit code from verification tool"
+        },
+        "tool_output": {
+          "type": ["string", "null"],
+          "description": "Truncated output from verification tool"
+        },
+        "evaluated_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "ISO timestamp of last evaluation"
+        },
+        "evaluation_duration_ms": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Time taken to evaluate (milliseconds)"
+        },
+        "error_message": {
+          "type": ["string", "null"],
+          "description": "Error details if status is error"
+        },
+        "iteration_evaluated": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Iteration number when last evaluated"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "LoopConfig": {
+      "type": "object",
+      "description": "Configuration for autonomous loop execution (FR-001, FR-002, FR-005)",
+      "required": ["agent_name"],
+      "properties": {
+        "agent_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Name of the agent executing the loop"
+        },
+        "session_id": {
+          "type": ["string", "null"],
+          "description": "Optional session ID for Memory storage"
+        },
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "default": 100,
+          "description": "Maximum iterations before Policy terminates loop"
+        },
+        "checkpoint_interval": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 5,
+          "description": "Save checkpoint every N iterations to Memory"
+        },
+        "checkpoint_expiry_seconds": {
+          "type": "integer",
+          "minimum": 3600,
+          "maximum": 604800,
+          "default": 86400,
+          "description": "Memory event expiry for checkpoints"
+        },
+        "exit_conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExitConditionConfig"
+          },
+          "description": "Exit conditions to evaluate each iteration"
+        },
+        "iteration_timeout_seconds": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 3600,
+          "default": 300,
+          "description": "Maximum time per iteration"
+        },
+        "verification_timeout_seconds": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 120,
+          "default": 30,
+          "description": "Maximum time per verification tool (SC-002)"
+        },
+        "policy_engine_arn": {
+          "type": ["string", "null"],
+          "description": "ARN of Cedar policy engine"
+        },
+        "gateway_url": {
+          "type": ["string", "null"],
+          "description": "URL of AgentCore Gateway"
+        },
+        "region": {
+          "type": "string",
+          "default": "us-east-1",
+          "description": "AWS region for AgentCore services"
+        },
+        "custom_metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Optional metadata for checkpoints and traces"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "LoopState": {
+      "type": "object",
+      "description": "Current state of loop execution (FR-006, FR-013)",
+      "required": ["session_id", "agent_name", "max_iterations"],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "Unique identifier for this loop session"
+        },
+        "agent_name": {
+          "type": "string",
+          "description": "Name of the executing agent"
+        },
+        "current_iteration": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Current iteration number (0-indexed)"
+        },
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum iterations allowed by Policy"
+        },
+        "phase": {
+          "$ref": "#/$defs/LoopPhase",
+          "default": "initializing"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp when loop started (FR-014)"
+        },
+        "last_iteration_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "ISO timestamp of last completed iteration"
+        },
+        "last_checkpoint_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "ISO timestamp of last checkpoint save"
+        },
+        "last_checkpoint_iteration": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Iteration number of last checkpoint"
+        },
+        "exit_conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExitConditionStatus"
+          },
+          "description": "Current status of each exit condition"
+        },
+        "is_active": {
+          "type": "boolean",
+          "default": false,
+          "description": "True if loop is currently executing"
+        },
+        "agent_state": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Agent-specific state data"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "Checkpoint": {
+      "type": "object",
+      "description": "Snapshot of loop state saved to AgentCore Memory (FR-005, FR-006, FR-012)",
+      "required": ["checkpoint_id", "session_id", "agent_name", "iteration", "max_iterations", "phase", "created_at"],
+      "properties": {
+        "checkpoint_id": {
+          "type": "string",
+          "description": "Unique identifier for this checkpoint"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Loop session ID for Memory service"
+        },
+        "agent_name": {
+          "type": "string",
+          "description": "Agent that created this checkpoint"
+        },
+        "iteration": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Iteration number when checkpoint was saved"
+        },
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Max iterations configured"
+        },
+        "phase": {
+          "$ref": "#/$defs/LoopPhase"
+        },
+        "agent_state": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Agent-specific state to restore on recovery"
+        },
+        "exit_conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExitConditionStatus"
+          },
+          "description": "Exit condition statuses at checkpoint"
+        },
+        "custom_data": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Custom data from save_checkpoint()"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp when checkpoint was created"
+        },
+        "memory_event_id": {
+          "type": ["string", "null"],
+          "description": "ID from AgentCore Memory after save"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "IterationEvent": {
+      "type": "object",
+      "description": "Event for AgentCore Observability (FR-009, FR-010, FR-014)",
+      "required": ["event_type", "session_id", "agent_name", "iteration", "max_iterations"],
+      "properties": {
+        "event_type": {
+          "$ref": "#/$defs/IterationEventType"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Loop session ID for trace correlation"
+        },
+        "agent_name": {
+          "type": "string",
+          "description": "Agent emitting the event"
+        },
+        "iteration": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Current iteration number"
+        },
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum iterations allowed"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of event"
+        },
+        "duration_ms": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Duration in milliseconds"
+        },
+        "exit_conditions_met": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Number of conditions currently met"
+        },
+        "exit_conditions_total": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Total number of exit conditions"
+        },
+        "phase": {
+          "$ref": "#/$defs/LoopPhase",
+          "default": "running"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Additional event-specific details"
+        },
+        "error_message": {
+          "type": ["string", "null"],
+          "description": "Error details for error events"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "LoopResult": {
+      "type": "object",
+      "description": "Final result of autonomous loop execution (FR-007, FR-008, SC-005)",
+      "required": ["session_id", "agent_name", "outcome", "iterations_completed", "max_iterations", "started_at", "duration_seconds"],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "Loop session ID"
+        },
+        "agent_name": {
+          "type": "string",
+          "description": "Agent that executed the loop"
+        },
+        "outcome": {
+          "$ref": "#/$defs/LoopOutcome"
+        },
+        "iterations_completed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total iterations completed"
+        },
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum allowed iterations"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp when loop started"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp when loop ended"
+        },
+        "duration_seconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total execution time in seconds"
+        },
+        "final_exit_conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExitConditionStatus"
+          },
+          "description": "Final status of all conditions"
+        },
+        "final_state": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Agent state at termination"
+        },
+        "last_checkpoint_id": {
+          "type": ["string", "null"],
+          "description": "ID of last saved checkpoint"
+        },
+        "error_message": {
+          "type": ["string", "null"],
+          "description": "Error details if outcome is error"
+        },
+        "policy_violation_details": {
+          "type": ["string", "null"],
+          "description": "Policy details if outcome is iteration_limit"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "PolicyConfig": {
+      "type": "object",
+      "description": "Configuration for Cedar iteration limit policy (FR-002, FR-011)",
+      "required": ["policy_engine_id", "policy_engine_arn"],
+      "properties": {
+        "policy_engine_id": {
+          "type": "string",
+          "description": "ID of Cedar policy engine"
+        },
+        "policy_engine_arn": {
+          "type": "string",
+          "description": "ARN of Cedar policy engine"
+        },
+        "policy_name": {
+          "type": "string",
+          "default": "iteration_limit_policy",
+          "description": "Name of the Cedar policy"
+        },
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "default": 100,
+          "description": "Default max iterations"
+        },
+        "warning_threshold": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 0.95,
+          "default": 0.8,
+          "description": "Percentage triggering warning (SC-008)"
+        },
+        "gateway_arn": {
+          "type": ["string", "null"],
+          "description": "Gateway ARN for policy resource"
+        },
+        "enforce_mode": {
+          "type": "boolean",
+          "default": true,
+          "description": "True for ENFORCE, False for MONITOR"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+
+  "oneOf": [
+    { "$ref": "#/$defs/LoopConfig" },
+    { "$ref": "#/$defs/LoopState" },
+    { "$ref": "#/$defs/Checkpoint" },
+    { "$ref": "#/$defs/IterationEvent" },
+    { "$ref": "#/$defs/LoopResult" },
+    { "$ref": "#/$defs/PolicyConfig" }
+  ]
+}

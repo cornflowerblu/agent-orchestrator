@@ -1,0 +1,24 @@
+# Exclude from Lambda packaging
+.venv/
+.venv
+*.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+.git/
+.gitignore
+.ruff_cache/
+*.egg-info/
+tests/
+infrastructure/
+.specify/
+.claude/
+*.md
+.env
+.DS_Store
+node_modules/
+cdk.out/
+.mypy_cache/
+*.egg
+build/
+dist/

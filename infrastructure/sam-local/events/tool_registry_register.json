@@ -1,0 +1,8 @@
+{
+  "action": "register_tool",
+  "tool_name": "my-calculator",
+  "tool_definition": {
+    "description": "Performs arithmetic operations",
+    "version": "1.0.0"
+  }
+}

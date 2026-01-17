@@ -1,6 +1,7 @@
 """Registry module for agent discovery and query."""
 
-from src.registry.discovery import AgentDiscovery, DiscoveryError, DiscoveryResult
+# Note: AgentDiscovery imports are lazy to avoid httpx dependency in Lambda
+# Use: from src.registry.discovery import AgentDiscovery
 from src.registry.models import (
     AgentStatus,
     AgentStatusSummary,
@@ -11,14 +12,11 @@ from src.registry.query import AgentRegistry, CompatibilityResult
 from src.registry.status import StatusStorage
 
 __all__ = [
-    "AgentDiscovery",
     "AgentRegistry",
     "AgentStatus",
     "AgentStatusSummary",
     "AgentStatusValue",
     "CompatibilityResult",
-    "DiscoveryError",
-    "DiscoveryResult",
     "HealthCheckStatus",
     "StatusStorage",
 ]

@@ -1,0 +1,17 @@
+{
+  "httpMethod": "PUT",
+  "path": "/agents/test-agent/metadata",
+  "pathParameters": {
+    "agent_name": "test-agent"
+  },
+  "queryStringParameters": null,
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": "{\"version\": \"1.0.0\", \"input_schemas\": [{\"name\": \"query\", \"semantic_type\": \"document\"}], \"output_schemas\": [{\"name\": \"result\", \"semantic_type\": \"artifact\"}]}",
+  "isBase64Encoded": false,
+  "requestContext": {
+    "requestId": "test-request-id",
+    "stage": "local"
+  }
+}

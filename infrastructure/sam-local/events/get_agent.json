@@ -1,0 +1,17 @@
+{
+  "httpMethod": "GET",
+  "path": "/agents/test-agent",
+  "pathParameters": {
+    "agent_name": "test-agent"
+  },
+  "queryStringParameters": null,
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": null,
+  "isBase64Encoded": false,
+  "requestContext": {
+    "requestId": "test-request-id",
+    "stage": "local"
+  }
+}

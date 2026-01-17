@@ -59,10 +59,11 @@ class TestListAgentsHandler:
         """Test listing agents when none exist."""
         from src.registry.handlers import list_agents_handler
 
-        with patch("src.registry.handlers.get_registry") as mock_get_registry:
-            mock_registry = MagicMock()
-            mock_registry.list_all_agents.return_value = []
-            mock_get_registry.return_value = mock_registry
+        # Handler uses get_metadata_storage(), not get_registry()
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get_storage:
+            mock_storage = MagicMock()
+            mock_storage.list_all_metadata.return_value = []
+            mock_get_storage.return_value = mock_storage
 
             response = list_agents_handler(sample_event_list_agents, mock_lambda_context)
 
@@ -72,36 +73,24 @@ class TestListAgentsHandler:
 
     def test_list_agents_with_results(self, mock_lambda_context, sample_event_list_agents):
         """Test listing agents with results."""
-        from src.agents.models import AgentCapabilities, AgentCard
+        from src.metadata.models import CustomAgentMetadata
         from src.registry.handlers import list_agents_handler
 
-        with patch("src.registry.handlers.get_registry") as mock_get_registry:
-            mock_registry = MagicMock()
-            caps = AgentCapabilities(streaming=True)
-            cards = [
-                AgentCard(
-                    name="agent-1",
-                    description="First agent for testing purposes",
+        # Handler uses get_metadata_storage(), not get_registry()
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get_storage:
+            mock_storage = MagicMock()
+            metadata_list = [
+                CustomAgentMetadata(
+                    agent_name="agent-1",
                     version="1.0.0",
-                    url="https://agent-1.example.com/invoke",
-                    capabilities=caps,
-                    skills=[],
-                    defaultInputModes=["text"],
-                    defaultOutputModes=["text"],
                 ),
-                AgentCard(
-                    name="agent-2",
-                    description="Second agent for testing purposes",
+                CustomAgentMetadata(
+                    agent_name="agent-2",
                     version="1.0.0",
-                    url="https://agent-2.example.com/invoke",
-                    capabilities=caps,
-                    skills=[],
-                    defaultInputModes=["text"],
-                    defaultOutputModes=["text"],
                 ),
             ]
-            mock_registry.list_all_agents.return_value = cards
-            mock_get_registry.return_value = mock_registry
+            mock_storage.list_all_metadata.return_value = metadata_list
+            mock_get_storage.return_value = mock_storage
 
             response = list_agents_handler(sample_event_list_agents, mock_lambda_context)
 
@@ -115,39 +104,35 @@ class TestGetAgentHandler:
 
     def test_get_agent_success(self, mock_lambda_context, sample_event_get_agent):
         """Test getting an existing agent."""
-        from src.agents.models import AgentCapabilities, AgentCard
+        from src.metadata.models import CustomAgentMetadata
         from src.registry.handlers import get_agent_handler
 
-        with patch("src.registry.handlers.get_registry") as mock_get_registry:
-            mock_registry = MagicMock()
-            card = AgentCard(
-                name="test-agent",
-                description="Test agent for testing purposes",
+        # Handler uses get_metadata_storage(), not get_registry()
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get_storage:
+            mock_storage = MagicMock()
+            metadata = CustomAgentMetadata(
+                agent_name="test-agent",
                 version="1.0.0",
-                url="https://test-agent.example.com/invoke",
-                capabilities=AgentCapabilities(streaming=True),
-                skills=[],
-                defaultInputModes=["text"],
-                defaultOutputModes=["text"],
             )
-            mock_registry.get_agent_card.return_value = card
-            mock_get_registry.return_value = mock_registry
+            mock_storage.get_metadata.return_value = metadata
+            mock_get_storage.return_value = mock_storage
 
             response = get_agent_handler(sample_event_get_agent, mock_lambda_context)
 
             assert response["statusCode"] == 200
             body = json.loads(response["body"])
-            assert body["name"] == "test-agent"
+            assert body["agent_name"] == "test-agent"
 
     def test_get_agent_not_found(self, mock_lambda_context, sample_event_get_agent):
         """Test getting a non-existent agent."""
         from src.exceptions import AgentNotFoundError
         from src.registry.handlers import get_agent_handler
 
-        with patch("src.registry.handlers.get_registry") as mock_get_registry:
-            mock_registry = MagicMock()
-            mock_registry.get_agent_card.side_effect = AgentNotFoundError("test-agent")
-            mock_get_registry.return_value = mock_registry
+        # Handler uses get_metadata_storage(), not get_registry()
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get_storage:
+            mock_storage = MagicMock()
+            mock_storage.get_metadata.side_effect = AgentNotFoundError("test-agent")
+            mock_get_storage.return_value = mock_storage
 
             response = get_agent_handler(sample_event_get_agent, mock_lambda_context)
 
@@ -361,8 +346,9 @@ class TestErrorHandling:
 
         event = {"httpMethod": "GET", "path": "/agents"}
 
-        with patch("src.registry.handlers.get_registry") as mock_get_registry:
-            mock_get_registry.side_effect = Exception("Internal error")
+        # Handler uses get_metadata_storage(), not get_registry()
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get_storage:
+            mock_get_storage.side_effect = Exception("Internal error")
 
             response = list_agents_handler(event, mock_lambda_context)
 

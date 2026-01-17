@@ -8,15 +8,31 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: ["**"] # Run on all branches
   pull_request:
-    branches: [main, develop]
+    branches: [main] # Only PRs to main
+  workflow_dispatch:
+    inputs:
+      run_deploy:
+        description: 'Run CDK deployment'
+        required: false
+        type: boolean
+        default: false
+      run_integration:
+        description: 'Run integration tests (requires deployment)'
+        required: false
+        type: boolean
+        default: false
 
 env:
   PYTHON_VERSION: "3.11"
   AWS_REGION: "us-east-1"
-  # Set environment to "production" for main branch (RETAIN resources)
-  # Set to "ci" for other branches (DESTROY resources after tests)
+  # GitHub environment determines which AWS account to use (production or sandbox)
+  # main → production environment (AWS account 712672311059)
+  # others → sandbox environment (AWS account 521690816501)
+  GITHUB_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'sandbox' }}
+  # CDK deployment environment (for RemovalPolicy logic)
+  # main → production (RETAIN resources), others → ci (DESTROY resources)
   ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'ci' }}
 
 # Required for OIDC authentication with AWS
@@ -137,6 +153,7 @@ jobs:
     name: CDK Synth
     runs-on: ubuntu-latest
     needs: test
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'sandbox' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -177,6 +194,9 @@ jobs:
     name: CDK Deploy
     runs-on: ubuntu-latest
     needs: [lint, test, type-check, cdk-synth]
+    # Run on PRs, commit message tags, or manual trigger
+    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[deploy]') || contains(github.event.head_commit.message, '[integration]') || inputs.run_deploy || inputs.run_integration
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'sandbox' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -209,14 +229,24 @@ jobs:
       - name: CDK Deploy
         run: |
           cd infrastructure/cdk
-          cdk deploy --all --require-approval never
+          cdk deploy --all --require-approval never --outputs-file outputs.json
         env:
           AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+
+      - name: Upload CDK outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdk-outputs
+          path: infrastructure/cdk/outputs.json
+          retention-days: 1
 
   integration-test:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: cdk-deploy
+    # Run on PRs, commit message tags, or manual trigger
+    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[deploy]') || contains(github.event.head_commit.message, '[integration]') || inputs.run_integration
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'sandbox' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -238,6 +268,33 @@ jobs:
       - name: Install dependencies
         run: uv pip install -e ".[dev]" --system
 
+      - name: Download CDK outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: cdk-outputs
+          path: infrastructure/cdk
+
+      - name: Extract API URL from outputs
+        id: extract-api-url
+        run: |
+          # Parse the API URL from CDK outputs
+          # The outputs file structure is: { "StackName": { "OutputKey": "OutputValue" } }
+          API_URL=$(cat infrastructure/cdk/outputs.json | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          # Find the API stack (name contains 'API')
+          for stack_name, outputs in data.items():
+              if 'API' in stack_name:
+                  for key, value in outputs.items():
+                      if 'ApiUrl' in key:
+                          print(value.rstrip('/'))
+                          sys.exit(0)
+          print('API_URL not found in outputs', file=sys.stderr)
+          sys.exit(1)
+          ")
+          echo "API_URL=$API_URL" >> $GITHUB_OUTPUT
+          echo "🔗 API URL: $API_URL"
+
       - name: Run integration tests
         run: |
           # Integration tests use 60% threshold (vs 80% for unit tests)
@@ -246,6 +303,7 @@ jobs:
         env:
           AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
           AWS_REGION: ${{ env.AWS_REGION }}
+          API_URL: ${{ steps.extract-api-url.outputs.API_URL }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -274,6 +332,7 @@ jobs:
     name: CDK Destroy (Cleanup)
     runs-on: ubuntu-latest
     needs: [cdk-deploy, integration-test]
+    environment: sandbox
     # Run cleanup whenever deploy was attempted (success or failure)
     # Ensures full resource cleanup even if deploy fails partway
     # Environment-based removal policy (DESTROY in CI) handles table deletion

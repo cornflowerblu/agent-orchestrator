@@ -1,0 +1,9 @@
+version = 0.1
+
+[default.build.parameters]
+use_container = true
+cached = true
+parallel = true
+
+[default.local_invoke.parameters]
+docker_network = "host"

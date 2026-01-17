@@ -1,0 +1,176 @@
+"""Integration tests for exit condition evaluation with Code Interpreter (T058).
+
+These tests require actual AWS credentials and Code Interpreter access.
+They are marked with @pytest.mark.integration to be skipped in CI.
+"""
+
+import os
+
+import pytest
+from botocore.exceptions import NoCredentialsError
+
+from src.loop.conditions import ExitConditionEvaluator
+from src.loop.models import (
+    ExitConditionConfig,
+    ExitConditionStatusValue,
+    ExitConditionType,
+)
+
+
+def _check_code_interpreter_available(region: str) -> bool:
+    """Check if Code Interpreter service is available with current credentials.
+
+    Returns:
+        True if Code Interpreter can be accessed, False otherwise
+    """
+    try:
+        from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
+
+        ci = CodeInterpreter(region=region, integration_source="test-check")
+        # Try to start a session - this will fail fast if credentials are invalid
+        ci.start()
+        ci.stop()
+        return True
+    except (NoCredentialsError, Exception) as e:
+        # NoCredentialsError: OIDC credentials not available for Code Interpreter
+        # Other exceptions: Code Interpreter service not enabled/accessible
+        print(f"Code Interpreter not available: {e}")
+        return False
+
+
+@pytest.mark.integration
+class TestCodeInterpreterIntegration:
+    """Integration tests with real Code Interpreter (T058)."""
+
+    @pytest.fixture
+    def evaluator(self):
+        """Create evaluator with real Code Interpreter client."""
+        # Skip if AWS credentials not available
+        if not os.getenv("AWS_REGION"):
+            pytest.skip("AWS_REGION not configured")
+
+        # Clear any moto mock credentials that might interfere
+        # Code Interpreter needs real AWS credentials
+        # Use yield to keep credentials cleared for the entire test duration
+        mock_keys = [
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+            "AWS_SECURITY_TOKEN",
+            "AWS_SESSION_TOKEN",
+        ]
+        original_values = {}
+        for key in mock_keys:
+            if key in os.environ and os.environ[key] == "testing":
+                original_values[key] = os.environ.pop(key)
+
+        region = os.getenv("AWS_REGION", "us-east-1")
+
+        # Skip if Code Interpreter service is not available
+        # This handles CI environments where OIDC credentials don't have
+        # Code Interpreter permissions
+        if not _check_code_interpreter_available(region):
+            pytest.skip("Code Interpreter service not available with current credentials")
+
+        evaluator = ExitConditionEvaluator(region=region, timeout_seconds=60)
+
+        # Yield evaluator - credentials stay cleared during test execution
+        yield evaluator
+
+        # Restore original values after test completes
+        for key, value in original_values.items():
+            os.environ[key] = value
+
+    def test_real_code_interpreter_pytest(self, evaluator):
+        """Should execute real pytest command via Code Interpreter."""
+        config = ExitConditionConfig(
+            type=ExitConditionType.ALL_TESTS_PASS,
+            tool_arguments={"path": "tests/unit/test_loop/", "markers": "not integration"},
+        )
+
+        # This will actually call Code Interpreter
+        status = evaluator.evaluate_tests(config, iteration=1)
+
+        # Verify we got a real result
+        assert status.type == ExitConditionType.ALL_TESTS_PASS
+        assert status.tool_name == "pytest"
+        assert status.evaluated_at is not None
+        assert status.iteration_evaluated == 1
+        # Status should be MET or NOT_MET, not ERROR
+        assert status.status in (
+            ExitConditionStatusValue.MET,
+            ExitConditionStatusValue.NOT_MET,
+        )
+
+    def test_real_code_interpreter_ruff(self, evaluator):
+        """Should execute real ruff check via Code Interpreter."""
+        config = ExitConditionConfig(
+            type=ExitConditionType.LINTING_CLEAN, tool_arguments={"path": "src/loop/"}
+        )
+
+        # This will actually call Code Interpreter
+        status = evaluator.evaluate_linting(config, iteration=1)
+
+        # Verify we got a real result
+        assert status.type == ExitConditionType.LINTING_CLEAN
+        assert status.tool_name == "ruff"
+        assert status.evaluated_at is not None
+        assert status.iteration_evaluated == 1
+        # Status should be MET or NOT_MET, not ERROR
+        assert status.status in (
+            ExitConditionStatusValue.MET,
+            ExitConditionStatusValue.NOT_MET,
+        )
+
+    def test_real_code_interpreter_timeout(self, evaluator):
+        """Should mark ERROR when timeout occurs."""
+        from unittest.mock import patch
+
+        # Create evaluator with very short timeout
+        short_timeout_evaluator = ExitConditionEvaluator(region=evaluator.region, timeout_seconds=2)
+
+        config = ExitConditionConfig(
+            type=ExitConditionType.ALL_TESTS_PASS,
+            tool_arguments={
+                "path": "tests/",
+            },
+        )
+
+        # Mock _execute_command_with_timeout to raise TimeoutError
+        # This tests that timeout errors are properly converted to ERROR status
+        with patch.object(
+            short_timeout_evaluator,
+            "_execute_command_with_timeout",
+            side_effect=TimeoutError("Code execution timeout after 2s"),
+        ):
+            status = short_timeout_evaluator.evaluate_tests(config, iteration=1)
+
+        # Should mark as ERROR when timeout occurs
+        assert status.status == ExitConditionStatusValue.ERROR
+        assert "timeout" in status.error_message.lower()
+
+
+@pytest.mark.integration
+def test_code_interpreter_session_lifecycle():
+    """Test Code Interpreter session lifecycle."""
+    if not os.getenv("AWS_REGION"):
+        pytest.skip("AWS_REGION not configured")
+
+    region = os.getenv("AWS_REGION", "us-east-1")
+
+    # Skip if Code Interpreter service is not available
+    if not _check_code_interpreter_available(region):
+        pytest.skip("Code Interpreter service not available with current credentials")
+
+    evaluator = ExitConditionEvaluator(region=region)
+
+    # Code Interpreter should not be initialized yet
+    assert evaluator._code_interpreter is None
+
+    # Access should trigger initialization
+    ci = evaluator.code_interpreter
+    assert ci is not None
+    assert evaluator._code_interpreter is not None
+
+    # Subsequent access should return same instance
+    ci2 = evaluator.code_interpreter
+    assert ci2 is ci
