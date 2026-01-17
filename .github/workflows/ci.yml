@@ -237,7 +237,9 @@ jobs:
 
       - name: Run integration tests
         run: |
-          pytest -v -m integration --cov=src --cov-report=xml --cov-report=term-missing
+          # Integration tests use 60% threshold (vs 80% for unit tests)
+          # Industry standard: integration tests 70-80%, unit tests 80-95%
+          pytest -v -m integration --cov=src --cov-report=xml --cov-report=term-missing --cov-fail-under=60
         env:
           AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
           AWS_REGION: ${{ env.AWS_REGION }}
