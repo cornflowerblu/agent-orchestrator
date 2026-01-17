@@ -11,6 +11,8 @@ sys.path.insert(0, str(project_root))
 
 import aws_cdk as cdk  # noqa: E402
 from stacks.api_stack import ApiStack  # noqa: E402
+from stacks.gateway_stack import GatewayStack  # noqa: E402
+from stacks.loop_stack import LoopStack  # noqa: E402
 from stacks.metadata_stack import MetadataStack  # noqa: E402
 
 app = cdk.App()
@@ -50,6 +52,24 @@ api_stack = ApiStack(
     description="Lambda functions and API Gateway for agent registry",
 )
 api_stack.add_dependency(metadata_stack)
+
+# Deploy Loop stack (Loop Framework with Cedar policies)
+loop_stack = LoopStack(
+    app,
+    "AgentOrchestratorLoop",
+    env=env,
+    description="Loop Framework infrastructure with Cedar policy engine",
+)
+# Loop stack is independent, no dependencies needed
+
+# Deploy Gateway stack (AgentCore Gateway for tool discovery)
+gateway_stack = GatewayStack(
+    app,
+    "AgentOrchestratorGateway",
+    env=env,
+    description="AgentCore Gateway infrastructure for tool discovery and invocation",
+)
+# Gateway stack is independent, no dependencies needed
 
 # Add tags to all resources
 cdk.Tags.of(app).add("Project", "AgentOrchestrator")
