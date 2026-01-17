@@ -121,7 +121,9 @@ cdk deploy --all --require-approval never --outputs-file outputs.json
 ```bash
 cd ../..  # Back to project root
 source .venv/bin/activate
-pytest -m integration -v --tb=short --maxfail=1
+# Integration tests use 60% coverage threshold (vs 80% for unit tests)
+# Industry standard: integration tests 70-80%, unit tests 80-95%
+pytest -m integration -v --tb=short --maxfail=1 --cov=src --cov-report=term-missing --cov-fail-under=60
 ```
 
 **Test Environment Setup:**
@@ -142,6 +144,7 @@ pytest -m integration -v --tb=short --maxfail=1
 | `AccessDenied` | Update IAM permissions in test role |
 | `ResourceNotFound` | Verify stack outputs are correct |
 | `ThrottlingException` | Add retry logic with backoff |
+| `Coverage < 60%` | Add more integration tests for uncovered critical paths |
 
 #### Step 4: Analyze Failures
 
@@ -166,11 +169,17 @@ If tests fail:
    - **Logic**: Code bug → Fix source code
    - **Timing**: Race condition → Add retries/waits
    - **Data**: Test data issue → Fix test fixtures
+   - **Coverage**: Coverage < 60% → Add more integration tests for uncovered paths
 
 4. **Apply Fix**
    - Edit relevant files
-   - Commit changes locally
+   - Commit changes locally (using /commit to validate unit tests still pass)
    - Continue to next iteration
+
+**Note on Coverage Failures:**
+- Coverage failures are treated like test failures - we destroy and iterate
+- This ensures clean state for next deployment with updated tests
+- Use `--skip-destroy` only if you need to debug infrastructure while adding tests
 
 ### Phase 3: Cleanup (Always Runs)
 
