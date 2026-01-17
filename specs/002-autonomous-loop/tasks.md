@@ -108,27 +108,27 @@
 
 ### Implementation for User Story 3
 
-- [ ] T041 [US3] Create ExitConditionEvaluator class skeleton in src/loop/conditions.py
-- [ ] T042 [US3] Implement Code Interpreter client wrapper in src/loop/conditions.py
-- [ ] T043 [US3] Implement evaluate_tests() method (ALL_TESTS_PASS) in src/loop/conditions.py
-- [ ] T044 [US3] Implement evaluate_linting() method (LINTING_CLEAN) in src/loop/conditions.py
-- [ ] T045 [US3] Implement evaluate_build() method (BUILD_SUCCEEDS) in src/loop/conditions.py
-- [ ] T046 [US3] Implement evaluate_security_scan() method (SECURITY_SCAN_CLEAN) in src/loop/conditions.py
-- [ ] T047 [US3] Implement evaluate_custom() method for CUSTOM type in src/loop/conditions.py
-- [ ] T048 [US3] Implement evaluate() dispatcher method in src/loop/conditions.py
-- [ ] T049 [US3] Implement Gateway tool discovery for MCP tools in src/loop/conditions.py
-- [ ] T050 [US3] Implement Gateway tool invocation wrapper in src/loop/conditions.py
-- [ ] T051 [US3] Add timeout handling (30s per tool per SC-002) in src/loop/conditions.py
+- [x] T041 [US3] Create ExitConditionEvaluator class skeleton in src/loop/conditions.py
+- [x] T042 [US3] Implement Code Interpreter client wrapper in src/loop/conditions.py
+- [x] T043 [US3] Implement evaluate_tests() method (ALL_TESTS_PASS) in src/loop/conditions.py
+- [x] T044 [US3] Implement evaluate_linting() method (LINTING_CLEAN) in src/loop/conditions.py
+- [x] T045 [US3] Implement evaluate_build() method (BUILD_SUCCEEDS) in src/loop/conditions.py
+- [x] T046 [US3] Implement evaluate_security_scan() method (SECURITY_SCAN_CLEAN) in src/loop/conditions.py
+- [x] T047 [US3] Implement evaluate_custom() method for CUSTOM type in src/loop/conditions.py
+- [x] T048 [US3] Implement evaluate() dispatcher method in src/loop/conditions.py
+- [x] T049 [US3] Implement Gateway tool discovery for MCP tools in src/loop/conditions.py
+- [x] T050 [US3] Implement Gateway tool invocation wrapper in src/loop/conditions.py
+- [x] T051 [US3] Add timeout handling (30s per tool per SC-002) in src/loop/conditions.py
 - [ ] T052 [US3] Integrate ExitConditionEvaluator with LoopFramework in src/loop/framework.py
 - [ ] T053 [US3] Implement LoopFramework.evaluate_all_conditions() in src/loop/framework.py
 
 ### Unit Tests for User Story 3
 
-- [ ] T054 [P] [US3] Write unit tests for ExitConditionEvaluator in tests/unit/test_loop/test_conditions.py
-- [ ] T055 [P] [US3] Write unit tests for evaluate_tests() in tests/unit/test_loop/test_conditions.py
-- [ ] T056 [P] [US3] Write unit tests for evaluate_linting() in tests/unit/test_loop/test_conditions.py
-- [ ] T057 [US3] Write unit tests for timeout handling in tests/unit/test_loop/test_conditions.py
-- [ ] T058 [US3] Write integration test for Code Interpreter in tests/integration/test_loop/test_conditions.py
+- [x] T054 [P] [US3] Write unit tests for ExitConditionEvaluator in tests/unit/test_loop/test_conditions.py
+- [x] T055 [P] [US3] Write unit tests for evaluate_tests() in tests/unit/test_loop/test_conditions.py
+- [x] T056 [P] [US3] Write unit tests for evaluate_linting() in tests/unit/test_loop/test_conditions.py
+- [x] T057 [US3] Write unit tests for timeout handling in tests/unit/test_loop/test_conditions.py
+- [x] T058 [US3] Write integration test for Code Interpreter in tests/integration/test_loop/test_conditions.py
 
 **Checkpoint**: User Story 3 complete - agents can evaluate exit conditions via verification tools
 
@@ -151,10 +151,10 @@
 - [x] T065 [US2] Implement CheckpointManager.save_checkpoint() in src/loop/checkpoint.py
 - [x] T066 [US2] Implement CheckpointManager.load_checkpoint() in src/loop/checkpoint.py
 - [x] T067 [US2] Implement CheckpointManager.list_checkpoints() in src/loop/checkpoint.py
-- [ ] T068 [US2] Add checkpoint interval logic to LoopFramework.run() in src/loop/framework.py
-- [ ] T069 [US2] Implement LoopFramework.save_checkpoint() helper in src/loop/framework.py
-- [ ] T070 [US2] Implement LoopFramework.load_checkpoint() helper in src/loop/framework.py
-- [ ] T071 [US2] Add resume_from parameter to LoopFramework.run() in src/loop/framework.py
+- [x] T068 [US2] Add checkpoint interval logic to LoopFramework.run() in src/loop/framework.py
+- [x] T069 [US2] Implement LoopFramework.save_checkpoint() helper in src/loop/framework.py
+- [x] T070 [US2] Implement LoopFramework.load_checkpoint() helper in src/loop/framework.py
+- [x] T071 [US2] Add resume_from parameter to LoopFramework.run() in src/loop/framework.py
 
 ### Unit Tests for User Story 2
 
