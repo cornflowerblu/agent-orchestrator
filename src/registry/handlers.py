@@ -15,6 +15,7 @@ from functools import lru_cache
 from typing import Any, cast
 
 from botocore.exceptions import ClientError
+from pydantic import ValidationError as PydanticValidationError
 
 from src.exceptions import AgentNotFoundError, ValidationError
 from src.logging_config import get_logger
@@ -232,7 +233,7 @@ def update_agent_metadata_handler(event: dict[str, Any], context: Any) -> dict[s
     except json.JSONDecodeError as e:
         return _create_response(400, {"error": f"Invalid JSON: {e}"})
 
-    except ValidationError as e:
+    except (ValidationError, PydanticValidationError) as e:
         return _create_response(400, {"error": str(e)})
 
     except ClientError:
