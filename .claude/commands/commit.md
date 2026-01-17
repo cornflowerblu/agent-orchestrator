@@ -13,9 +13,9 @@ Run `git status --porcelain` to check for uncommitted changes.
 - If no changes exist: Report "Nothing to commit" and exit
 - If changes exist: Proceed to Step 2
 
-## Step 2: Run Test Validation
+## Step 2: Run Unit Test Validation
 
-Execute the following command to run tests with coverage:
+Execute the following command to run unit tests with coverage:
 
 ```bash
 source .venv/bin/activate && pytest --cov=src --cov-report=term-missing -m "not integration"
@@ -23,11 +23,10 @@ source .venv/bin/activate && pytest --cov=src --cov-report=term-missing -m "not 
 
 **Notes**:
 - Virtual environment MUST be activated before running pytest
-- The `-m "not integration"` flag excludes integration tests (they require AWS deployment)
-- Integration tests marked with `@pytest.mark.integration` will be skipped (expected)
-- Pytest exit code 0 with skipped tests = PASS
+- The `-m "not integration"` flag excludes integration tests (they run in Step 3)
+- Pytest exit code 0 = PASS
 
-## Step 3: Evaluate Test Results
+## Step 3: Evaluate Unit Test Results
 
 **PASS Criteria** (All must be true):
 - Pytest exit code = 0 (all non-skipped tests passed)
@@ -38,6 +37,52 @@ source .venv/bin/activate && pytest --cov=src --cov-report=term-missing -m "not 
 - Any test failure (pytest exit code != 0)
 - Coverage < 80%
 - Pytest execution error
+
+**If unit tests FAIL**: Skip to Step 4b (Block Commit)
+**If unit tests PASS**: Proceed to Step 3a (Integration Tests)
+
+## Step 3a: Run Local Integration Test Validation
+
+After unit tests pass, execute local integration tests:
+
+```bash
+source .venv/bin/activate && pytest -m integration_local -v
+```
+
+**Notes**:
+- Only run if Step 2 (unit tests) passed
+- Virtual environment MUST be activated before running pytest
+- The `-m integration_local` flag runs only local integration tests
+- **No coverage requirement** - these tests just need to pass
+- Coverage is measured in CI/CD with E2E integration tests (60% threshold)
+- These tests do NOT require AWS deployment
+
+## Step 3b: Evaluate Integration Test Results
+
+**PASS Criteria**:
+- Pytest exit code = 0 (all tests passed)
+- No pytest execution errors
+
+**FAIL Criteria**:
+- Any test failure (pytest exit code != 0)
+- Pytest execution error
+
+**Output Format When PASS**:
+```
+✅ Unit tests: X passed, Y.YY% coverage (threshold: 80%)
+✅ Local integration tests: X passed
+```
+
+**Output Format When FAIL**:
+```
+✅ Unit tests: X passed, Y.YY% coverage (threshold: 80%)
+❌ Local integration tests failed
+
+[Show pytest failure output]
+```
+
+**If integration tests FAIL**: Skip to Step 4b (Block Commit)
+**If integration tests PASS**: Proceed to Step 4a (Create Commits)
 
 ## Step 4a: If Tests PASS - Create Commits
 
@@ -90,10 +135,11 @@ test(consultation): add unit tests for consultation rules
 
 **DO NOT create any commits.**
 
-Display clear failure information:
+Display clear failure information based on which step failed:
 
+**If Unit Tests Failed (Step 2)**:
 ```
-❌ Tests failed. Cannot commit.
+❌ Unit tests failed. Cannot commit.
 
 [Show pytest failure output or coverage report]
 
@@ -104,21 +150,37 @@ Next steps:
 4. Try /commit again when tests pass
 ```
 
-**If Tests Failed**:
+**If Integration Tests Failed (Step 3a)**:
+```
+✅ Unit tests: X passed, Y.YY% coverage (threshold: 80%)
+❌ Local integration tests failed
+
+[Show pytest failure output]
+
+Next steps:
+1. Review failure output above
+2. Fix failing tests
+3. Re-run tests: source .venv/bin/activate && pytest -m integration_local -v
+4. Try /commit again when tests pass
+```
+
+**For Unit Test Failures**:
 - Show which tests failed and why
 - Show full pytest output for debugging
+- If coverage < 80%: Show coverage report with missing lines
 
-**If Coverage Below 80%**:
-- Show coverage report with missing lines
-- Identify files below threshold
-- Suggest specific lines that need test coverage
+**For Integration Test Failures**:
+- Show which integration tests failed and why
+- Show full pytest output for debugging
+- No coverage requirement (tests just need to pass)
 
 ## Edge Cases
 
-### Skipped Integration Tests
-- Integration tests are EXPECTED to be skipped (require AWS deployment)
-- Pytest exit code 0 with skipped tests = PASS
-- Only fail if non-integration tests fail
+### No Integration Tests Yet
+If no integration tests exist yet (early project stage):
+- Integration test step will show "no tests ran"
+- This is ALLOWED - proceed to commit
+- Remind user to add integration tests following TDD workflow
 
 ### Virtual Environment Missing
 If `.venv/bin/activate` does not exist:
@@ -142,8 +204,8 @@ If no tests exist yet (early project stage):
 When validation passes and commits created:
 
 ```
-✅ All tests passed (X/X tests, Y skipped)
-✅ Coverage: Z.Z% (threshold: 80%)
+✅ Unit tests: X passed, Y.YY% coverage (threshold: 80%)
+✅ Local integration tests: X passed
 
 Created commits:
 1. feat(module): description
