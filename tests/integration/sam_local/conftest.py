@@ -114,6 +114,9 @@ class SAMLocalInvoker:
                 "-",  # Read event from stdin
                 "--docker-network",
                 "host",
+                # Add host.docker.internal for Linux compatibility (GitHub Actions)
+                "--add-host",
+                "host.docker.internal:host-gateway",
             ],
             cwd=self.sam_dir,
             input=event_json,
@@ -154,6 +157,9 @@ class SAMLocalInvoker:
                 str(event_path),
                 "--docker-network",
                 "host",
+                # Add host.docker.internal for Linux compatibility (GitHub Actions)
+                "--add-host",
+                "host.docker.internal:host-gateway",
             ],
             cwd=self.sam_dir,
             capture_output=True,
