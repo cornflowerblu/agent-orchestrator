@@ -105,10 +105,6 @@ class AgentDiscovery:
 
         try:
             data = await self._http_get(url)
-            card = AgentCard(**data)
-            logger.info(f"Discovered agent '{card.name}' at {endpoint}")
-            return card
-
         except httpx.ConnectError as e:
             logger.warning(f"Connection error fetching agent card from {endpoint}: {e}")
             raise DiscoveryError(f"Connection refused: {e}", endpoint=endpoint) from e
@@ -125,9 +121,22 @@ class AgentDiscovery:
             logger.warning(f"Invalid JSON from {endpoint}: {e}")
             raise DiscoveryError(f"Invalid JSON response: {e}", endpoint=endpoint) from e
 
+        # Parse and validate the agent card
+        try:
+            card = AgentCard(**data)
         except Exception as e:
-            logger.error(f"Unexpected error fetching agent card from {endpoint}: {e}")
-            raise DiscoveryError(f"Discovery failed: {e}", endpoint=endpoint) from e
+            # Pydantic validation or other parsing errors
+            logger.error(
+                f"Agent card validation failed for {endpoint}: {e}",
+                exc_info=True  # Include stack trace for debugging
+            )
+            raise DiscoveryError(
+                f"Invalid agent card format: {e}",
+                endpoint=endpoint
+            ) from e
+
+        logger.info(f"Discovered agent '{card.name}' at {endpoint}")
+        return card
 
     async def discover_all_agents(
         self,
