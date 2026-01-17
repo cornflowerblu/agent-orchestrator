@@ -127,32 +127,48 @@ pytest -m "not integration" --cov=src --cov-report=term-missing
 The CI pipeline runs tests in parallel for fast feedback:
 
 ```
-                    ┌─────────────────┐
-                    │      lint       │
-                    └────────┬────────┘
-                             │
-           ┌─────────────────┼─────────────────┐
-           │                 │                 │
-           ▼                 ▼                 ▼
-┌──────────────────┐ ┌──────────────────┐ ┌────────────┐
-│   Unit Tests     │ │ SAM Local Tests  │ │ type-check │
-│ (coverage: 79%)  │ │ (no coverage)    │ │            │
-└────────┬─────────┘ └────────┬─────────┘ └─────┬──────┘
-         │                    │                 │
-         └────────────────────┴─────────────────┘
-                              │
-                    ┌─────────▼─────────┐
-                    │   all-checks      │
-                    └───────────────────┘
-                              │
-              (on PR or [deploy] tag)
-                              │
-                    ┌─────────▼─────────┐
-                    │   CDK Deploy →    │
-                    │ Integration Tests │
-                    │   → CDK Destroy   │
-                    └───────────────────┘
+                         ┌─────────────────┐
+                         │      lint       │
+                         └────────┬────────┘
+                                  │
+        ┌─────────────────────────┼─────────────────────────┐
+        │                         │                         │
+        ▼                         ▼                         ▼
+┌───────────────┐        ┌────────────────┐        ┌────────────────┐
+│  Unit Tests   │        │ SAM Local Tests│        │  type-check    │
+│ (coverage 79%)│        │ (packaging)    │        │  security      │
+└───────┬───────┘        └───────┬────────┘        └───────┬────────┘
+        │                        │                         │
+        ▼                        │                         │
+┌───────────────┐                │                         │
+│   CDK Synth   │                │                         │
+└───────┬───────┘                │                         │
+        │                        │                         │
+        └────────────────────────┴─────────────────────────┘
+                                 │
+                       ┌─────────▼─────────┐
+                       │   all-checks      │◄── Gate for branch protection
+                       └─────────┬─────────┘
+                                 │
+                  (on PR or [deploy] commit tag)
+                                 │
+                       ┌─────────▼─────────┐
+                       │    CDK Deploy     │
+                       └─────────┬─────────┘
+                                 │
+                       ┌─────────▼─────────┐
+                       │ Integration Tests │
+                       │  (real AWS E2E)   │
+                       └─────────┬─────────┘
+                                 │
+                       ┌─────────▼─────────┐
+                       │   CDK Destroy     │
+                       │ (cleanup sandbox) │
+                       └───────────────────┘
 ```
+
+**Note:** CDK Synth runs after Unit Tests to validate CloudFormation templates.
+All jobs must pass `all-checks` before deployment can proceed.
 
 ### Why SAM Tests Don't Have Coverage
 
