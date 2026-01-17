@@ -219,16 +219,16 @@
 - [x] T101 [US5] Implement ObservabilityQueries.get_exit_condition_history() in src/dashboard/queries.py
 - [x] T102 [US5] Create LoopProgress response model in src/dashboard/models.py
 - [ ] T103 [US5] Implement streaming/subscription logic in src/dashboard/queries.py
-- [ ] T104 [US5] Create API handlers skeleton in src/dashboard/handlers.py
-- [ ] T105 [US5] Implement /progress/{session_id} handler in src/dashboard/handlers.py
-- [ ] T106 [US5] Implement /events/{session_id} handler in src/dashboard/handlers.py
-- [ ] T107 [US5] Implement /checkpoints/{session_id} handler in src/dashboard/handlers.py
+- [x] T104 [US5] Create API handlers skeleton in src/dashboard/handlers.py
+- [x] T105 [US5] Implement /progress/{session_id} handler in src/dashboard/handlers.py
+- [x] T106 [US5] Implement /events/{session_id} handler in src/dashboard/handlers.py
+- [x] T107 [US5] Implement /checkpoints/{session_id} handler in src/dashboard/handlers.py
 
 ### Unit Tests for User Story 5
 
-- [ ] T108 [P] [US5] Write unit tests for ObservabilityQueries in tests/unit/test_dashboard/test_queries.py
-- [ ] T109 [P] [US5] Write unit tests for LoopProgress model in tests/unit/test_dashboard/test_models.py
-- [ ] T110 [US5] Write unit tests for API handlers in tests/unit/test_dashboard/test_handlers.py
+- [x] T108 [P] [US5] Write unit tests for ObservabilityQueries in tests/unit/test_dashboard/test_queries.py
+- [x] T109 [P] [US5] Write unit tests for LoopProgress model in tests/unit/test_dashboard/test_models.py
+- [x] T110 [US5] Write unit tests for API handlers in tests/unit/test_dashboard/test_handlers.py
 - [ ] T111 [US5] Write integration test for Observability API in tests/integration/test_dashboard/test_queries.py
 
 **Checkpoint**: User Story 5 complete - dashboard can query progress via Observability

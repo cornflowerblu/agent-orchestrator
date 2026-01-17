@@ -239,3 +239,67 @@ class TestPolicyEnforcer:
                 current_iteration=100,
                 session_id="session-123"
             )
+
+    @patch("src.orchestrator.policy.PolicyClient")
+    def test_update_policy(self, mock_policy_client):
+        """Test updating an existing policy."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+
+        # Mock policy client
+        mock_client_instance = mock_policy_client.return_value
+        mock_client_instance.create_or_get_policy_engine.return_value = {
+            "policyEngineId": "engine-123",
+            "policyEngineArn": "arn:aws:policy:engine-123",
+        }
+        mock_client_instance.update_policy.return_value = {
+            "policyId": "policy-456",
+            "policyArn": "arn:aws:policy:policy-456",
+        }
+
+        enforcer = PolicyEnforcer(config=config)
+
+        # Update policy with new max iterations
+        new_config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=200,
+        )
+        result = enforcer.update_policy(new_config=new_config, policy_id="policy-456")
+
+        # Verify update was called
+        mock_client_instance.update_policy.assert_called_once()
+        call_kwargs = mock_client_instance.update_policy.call_args[1]
+        assert call_kwargs["policy_id"] == "policy-456"
+        assert "cedar" in call_kwargs["definition"]
+
+        # Verify result
+        assert result == "arn:aws:policy:policy-456"
+
+    @patch("src.orchestrator.policy.PolicyClient")
+    def test_get_policy(self, mock_policy_client):
+        """Test retrieving an existing policy."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+
+        # Mock policy client
+        mock_client_instance = mock_policy_client.return_value
+        mock_client_instance.get_policy.return_value = {
+            "policyId": "policy-456",
+            "policyArn": "arn:aws:policy:policy-456",
+            "name": "iteration-limit-test-agent",
+            "definition": {"cedar": {"statement": "permit(..."}},
+        }
+
+        enforcer = PolicyEnforcer(config=config)
+        result = enforcer.get_policy(policy_id="policy-456")
+
+        # Verify get_policy was called
+        mock_client_instance.get_policy.assert_called_once_with(policy_id="policy-456")
+
+        # Verify result
+        assert result["policyId"] == "policy-456"
+        assert result["name"] == "iteration-limit-test-agent"
