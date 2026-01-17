@@ -238,9 +238,10 @@ jobs:
     name: CDK Destroy (Cleanup)
     runs-on: ubuntu-latest
     needs: [cdk-deploy, integration-test]
-    # Only cleanup if deploy succeeded (creates CloudFormation stacks)
-    # If deploy fails, CloudFormation auto-rollback handles cleanup
-    if: always() && needs.cdk-deploy.result == 'success'
+    # Run cleanup whenever deploy was attempted (success or failure)
+    # Ensures full resource cleanup even if deploy fails partway
+    # Environment-based removal policy (DESTROY in CI) handles table deletion
+    if: always() && needs.cdk-deploy.result != 'skipped'
     steps:
       - uses: actions/checkout@v4
 
