@@ -6,6 +6,12 @@ that enforce iteration limits on autonomous agent loops.
 
 from typing import Any
 
+try:
+    from bedrock_agentcore_starter_toolkit.operations.policy.client import PolicyClient
+except ImportError:
+    # For testing and when SDK is not installed
+    PolicyClient = None  # type: ignore
+
 from src.orchestrator.models import PolicyConfig
 
 

@@ -308,3 +308,48 @@ class TestEvaluateDispatcher:
         status = evaluator.evaluate(config, iteration=1)
 
         mock_evaluate.assert_called_once_with(config, 1)
+
+
+class TestTimeoutHandling:
+    """Test timeout handling (T057)."""
+
+    def test_timeout_enforcement(self, mocker):
+        """Should enforce timeout and mark condition as ERROR."""
+        import concurrent.futures
+
+        evaluator = ExitConditionEvaluator(region="us-east-1", timeout_seconds=1)
+        config = ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)
+
+        # Mock execute_code to raise TimeoutError
+        mock_execute = mocker.patch.object(
+            evaluator.code_interpreter, "execute_code", side_effect=TimeoutError("Timeout")
+        )
+
+        # Mock ThreadPoolExecutor to simulate timeout
+        def mock_submit(func, *args):
+            future = mocker.Mock()
+            future.result.side_effect = concurrent.futures.TimeoutError()
+            future.cancel = mocker.Mock()
+            return future
+
+        mock_executor = mocker.Mock()
+        mock_executor.__enter__ = mocker.Mock(return_value=mock_executor)
+        mock_executor.__exit__ = mocker.Mock(return_value=None)
+        mock_executor.submit = mock_submit
+
+        mocker.patch(
+            "concurrent.futures.ThreadPoolExecutor", return_value=mock_executor
+        )
+
+        status = evaluator.evaluate_tests(config, iteration=1)
+
+        # Should mark as ERROR
+        assert status.status == ExitConditionStatusValue.ERROR
+        assert "timeout" in status.error_message.lower()
+        assert status.iteration_evaluated == 1
+
+    def test_custom_timeout_value(self):
+        """Should allow custom timeout configuration."""
+        evaluator = ExitConditionEvaluator(region="us-east-1", timeout_seconds=60)
+
+        assert evaluator.timeout_seconds == 60

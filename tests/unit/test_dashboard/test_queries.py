@@ -137,3 +137,85 @@ class TestObservabilityQueriesGetLoopProgress:
         progress = queries.get_loop_progress(session_id="nonexistent-session")
 
         assert progress is None
+
+
+class TestObservabilityQueriesGetRecentEvents:
+    """Test ObservabilityQueries.get_recent_events() method."""
+
+    @patch("src.dashboard.queries.boto3")
+    def test_get_recent_events_queries_cloudwatch_logs(self, mock_boto3):
+        """Test that get_recent_events queries CloudWatch Logs for loop events."""
+        from src.dashboard.queries import ObservabilityQueries
+
+        # Setup mock CloudWatch Logs client
+        mock_logs_client = Mock()
+        mock_logs_client.start_query.return_value = {"queryId": "query-123"}
+        mock_logs_client.get_query_results.return_value = {
+            "status": "Complete",
+            "results": [
+                [
+                    {"field": "@timestamp", "value": "2026-01-17T10:00:00Z"},
+                    {"field": "event_type", "value": "loop.iteration.started"},
+                    {"field": "iteration", "value": "10"},
+                ]
+            ]
+        }
+
+        queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
+        events = queries.get_recent_events(session_id="loop-session-123", limit=10)
+
+        # Verify CloudWatch Logs was queried
+        mock_logs_client.start_query.assert_called_once()
+        assert events is not None
+        assert isinstance(events, list)
+
+    @patch("src.dashboard.queries.boto3")
+    def test_get_recent_events_returns_list_of_events(self, mock_boto3):
+        """Test that get_recent_events returns a list of event dictionaries."""
+        from src.dashboard.queries import ObservabilityQueries
+
+        # Setup mock with multiple events
+        mock_logs_client = Mock()
+        mock_logs_client.start_query.return_value = {"queryId": "query-456"}
+        mock_logs_client.get_query_results.return_value = {
+            "status": "Complete",
+            "results": [
+                [
+                    {"field": "@timestamp", "value": "2026-01-17T10:00:00Z"},
+                    {"field": "event_type", "value": "loop.iteration.started"},
+                    {"field": "iteration", "value": "10"},
+                    {"field": "session_id", "value": "loop-session-456"},
+                ],
+                [
+                    {"field": "@timestamp", "value": "2026-01-17T10:01:00Z"},
+                    {"field": "event_type", "value": "loop.iteration.completed"},
+                    {"field": "iteration", "value": "10"},
+                    {"field": "session_id", "value": "loop-session-456"},
+                ]
+            ]
+        }
+
+        queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
+        events = queries.get_recent_events(session_id="loop-session-456", limit=10)
+
+        assert len(events) == 2
+        assert events[0]["event_type"] == "loop.iteration.started"
+        assert events[1]["event_type"] == "loop.iteration.completed"
+
+    @patch("src.dashboard.queries.boto3")
+    def test_get_recent_events_returns_empty_list_if_no_results(self, mock_boto3):
+        """Test that get_recent_events returns empty list if no events found."""
+        from src.dashboard.queries import ObservabilityQueries
+
+        # Setup mock with no results
+        mock_logs_client = Mock()
+        mock_logs_client.start_query.return_value = {"queryId": "query-789"}
+        mock_logs_client.get_query_results.return_value = {
+            "status": "Complete",
+            "results": []
+        }
+
+        queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
+        events = queries.get_recent_events(session_id="nonexistent-session", limit=10)
+
+        assert events == []

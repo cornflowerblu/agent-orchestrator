@@ -3,13 +3,11 @@
 T073: Tests for CheckpointManager class
 """
 
-from unittest.mock import MagicMock, patch
-
 import pytest
 
 from src.exceptions import CheckpointRecoveryError
 from src.loop.checkpoint import CheckpointManager
-from src.loop.models import Checkpoint, ExitConditionStatus, ExitConditionStatusValue, ExitConditionType, LoopPhase, LoopState
+from src.loop.models import ExitConditionStatus, ExitConditionStatusValue, ExitConditionType, LoopPhase, LoopState
 
 
 # =============================================================================
@@ -29,204 +27,184 @@ class TestCheckpointManager:
 
     def test_create_memory_for_session(self) -> None:
         """Test CheckpointManager.create_memory() creates Memory instance."""
-        with patch("src.loop.checkpoint.Memory") as mock_memory_class:
-            mock_memory_instance = MagicMock()
-            mock_memory_class.return_value = mock_memory_instance
+        manager = CheckpointManager(session_id="test-session")
+        memory = manager.create_memory()
 
-            manager = CheckpointManager(session_id="test-session")
-            memory = manager.create_memory()
-
-            # Verify Memory was created
-            mock_memory_class.assert_called_once()
-            assert memory == mock_memory_instance
+        # Verify Memory was created
+        assert memory is not None
+        assert hasattr(memory, "put")
+        assert hasattr(memory, "get")
+        assert hasattr(memory, "list")
 
     def test_save_checkpoint(self) -> None:
         """Test CheckpointManager.save_checkpoint() saves to Memory."""
-        with patch("src.loop.checkpoint.Memory") as mock_memory_class:
-            mock_memory = MagicMock()
-            mock_memory_class.return_value = mock_memory
+        manager = CheckpointManager(session_id="test-session")
 
-            manager = CheckpointManager(session_id="test-session")
+        # Create test loop state
+        loop_state = LoopState(
+            session_id="test-session",
+            agent_name="test-agent",
+            max_iterations=100,
+            current_iteration=10,
+            phase=LoopPhase.RUNNING,
+        )
 
-            # Create test loop state
-            loop_state = LoopState(
-                session_id="test-session",
-                agent_name="test-agent",
-                max_iterations=100,
-                current_iteration=10,
-                phase=LoopPhase.RUNNING,
-            )
+        # Save checkpoint
+        checkpoint_id = manager.save_checkpoint(loop_state)
 
-            # Save checkpoint
-            checkpoint_id = manager.save_checkpoint(loop_state)
-
-            # Verify checkpoint was saved
-            assert checkpoint_id is not None
-            assert checkpoint_id.startswith("checkpoint-")
-            mock_memory.put.assert_called_once()
-
-            # Verify the data structure saved
-            call_args = mock_memory.put.call_args
-            assert "key" in call_args.kwargs
-            assert "value" in call_args.kwargs
-            assert call_args.kwargs["key"].startswith("checkpoint/test-session/")
+        # Verify checkpoint was saved
+        assert checkpoint_id is not None
+        assert checkpoint_id.startswith("checkpoint-")
 
     def test_load_checkpoint_success(self) -> None:
         """Test CheckpointManager.load_checkpoint() loads from Memory."""
-        with patch("src.loop.checkpoint.Memory") as mock_memory_class:
-            mock_memory = MagicMock()
-            mock_memory_class.return_value = mock_memory
+        manager = CheckpointManager(session_id="test-session")
 
-            # Setup mock Memory to return checkpoint data
-            mock_memory.get.return_value = {
-                "checkpoint_id": "checkpoint-123",
-                "session_id": "test-session",
-                "iteration": 10,
-                "loop_state_snapshot": {
-                    "session_id": "test-session",
-                    "agent_name": "test-agent",
-                    "max_iterations": 100,
-                    "current_iteration": 10,
-                    "phase": "running",
-                    "is_active": False,
-                    "started_at": "2026-01-17T10:00:00Z",
-                    "exit_conditions": [],
-                    "agent_state": {},
-                },
-                "created_at": "2026-01-17T10:05:00Z",
-                "agent_name": "test-agent",
-            }
+        # Create and save a checkpoint first
+        loop_state = LoopState(
+            session_id="test-session",
+            agent_name="test-agent",
+            max_iterations=100,
+            current_iteration=10,
+            phase=LoopPhase.RUNNING,
+        )
+        manager.save_checkpoint(loop_state)
 
-            manager = CheckpointManager(session_id="test-session")
+        # Load checkpoint
+        loaded_state = manager.load_checkpoint(iteration=10)
 
-            # Load checkpoint
-            loop_state = manager.load_checkpoint(iteration=10)
-
-            # Verify checkpoint was loaded
-            assert loop_state is not None
-            assert loop_state.session_id == "test-session"
-            assert loop_state.current_iteration == 10
-            assert loop_state.agent_name == "test-agent"
-            mock_memory.get.assert_called_once()
+        # Verify checkpoint was loaded
+        assert loaded_state is not None
+        assert loaded_state.session_id == "test-session"
+        assert loaded_state.current_iteration == 10
+        assert loaded_state.agent_name == "test-agent"
 
     def test_load_checkpoint_not_found(self) -> None:
         """Test CheckpointManager.load_checkpoint() raises error if not found."""
-        with patch("src.loop.checkpoint.Memory") as mock_memory_class:
-            mock_memory = MagicMock()
-            mock_memory_class.return_value = mock_memory
+        manager = CheckpointManager(session_id="test-session")
 
-            # Setup mock Memory to return None (checkpoint not found)
-            mock_memory.get.return_value = None
+        # Attempt to load non-existent checkpoint
+        with pytest.raises(CheckpointRecoveryError) as exc_info:
+            manager.load_checkpoint(iteration=99)
 
-            manager = CheckpointManager(session_id="test-session")
-
-            # Attempt to load non-existent checkpoint
-            with pytest.raises(CheckpointRecoveryError) as exc_info:
-                manager.load_checkpoint(iteration=99)
-
-            assert "Checkpoint not found" in str(exc_info.value)
-            assert exc_info.value.checkpoint_id is not None
+        assert "Checkpoint not found" in str(exc_info.value)
+        assert exc_info.value.checkpoint_id is not None
 
     def test_load_checkpoint_invalid_data(self) -> None:
         """Test CheckpointManager.load_checkpoint() raises error for invalid data."""
-        with patch("src.loop.checkpoint.Memory") as mock_memory_class:
-            mock_memory = MagicMock()
-            mock_memory_class.return_value = mock_memory
+        manager = CheckpointManager(session_id="test-session")
 
-            # Setup mock Memory to return invalid checkpoint data
-            mock_memory.get.return_value = {
-                "checkpoint_id": "checkpoint-123",
-                "session_id": "test-session",
-                # Missing required fields
-            }
+        # Manually put invalid data into Memory
+        manager.create_memory()
+        manager._memory._storage["checkpoint/test-session/10"] = {  # type: ignore[union-attr]
+            "checkpoint_id": "checkpoint-123",
+            "session_id": "test-session",
+            # Missing required fields
+        }
 
-            manager = CheckpointManager(session_id="test-session")
+        # Attempt to load invalid checkpoint
+        with pytest.raises(CheckpointRecoveryError) as exc_info:
+            manager.load_checkpoint(iteration=10)
 
-            # Attempt to load invalid checkpoint
-            with pytest.raises(CheckpointRecoveryError) as exc_info:
-                manager.load_checkpoint(iteration=10)
-
-            assert "Invalid checkpoint data" in str(exc_info.value)
+        assert "Invalid checkpoint data" in str(exc_info.value)
 
     def test_list_checkpoints(self) -> None:
         """Test CheckpointManager.list_checkpoints() lists all checkpoints."""
-        with patch("src.loop.checkpoint.Memory") as mock_memory_class:
-            mock_memory = MagicMock()
-            mock_memory_class.return_value = mock_memory
+        manager = CheckpointManager(session_id="test-session")
 
-            # Setup mock Memory to return list of checkpoints
-            mock_memory.list.return_value = [
-                {
-                    "checkpoint_id": "checkpoint-1",
-                    "session_id": "test-session",
-                    "iteration": 5,
-                    "created_at": "2026-01-17T10:00:00Z",
-                    "agent_name": "test-agent",
-                },
-                {
-                    "checkpoint_id": "checkpoint-2",
-                    "session_id": "test-session",
-                    "iteration": 10,
-                    "created_at": "2026-01-17T10:05:00Z",
-                    "agent_name": "test-agent",
-                },
-            ]
-
-            manager = CheckpointManager(session_id="test-session")
-
-            # List checkpoints
-            checkpoints = manager.list_checkpoints()
-
-            # Verify checkpoints were listed
-            assert len(checkpoints) == 2
-            assert checkpoints[0]["iteration"] == 5
-            assert checkpoints[1]["iteration"] == 10
-            mock_memory.list.assert_called_once()
-
-    def test_save_checkpoint_preserves_exit_conditions(self) -> None:
-        """Test that save_checkpoint preserves exit condition state."""
-        with patch("src.loop.checkpoint.Memory") as mock_memory_class:
-            mock_memory = MagicMock()
-            mock_memory_class.return_value = mock_memory
-
-            manager = CheckpointManager(session_id="test-session")
-
-            # Create loop state with exit conditions
+        # Save two checkpoints
+        for iteration in [5, 10]:
             loop_state = LoopState(
                 session_id="test-session",
                 agent_name="test-agent",
                 max_iterations=100,
-                current_iteration=15,
-                exit_conditions=[
-                    ExitConditionStatus(
-                        type=ExitConditionType.ALL_TESTS_PASS,
-                        status=ExitConditionStatusValue.MET,
-                        tool_name="pytest",
-                        tool_exit_code=0,
-                        tool_output="20 passed",
-                        iteration_evaluated=15,
-                    ),
-                ],
+                current_iteration=iteration,
             )
+            manager.save_checkpoint(loop_state)
 
-            # Save checkpoint
-            checkpoint_id = manager.save_checkpoint(loop_state)
+        # List checkpoints
+        checkpoints = manager.list_checkpoints()
 
-            # Verify checkpoint was saved with exit conditions
-            call_args = mock_memory.put.call_args
-            saved_data = call_args.kwargs["value"]
-            assert "loop_state_snapshot" in saved_data
-            assert len(saved_data["loop_state_snapshot"]["exit_conditions"]) == 1
-            assert saved_data["loop_state_snapshot"]["exit_conditions"][0]["type"] == "all_tests_pass"
+        # Verify checkpoints were listed
+        assert len(checkpoints) == 2
+        iterations = {cp["iteration"] for cp in checkpoints}
+        assert 5 in iterations
+        assert 10 in iterations
+
+    def test_save_checkpoint_preserves_exit_conditions(self) -> None:
+        """Test that save_checkpoint preserves exit condition state."""
+        manager = CheckpointManager(session_id="test-session")
+
+        # Create loop state with exit conditions
+        loop_state = LoopState(
+            session_id="test-session",
+            agent_name="test-agent",
+            max_iterations=100,
+            current_iteration=15,
+            exit_conditions=[
+                ExitConditionStatus(
+                    type=ExitConditionType.ALL_TESTS_PASS,
+                    status=ExitConditionStatusValue.MET,
+                    tool_name="pytest",
+                    tool_exit_code=0,
+                    tool_output="20 passed",
+                    iteration_evaluated=15,
+                ),
+            ],
+        )
+
+        # Save and load checkpoint
+        manager.save_checkpoint(loop_state)
+        loaded_state = manager.load_checkpoint(iteration=15)
+
+        # Verify exit conditions were preserved
+        assert len(loaded_state.exit_conditions) == 1
+        assert loaded_state.exit_conditions[0].type == ExitConditionType.ALL_TESTS_PASS
+        assert loaded_state.exit_conditions[0].status == ExitConditionStatusValue.MET
+        assert loaded_state.exit_conditions[0].tool_name == "pytest"
 
     def test_checkpoint_manager_with_custom_region(self) -> None:
         """Test CheckpointManager uses custom AWS region."""
-        with patch("src.loop.checkpoint.Memory") as mock_memory_class:
-            mock_memory = MagicMock()
-            mock_memory_class.return_value = mock_memory
+        manager = CheckpointManager(session_id="test-session", region="eu-west-1")
 
-            manager = CheckpointManager(session_id="test-session", region="eu-west-1")
+        assert manager.region == "eu-west-1"
+        # When creating memory, region should be passed if needed
+        memory = manager.create_memory()
+        assert hasattr(memory, "region")
+        assert memory.region == "eu-west-1"
 
-            assert manager.region == "eu-west-1"
-            # When creating memory, region should be passed if needed
-            # This depends on the Memory API implementation
+    def test_checkpoint_roundtrip_preserves_all_state(self) -> None:
+        """Test full roundtrip preserves all loop state."""
+        manager = CheckpointManager(session_id="test-session")
+
+        # Create complex loop state
+        original_state = LoopState(
+            session_id="test-session",
+            agent_name="test-agent",
+            max_iterations=200,
+            current_iteration=75,
+            phase=LoopPhase.EVALUATING_CONDITIONS,
+            is_active=True,
+            started_at="2026-01-17T10:00:00Z",
+            last_iteration_at="2026-01-17T10:15:00Z",
+            last_checkpoint_at="2026-01-17T10:10:00Z",
+            last_checkpoint_iteration=70,
+            exit_conditions=[
+                ExitConditionStatus(
+                    type=ExitConditionType.ALL_TESTS_PASS,
+                    status=ExitConditionStatusValue.MET,
+                ),
+                ExitConditionStatus(
+                    type=ExitConditionType.LINTING_CLEAN,
+                    status=ExitConditionStatusValue.NOT_MET,
+                ),
+            ],
+            agent_state={"key": "value", "counter": 42},
+        )
+
+        # Save and load
+        manager.save_checkpoint(original_state)
+        restored_state = manager.load_checkpoint(iteration=75)
+
+        # Verify all fields match
+        assert restored_state.model_dump() == original_state.model_dump()
