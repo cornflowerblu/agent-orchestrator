@@ -11,7 +11,8 @@ Task T059: Implement query_observability_traces method
 Task T060: Implement validate_task_completion method
 """
 
-from typing import Any, Callable, cast
+from collections.abc import Callable
+from typing import Any, cast
 
 from pydantic import BaseModel, Field
 
