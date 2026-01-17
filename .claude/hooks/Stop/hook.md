@@ -1,9 +1,3 @@
-<!--
-DISABLED: This hook has been replaced by the /commit skill for on-demand validation
-and /ralph handles validation within its TDD loop.
-
-Uncomment this entire file to re-enable automatic test validation on every stop.
-
 # Stop Hook: Test Validation Before Commit
 
 Check for uncommitted changes and validate tests before creating commits.
@@ -177,6 +171,3 @@ Created commits:
 
 Status: Ready for push
 ```
-
-END OF DISABLED HOOK
--->
