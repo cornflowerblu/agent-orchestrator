@@ -101,8 +101,7 @@ jobs:
           pip install mypy types-boto3
 
       - name: Run mypy
-        run: mypy src/ --ignore-missing-imports --no-error-summary || true
-        continue-on-error: true
+        run: mypy src/ --ignore-missing-imports
 
   security:
     name: Security Scan
