@@ -142,15 +142,15 @@
 
 ### Implementation for User Story 2
 
-- [ ] T059 [US2] Create Checkpoint model in src/loop/models.py
-- [ ] T060 [US2] Implement Checkpoint.from_loop_state() class method in src/loop/models.py
-- [ ] T061 [US2] Implement Checkpoint.to_loop_state() method in src/loop/models.py
-- [ ] T062 [US2] Create CheckpointManager class skeleton in src/loop/checkpoint.py
-- [ ] T063 [US2] Implement Memory client wrapper in src/loop/checkpoint.py
-- [ ] T064 [US2] Implement CheckpointManager.create_memory() for session in src/loop/checkpoint.py
-- [ ] T065 [US2] Implement CheckpointManager.save_checkpoint() in src/loop/checkpoint.py
-- [ ] T066 [US2] Implement CheckpointManager.load_checkpoint() in src/loop/checkpoint.py
-- [ ] T067 [US2] Implement CheckpointManager.list_checkpoints() in src/loop/checkpoint.py
+- [x] T059 [US2] Create Checkpoint model in src/loop/models.py
+- [x] T060 [US2] Implement Checkpoint.from_loop_state() class method in src/loop/models.py
+- [x] T061 [US2] Implement Checkpoint.to_loop_state() method in src/loop/models.py
+- [x] T062 [US2] Create CheckpointManager class skeleton in src/loop/checkpoint.py
+- [x] T063 [US2] Implement Memory client wrapper in src/loop/checkpoint.py
+- [x] T064 [US2] Implement CheckpointManager.create_memory() for session in src/loop/checkpoint.py
+- [x] T065 [US2] Implement CheckpointManager.save_checkpoint() in src/loop/checkpoint.py
+- [x] T066 [US2] Implement CheckpointManager.load_checkpoint() in src/loop/checkpoint.py
+- [x] T067 [US2] Implement CheckpointManager.list_checkpoints() in src/loop/checkpoint.py
 - [ ] T068 [US2] Add checkpoint interval logic to LoopFramework.run() in src/loop/framework.py
 - [ ] T069 [US2] Implement LoopFramework.save_checkpoint() helper in src/loop/framework.py
 - [ ] T070 [US2] Implement LoopFramework.load_checkpoint() helper in src/loop/framework.py
@@ -158,8 +158,8 @@
 
 ### Unit Tests for User Story 2
 
-- [ ] T072 [P] [US2] Write unit tests for Checkpoint model in tests/unit/test_loop/test_models.py
-- [ ] T073 [P] [US2] Write unit tests for CheckpointManager in tests/unit/test_loop/test_checkpoint.py
+- [x] T072 [P] [US2] Write unit tests for Checkpoint model in tests/unit/test_loop/test_models.py
+- [x] T073 [P] [US2] Write unit tests for CheckpointManager in tests/unit/test_loop/test_checkpoint.py
 - [ ] T074 [US2] Write unit tests for checkpoint interval logic in tests/unit/test_loop/test_framework.py
 - [ ] T075 [US2] Write integration test for Memory service in tests/integration/test_loop/test_checkpoint.py
 

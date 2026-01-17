@@ -84,3 +84,48 @@ class PolicyEnforcer:
         # Cache the result
         self._policy_engine_cache[engine_name] = result
         return result
+
+    def create_iteration_policy(self) -> str:
+        """Create a Cedar policy for iteration limit enforcement.
+
+        Maps to FR-007: Policy uses Cedar syntax to enforce iteration limits.
+
+        Returns:
+            Policy ARN
+
+        Example:
+            enforcer = PolicyEnforcer(config)
+            policy_arn = enforcer.create_iteration_policy()
+            # Returns: "arn:aws:bedrock-agentcore:us-east-1:123456789:policy/policy-456"
+        """
+        # Get or create policy engine
+        engine = self._get_or_create_policy_engine()
+        engine_id = engine["policyEngineId"]
+
+        # Generate policy name
+        policy_name = f"{self.config.policy_name_prefix}-{self.config.agent_name}"
+        if self.config.session_id:
+            policy_name += f"-{self.config.session_id}"
+
+        # Check cache
+        if policy_name in self._policy_cache:
+            return self._policy_cache[policy_name]["policyArn"]
+
+        # Generate Cedar statement
+        cedar_statement = self.config.generate_cedar_statement()
+
+        # Create policy using AgentCore Policy service
+        result = self.policy_client.create_or_get_policy(
+            policy_engine_id=engine_id,
+            name=policy_name,
+            description=f"Iteration limit policy for {self.config.agent_name}",
+            definition={
+                "cedar": {
+                    "statement": cedar_statement,
+                }
+            },
+        )
+
+        # Cache the result
+        self._policy_cache[policy_name] = result
+        return result["policyArn"]
