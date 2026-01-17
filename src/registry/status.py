@@ -319,7 +319,7 @@ class StatusStorage:
         """
         statuses = self.list_all_statuses()
 
-        summary = AgentStatusSummary(
+        return AgentStatusSummary(
             total_agents=len(statuses),
             active_count=sum(1 for s in statuses if s.status == AgentStatusValue.ACTIVE),
             inactive_count=sum(1 for s in statuses if s.status == AgentStatusValue.INACTIVE),
@@ -328,4 +328,3 @@ class StatusStorage:
             unhealthy_count=sum(1 for s in statuses if not s.is_healthy()),
         )
 
-        return summary

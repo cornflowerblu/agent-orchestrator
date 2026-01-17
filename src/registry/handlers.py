@@ -36,7 +36,7 @@ _status_storage: StatusStorage | None = None
 @lru_cache(maxsize=1)
 def get_registry() -> AgentRegistry:
     """Get the singleton AgentRegistry instance."""
-    global _registry
+    global _registry  # noqa: PLW0603
     if _registry is None:
         _registry = AgentRegistry(
             metadata_storage=get_metadata_storage(),
@@ -47,7 +47,7 @@ def get_registry() -> AgentRegistry:
 @lru_cache(maxsize=1)
 def get_metadata_storage() -> MetadataStorage:
     """Get the singleton MetadataStorage instance."""
-    global _metadata_storage
+    global _metadata_storage  # noqa: PLW0603
     if _metadata_storage is None:
         _metadata_storage = MetadataStorage()
     return _metadata_storage
@@ -56,7 +56,7 @@ def get_metadata_storage() -> MetadataStorage:
 @lru_cache(maxsize=1)
 def get_status_storage() -> StatusStorage:
     """Get the singleton StatusStorage instance."""
-    global _status_storage
+    global _status_storage  # noqa: PLW0603
     if _status_storage is None:
         _status_storage = StatusStorage()
     return _status_storage
@@ -142,12 +142,12 @@ def list_agents_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             },
         )
 
-    except ClientError as e:
-        logger.error(f"AWS service error listing agents: {e}")
+    except ClientError:
+        logger.exception("AWS service error listing agents")
         return _create_response(503, {"error": "Service temporarily unavailable"})
 
-    except Exception as e:
-        logger.exception(f"Unexpected error listing agents: {e}")
+    except Exception:
+        logger.exception("Unexpected error listing agents")
         return _create_response(500, {"error": "Internal server error"})
 
 
@@ -178,12 +178,12 @@ def get_agent_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     except AgentNotFoundError as e:
         return _create_response(404, {"error": str(e)})
 
-    except ClientError as e:
-        logger.error(f"AWS service error getting agent: {e}")
+    except ClientError:
+        logger.exception("AWS service error getting agent")
         return _create_response(503, {"error": "Service temporarily unavailable"})
 
-    except Exception as e:
-        logger.exception(f"Unexpected error getting agent: {e}")
+    except Exception:
+        logger.exception("Unexpected error getting agent")
         return _create_response(500, {"error": "Internal server error"})
 
 
@@ -227,12 +227,12 @@ def update_agent_metadata_handler(event: dict[str, Any], context: Any) -> dict[s
     except ValidationError as e:
         return _create_response(400, {"error": str(e)})
 
-    except ClientError as e:
-        logger.error(f"AWS service error updating metadata: {e}")
+    except ClientError:
+        logger.exception("AWS service error updating metadata")
         return _create_response(503, {"error": "Service temporarily unavailable"})
 
-    except Exception as e:
-        logger.exception(f"Unexpected error updating metadata: {e}")
+    except Exception:
+        logger.exception("Unexpected error updating metadata")
         return _create_response(500, {"error": "Internal server error"})
 
 
@@ -270,12 +270,12 @@ def get_consultation_requirements_handler(event: dict[str, Any], context: Any) -
     except AgentNotFoundError as e:
         return _create_response(404, {"error": str(e)})
 
-    except ClientError as e:
-        logger.error(f"AWS service error getting consultation requirements: {e}")
+    except ClientError:
+        logger.exception("AWS service error getting consultation requirements")
         return _create_response(503, {"error": "Service temporarily unavailable"})
 
-    except Exception as e:
-        logger.exception(f"Unexpected error getting consultation requirements: {e}")
+    except Exception:
+        logger.exception("Unexpected error getting consultation requirements")
         return _create_response(500, {"error": "Internal server error"})
 
 
@@ -312,12 +312,12 @@ def check_compatibility_handler(event: dict[str, Any], context: Any) -> dict[str
     except AgentNotFoundError as e:
         return _create_response(404, {"error": str(e)})
 
-    except ClientError as e:
-        logger.error(f"AWS service error checking compatibility: {e}")
+    except ClientError:
+        logger.exception("AWS service error checking compatibility")
         return _create_response(503, {"error": "Service temporarily unavailable"})
 
-    except Exception as e:
-        logger.exception(f"Unexpected error checking compatibility: {e}")
+    except Exception:
+        logger.exception("Unexpected error checking compatibility")
         return _create_response(500, {"error": "Internal server error"})
 
 
@@ -363,12 +363,12 @@ def find_compatible_agents_handler(event: dict[str, Any], context: Any) -> dict[
     except json.JSONDecodeError as e:
         return _create_response(400, {"error": f"Invalid JSON: {e}"})
 
-    except ClientError as e:
-        logger.error(f"AWS service error finding compatible agents: {e}")
+    except ClientError:
+        logger.exception("AWS service error finding compatible agents")
         return _create_response(503, {"error": "Service temporarily unavailable"})
 
-    except Exception as e:
-        logger.exception(f"Unexpected error finding compatible agents: {e}")
+    except Exception:
+        logger.exception("Unexpected error finding compatible agents")
         return _create_response(500, {"error": "Internal server error"})
 
 
@@ -399,12 +399,12 @@ def get_agent_status_handler(event: dict[str, Any], context: Any) -> dict[str, A
     except AgentNotFoundError as e:
         return _create_response(404, {"error": str(e)})
 
-    except ClientError as e:
-        logger.error(f"AWS service error getting agent status: {e}")
+    except ClientError:
+        logger.exception("AWS service error getting agent status")
         return _create_response(503, {"error": "Service temporarily unavailable"})
 
-    except Exception as e:
-        logger.exception(f"Unexpected error getting agent status: {e}")
+    except Exception:
+        logger.exception("Unexpected error getting agent status")
         return _create_response(500, {"error": "Internal server error"})
 
 
@@ -464,10 +464,10 @@ def update_agent_status_handler(event: dict[str, Any], context: Any) -> dict[str
     except AgentNotFoundError as e:
         return _create_response(404, {"error": str(e)})
 
-    except ClientError as e:
-        logger.error(f"AWS service error updating agent status: {e}")
+    except ClientError:
+        logger.exception("AWS service error updating agent status")
         return _create_response(503, {"error": "Service temporarily unavailable"})
 
-    except Exception as e:
-        logger.exception(f"Unexpected error updating agent status: {e}")
+    except Exception:
+        logger.exception("Unexpected error updating agent status")
         return _create_response(500, {"error": "Internal server error"})
