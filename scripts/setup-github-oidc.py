@@ -171,6 +171,22 @@ def setup_iam_role(iam_client, account_id: str, region: str, repo: str, oidc_arn
                 "Resource": f"arn:aws:ecr:{region}:{account_id}:repository/cdk-*",
             },
             {
+                # CloudWatch Logs access for Lambda functions and integration tests.
+                # Required for CDK deployments of Lambda functions and observability testing.
+                "Sid": "CloudWatchLogsAccess",
+                "Effect": "Allow",
+                "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents",
+                    "logs:DescribeLogGroups",
+                    "logs:DescribeLogStreams",
+                    "logs:GetLogEvents",
+                    "logs:DeleteLogGroup",
+                ],
+                "Resource": f"arn:aws:logs:{region}:{account_id}:log-group:*",
+            },
+            {
                 # Bedrock AgentCore Code Interpreter access for integration tests.
                 # Allows running pytest and linting tools in a secure sandbox environment.
                 "Sid": "BedrockCodeInterpreterAccess",
