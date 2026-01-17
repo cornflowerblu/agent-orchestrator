@@ -5,7 +5,7 @@ works end-to-end with actual infrastructure.
 
 Requires:
 - CDK stack deployed to AWS
-- API_URL environment variable set (or uses default sandbox URL)
+- API_URL environment variable set to the deployed API Gateway URL
 """
 
 import os
@@ -17,14 +17,19 @@ import requests
 # Mark all tests as integration tests
 pytestmark = pytest.mark.integration
 
-# Default to sandbox API URL if not provided
-DEFAULT_API_URL = "https://i92jukwhp5.execute-api.us-east-1.amazonaws.com/v1"
-
 
 @pytest.fixture
 def api_url():
-    """Get API URL from environment or use default."""
-    return os.getenv("API_URL", DEFAULT_API_URL)
+    """Get API URL from environment variable.
+
+    The API_URL must be set to the deployed API Gateway endpoint.
+    In CI, this is extracted from CDK deploy outputs.
+    For local testing, set it manually after deploying the stack.
+    """
+    url = os.getenv("API_URL")
+    if not url:
+        pytest.skip("API_URL environment variable not set - deploy CDK stack first")
+    return url
 
 
 @pytest.fixture

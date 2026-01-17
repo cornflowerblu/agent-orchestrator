@@ -5,6 +5,7 @@ Task T075: Create API stack with Lambda + API Gateway
 
 from aws_cdk import (
     BundlingOptions,
+    CfnOutput,
     Duration,
     Stack,
 )
@@ -309,3 +310,12 @@ class ApiStack(Stack):
         self.find_compat_fn = find_compat_fn
         self.get_status_fn = get_status_fn
         self.update_status_fn = update_status_fn
+
+        # Export API URL for integration tests
+        CfnOutput(
+            self,
+            "ApiUrl",
+            value=api.url,
+            description="API Gateway URL for integration tests",
+            export_name=f"{construct_id}-ApiUrl",
+        )
