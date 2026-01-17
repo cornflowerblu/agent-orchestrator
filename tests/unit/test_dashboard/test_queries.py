@@ -219,3 +219,102 @@ class TestObservabilityQueriesGetRecentEvents:
         events = queries.get_recent_events(session_id="nonexistent-session", limit=10)
 
         assert events == []
+
+
+class TestObservabilityQueriesListCheckpoints:
+    """Test ObservabilityQueries.list_checkpoints() method."""
+
+    @patch("src.dashboard.queries.boto3")
+    def test_list_checkpoints_queries_cloudwatch_logs(self, mock_boto3):
+        """Test that list_checkpoints queries CloudWatch Logs for checkpoint events."""
+        from src.dashboard.queries import ObservabilityQueries
+
+        # Setup mock CloudWatch Logs client
+        mock_logs_client = Mock()
+        mock_logs_client.start_query.return_value = {"queryId": "query-cp1"}
+        mock_logs_client.get_query_results.return_value = {
+            "status": "Complete",
+            "results": [
+                [
+                    {"field": "@timestamp", "value": "2026-01-17T10:00:00Z"},
+                    {"field": "iteration", "value": "10"},
+                    {"field": "checkpoint_id", "value": "cp-10"},
+                ]
+            ]
+        }
+
+        queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
+        checkpoints = queries.list_checkpoints(session_id="loop-session-123")
+
+        # Verify CloudWatch Logs was queried
+        mock_logs_client.start_query.assert_called_once()
+        assert checkpoints is not None
+        assert isinstance(checkpoints, list)
+
+    @patch("src.dashboard.queries.boto3")
+    def test_list_checkpoints_returns_empty_list_if_no_results(self, mock_boto3):
+        """Test that list_checkpoints returns empty list if no checkpoints found."""
+        from src.dashboard.queries import ObservabilityQueries
+
+        # Setup mock with no results
+        mock_logs_client = Mock()
+        mock_logs_client.start_query.return_value = {"queryId": "query-cp2"}
+        mock_logs_client.get_query_results.return_value = {
+            "status": "Complete",
+            "results": []
+        }
+
+        queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
+        checkpoints = queries.list_checkpoints(session_id="nonexistent-session")
+
+        assert checkpoints == []
+
+
+class TestObservabilityQueriesGetExitConditionHistory:
+    """Test ObservabilityQueries.get_exit_condition_history() method."""
+
+    @patch("src.dashboard.queries.boto3")
+    def test_get_exit_condition_history_queries_cloudwatch_logs(self, mock_boto3):
+        """Test that get_exit_condition_history queries CloudWatch Logs."""
+        from src.dashboard.queries import ObservabilityQueries
+
+        # Setup mock CloudWatch Logs client
+        mock_logs_client = Mock()
+        mock_logs_client.start_query.return_value = {"queryId": "query-ec1"}
+        mock_logs_client.get_query_results.return_value = {
+            "status": "Complete",
+            "results": [
+                [
+                    {"field": "@timestamp", "value": "2026-01-17T10:00:00Z"},
+                    {"field": "iteration", "value": "10"},
+                    {"field": "condition_type", "value": "all_tests_pass"},
+                    {"field": "status", "value": "met"},
+                ]
+            ]
+        }
+
+        queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
+        history = queries.get_exit_condition_history(session_id="loop-session-123")
+
+        # Verify CloudWatch Logs was queried
+        mock_logs_client.start_query.assert_called_once()
+        assert history is not None
+        assert isinstance(history, list)
+
+    @patch("src.dashboard.queries.boto3")
+    def test_get_exit_condition_history_returns_empty_list_if_no_results(self, mock_boto3):
+        """Test that get_exit_condition_history returns empty list if no evaluations."""
+        from src.dashboard.queries import ObservabilityQueries
+
+        # Setup mock with no results
+        mock_logs_client = Mock()
+        mock_logs_client.start_query.return_value = {"queryId": "query-ec2"}
+        mock_logs_client.get_query_results.return_value = {
+            "status": "Complete",
+            "results": []
+        }
+
+        queries = ObservabilityQueries(region="us-east-1", logs_client=mock_logs_client)
+        history = queries.get_exit_condition_history(session_id="nonexistent-session")
+
+        assert history == []

@@ -22,7 +22,8 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
-from src.exceptions import LoopFrameworkError
+from src.exceptions import CheckpointRecoveryError, LoopFrameworkError
+from src.loop.checkpoint import CheckpointManager
 from src.loop.models import (
     ExitConditionStatus,
     ExitConditionStatusValue,
@@ -68,6 +69,10 @@ class LoopFramework:
         self.config = config
         self.state = state
         self.tracer = tracer
+        self.checkpoint_manager = CheckpointManager(
+            session_id=state.session_id,
+            region=config.region,
+        )
 
     @classmethod
     async def initialize(cls, config: LoopConfig) -> "LoopFramework":
@@ -220,6 +225,7 @@ class LoopFramework:
         self,
         work_function: Callable[[int, dict[str, Any], "LoopFramework"], dict[str, Any]],
         initial_state: dict[str, Any] | None = None,
+        resume_from: int | None = None,
     ) -> LoopResult:
         """Run the autonomous loop.
 
@@ -227,6 +233,8 @@ class LoopFramework:
         Maps to T031: Implement iteration execution with work_function callback.
         Maps to T032: Implement loop termination logic.
         Maps to T033: Implement re-entry prevention.
+        Maps to T068: Add checkpoint interval logic to LoopFramework.run().
+        Maps to T071: Add resume_from parameter to LoopFramework.run().
 
         The loop runs until:
         1. All exit conditions are met (outcome: COMPLETED)
@@ -237,19 +245,25 @@ class LoopFramework:
             work_function: Async function to call each iteration.
                 Signature: async def work(iteration, state, framework) -> dict
             initial_state: Optional initial agent state dict
+            resume_from: Optional iteration number to resume from checkpoint
 
         Returns:
             LoopResult with final outcome, state, and statistics
 
         Raises:
             LoopFrameworkError: If loop is already active (re-entry prevention)
+            CheckpointRecoveryError: If resume_from specified but checkpoint invalid
 
         Example:
             async def do_work(iteration, state, fw):
                 state["count"] = state.get("count", 0) + 1
                 return state
 
+            # Initial run
             result = await framework.run(work_function=do_work, initial_state={})
+
+            # Resume from checkpoint
+            result = await framework.run(work_function=do_work, resume_from=10)
         """
         # T033: Re-entry prevention
         if self.state.is_active:
@@ -257,9 +271,18 @@ class LoopFramework:
                 "Loop is already active. Cannot start a new run while executing."
             )
 
+        # T071: Resume from checkpoint if specified
+        if resume_from is not None:
+            restored_state = await self.load_checkpoint(iteration=resume_from)
+            self.state = restored_state
+            agent_state = restored_state.agent_state
+            start_iteration = resume_from + 1  # Resume from next iteration
+        else:
+            agent_state = initial_state or {}
+            start_iteration = 0
+
         # Initialize
         loop_start_time = datetime.now(UTC)
-        agent_state = initial_state or {}
         outcome = LoopOutcome.ITERATION_LIMIT  # Default if we hit max iterations
 
         try:

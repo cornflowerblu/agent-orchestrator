@@ -146,3 +146,96 @@ class TestPolicyEnforcer:
         # Verify policy name includes session ID
         call_kwargs = mock_client_instance.create_or_get_policy.call_args[1]
         assert "session-abc" in call_kwargs["name"]
+
+    @patch("src.orchestrator.policy.PolicyClient")
+    def test_check_iteration_allowed_success(self, mock_policy_client):
+        """Test checking if iteration is allowed (policy permits)."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+
+        # Mock policy client
+        mock_client_instance = mock_policy_client.return_value
+        mock_client_instance.create_or_get_policy_engine.return_value = {
+            "policyEngineId": "engine-123",
+            "policyEngineArn": "arn:aws:policy:engine-123",
+        }
+        # Mock policy evaluation - ALLOW decision
+        mock_client_instance.evaluate.return_value = "ALLOW"
+
+        enforcer = PolicyEnforcer(config=config)
+        result = enforcer.check_iteration_allowed(
+            current_iteration=50,
+            session_id="session-123"
+        )
+
+        # Should return True (allowed)
+        assert result is True
+
+        # Verify evaluate was called with correct context
+        mock_client_instance.evaluate.assert_called_once()
+        call_kwargs = mock_client_instance.evaluate.call_args[1]
+        assert call_kwargs["principal"] == "test-agent"
+        assert call_kwargs["action"] == "iterate"
+        assert call_kwargs["context"]["current_iteration"] == 50
+        assert call_kwargs["context"]["max_iterations"] == 100
+
+    @patch("src.orchestrator.policy.PolicyClient")
+    def test_check_iteration_allowed_violation(self, mock_policy_client):
+        """Test checking iteration when limit exceeded (policy denies)."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+
+        # Mock policy client
+        mock_client_instance = mock_policy_client.return_value
+        mock_client_instance.create_or_get_policy_engine.return_value = {
+            "policyEngineId": "engine-123",
+            "policyEngineArn": "arn:aws:policy:engine-123",
+        }
+        # Mock policy evaluation - DENY decision
+        mock_client_instance.evaluate.return_value = "DENY"
+
+        enforcer = PolicyEnforcer(config=config)
+
+        # Should raise PolicyViolationError
+        with pytest.raises(PolicyViolationError) as exc_info:
+            enforcer.check_iteration_allowed(
+                current_iteration=100,
+                session_id="session-123"
+            )
+
+        # Verify error details
+        error = exc_info.value
+        assert error.agent_name == "test-agent"
+        assert error.current_iteration == 100
+        assert error.max_iterations == 100
+        assert error.session_id == "session-123"
+
+    @patch("src.orchestrator.policy.PolicyClient")
+    def test_check_iteration_allowed_at_limit(self, mock_policy_client):
+        """Test checking iteration at exact limit."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+
+        # Mock policy client
+        mock_client_instance = mock_policy_client.return_value
+        mock_client_instance.create_or_get_policy_engine.return_value = {
+            "policyEngineId": "engine-123",
+            "policyEngineArn": "arn:aws:policy:engine-123",
+        }
+        # At limit, policy should deny (context.current_iteration < context.max_iterations is false)
+        mock_client_instance.evaluate.return_value = "DENY"
+
+        enforcer = PolicyEnforcer(config=config)
+
+        # Should raise PolicyViolationError when at limit
+        with pytest.raises(PolicyViolationError):
+            enforcer.check_iteration_allowed(
+                current_iteration=100,
+                session_id="session-123"
+            )

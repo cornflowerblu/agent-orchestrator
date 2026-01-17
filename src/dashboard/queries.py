@@ -200,3 +200,157 @@ class ObservabilityQueries:
         except Exception as e:
             # Log error but don't crash - return empty list
             return []
+
+    def list_checkpoints(
+        self,
+        session_id: str,
+        limit: int = 20,
+        time_range_minutes: int = 1440,  # 24 hours default
+        log_group_name: str = "/aws/bedrock/agent-loops",
+    ) -> list[dict[str, Any]]:
+        """Query CloudWatch Logs for checkpoint events by session ID.
+
+        Finds all checkpoint save events for a loop session, sorted by
+        iteration number (most recent first).
+
+        Args:
+            session_id: Loop session ID to query
+            limit: Maximum number of checkpoints to return (default 20)
+            time_range_minutes: How far back to search (default 1440 = 24 hours)
+            log_group_name: CloudWatch Log Group name
+
+        Returns:
+            List of checkpoint dictionaries with iteration, timestamp, checkpoint_id
+
+        Example:
+            checkpoints = queries.list_checkpoints("loop-session-123")
+            for cp in checkpoints:
+                print(f"Iteration {cp['iteration']}: {cp['timestamp']}")
+        """
+        # Calculate time range for query
+        end_time = datetime.now(UTC)
+        start_time = end_time - timedelta(minutes=time_range_minutes)
+
+        # CloudWatch Logs Insights query for checkpoint events
+        query_string = f"""
+            fields @timestamp, iteration, checkpoint_id, session_id
+            | filter session_id = "{session_id}" and event_type = "loop.checkpoint.saved"
+            | sort iteration desc
+            | limit {limit}
+        """
+
+        try:
+            # Start the query
+            start_response = self.logs_client.start_query(
+                logGroupName=log_group_name,
+                startTime=int(start_time.timestamp()),
+                endTime=int(end_time.timestamp()),
+                queryString=query_string.strip(),
+            )
+
+            query_id = start_response["queryId"]
+
+            # Poll for query results
+            import time
+            max_attempts = 10
+            for attempt in range(max_attempts):
+                results_response = self.logs_client.get_query_results(queryId=query_id)
+
+                if results_response["status"] == "Complete":
+                    # Convert results to list of checkpoint dictionaries
+                    checkpoints = []
+                    for result in results_response.get("results", []):
+                        checkpoint = {}
+                        for field_data in result:
+                            field_name = field_data.get("field", "").lstrip("@")
+                            checkpoint[field_name] = field_data.get("value", "")
+                        checkpoints.append(checkpoint)
+
+                    return checkpoints
+
+                if results_response["status"] == "Failed":
+                    return []
+
+                time.sleep(0.5)
+
+            return []
+
+        except Exception as e:
+            return []
+
+    def get_exit_condition_history(
+        self,
+        session_id: str,
+        limit: int = 50,
+        time_range_minutes: int = 60,
+        log_group_name: str = "/aws/bedrock/agent-loops",
+    ) -> list[dict[str, Any]]:
+        """Query CloudWatch Logs for exit condition evaluation history.
+
+        Retrieves all exit condition evaluation events for a loop session,
+        showing how conditions changed over time.
+
+        Args:
+            session_id: Loop session ID to query
+            limit: Maximum number of evaluations to return (default 50)
+            time_range_minutes: How far back to search (default 60)
+            log_group_name: CloudWatch Log Group name
+
+        Returns:
+            List of evaluation dictionaries with condition_type, status, iteration
+
+        Example:
+            history = queries.get_exit_condition_history("loop-session-123")
+            for eval in history:
+                print(f"Iteration {eval['iteration']}: {eval['condition_type']} = {eval['status']}")
+        """
+        # Calculate time range for query
+        end_time = datetime.now(UTC)
+        start_time = end_time - timedelta(minutes=time_range_minutes)
+
+        # CloudWatch Logs Insights query for exit condition events
+        query_string = f"""
+            fields @timestamp, iteration, condition_type, status, tool_name, tool_exit_code
+            | filter session_id = "{session_id}" and event_type = "loop.exit_condition.evaluated"
+            | sort @timestamp desc
+            | limit {limit}
+        """
+
+        try:
+            # Start the query
+            start_response = self.logs_client.start_query(
+                logGroupName=log_group_name,
+                startTime=int(start_time.timestamp()),
+                endTime=int(end_time.timestamp()),
+                queryString=query_string.strip(),
+            )
+
+            query_id = start_response["queryId"]
+
+            # Poll for query results
+            import time
+            max_attempts = 10
+            for attempt in range(max_attempts):
+                results_response = self.logs_client.get_query_results(queryId=query_id)
+
+                if results_response["status"] == "Complete":
+                    # Convert results to list of evaluation dictionaries
+                    evaluations = []
+                    for result in results_response.get("results", []):
+                        evaluation = {}
+                        for field_data in result:
+                            field_name = field_data.get("field", "").lstrip("@")
+                            evaluation[field_name] = field_data.get("value", "")
+                        evaluations.append(evaluation)
+
+                    return evaluations
+
+                if results_response["status"] == "Failed":
+                    return []
+
+                time.sleep(0.5)
+
+            return []
+
+        except Exception as e:
+            return []

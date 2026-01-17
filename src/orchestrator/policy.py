@@ -13,6 +13,7 @@ except ImportError:
     PolicyClient = None  # type: ignore
 
 from src.orchestrator.models import PolicyConfig
+from src.exceptions import PolicyViolationError
 
 
 class PolicyEnforcer:
