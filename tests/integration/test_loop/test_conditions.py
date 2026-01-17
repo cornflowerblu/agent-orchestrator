@@ -27,8 +27,29 @@ class TestCodeInterpreterIntegration:
         if not os.getenv("AWS_REGION"):
             pytest.skip("AWS credentials not configured")
 
+        # Clear any moto mock credentials that might interfere
+        # Code Interpreter needs real AWS credentials
+        # Use yield to keep credentials cleared for the entire test duration
+        mock_keys = [
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+            "AWS_SECURITY_TOKEN",
+            "AWS_SESSION_TOKEN",
+        ]
+        original_values = {}
+        for key in mock_keys:
+            if key in os.environ and os.environ[key] == "testing":
+                original_values[key] = os.environ.pop(key)
+
         region = os.getenv("AWS_REGION", "us-east-1")
-        return ExitConditionEvaluator(region=region, timeout_seconds=60)
+        evaluator = ExitConditionEvaluator(region=region, timeout_seconds=60)
+
+        # Yield evaluator - credentials stay cleared during test execution
+        yield evaluator
+
+        # Restore original values after test completes
+        for key, value in original_values.items():
+            os.environ[key] = value
 
     def test_real_code_interpreter_pytest(self, evaluator):
         """Should execute real pytest command via Code Interpreter."""

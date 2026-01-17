@@ -13,12 +13,14 @@ Example:
     result = await framework.run(work_function=do_work, initial_state={})
 """
 
+import os
 import uuid
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Any
 
 from opentelemetry import trace
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
@@ -212,16 +214,67 @@ class LoopFramework:
         Maps to T034: Add OTEL tracer setup in LoopFramework.__init__.
         Maps to FR-014: Emit OTEL traces recording start/completion time.
 
+        Exporter selection (via OTEL_EXPORTER_TYPE environment variable):
+        - "console" (default): ConsoleSpanExporter for local development
+        - "otlp": OTLPSpanExporter for AWS X-Ray/CloudWatch integration
+
+        For OTLP export, configure via standard OTEL environment variables:
+        - OTEL_EXPORTER_OTLP_ENDPOINT: OTLP collector endpoint
+        - OTEL_EXPORTER_OTLP_HEADERS: Optional authentication headers
+
         Args:
             agent_name: Name of the agent for tracer identification
 
         Returns:
             Configured OTEL Tracer instance
         """
-        # Create tracer provider with console exporter for now
-        # In production, this would use AWS X-Ray or CloudWatch exporter
-        provider = TracerProvider()
-        processor = BatchSpanProcessor(ConsoleSpanExporter())
+        # Create resource with service metadata
+        resource = Resource.create(
+            {
+                "service.name": f"agent-orchestrator-{agent_name}",
+                "service.namespace": "agent-orchestrator",
+                "service.instance.id": os.getenv("HOSTNAME", "local"),
+            }
+        )
+
+        # Create tracer provider
+        provider = TracerProvider(resource=resource)
+
+        # Select exporter based on environment configuration
+        exporter_type = os.getenv("OTEL_EXPORTER_TYPE", "console").lower()
+
+        if exporter_type == "otlp":
+            # Use OTLP exporter for AWS X-Ray/CloudWatch integration
+            try:
+                from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+                    OTLPSpanExporter,
+                )
+
+                # OTLP endpoint from environment (standard OTEL convention)
+                endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+                if endpoint:
+                    exporter = OTLPSpanExporter(endpoint=f"{endpoint}/v1/traces")
+                else:
+                    # Default to AWS ADOT collector sidecar endpoint
+                    exporter = OTLPSpanExporter(
+                        endpoint="http://localhost:4318/v1/traces"
+                    )
+
+            except ImportError:
+                # Fall back to console if OTLP exporter not installed
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    "OTLP exporter requested but opentelemetry-exporter-otlp-proto-http "
+                    "not installed. Falling back to console exporter."
+                )
+                exporter = ConsoleSpanExporter()
+        else:
+            # Default: Console exporter for local development
+            exporter = ConsoleSpanExporter()
+
+        # Add span processor with selected exporter
+        processor = BatchSpanProcessor(exporter)
         provider.add_span_processor(processor)
         trace.set_tracer_provider(provider)
 

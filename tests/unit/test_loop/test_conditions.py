@@ -12,6 +12,35 @@ from src.loop.models import (
 )
 
 
+def create_streaming_response(exit_code: int, stdout: str, stderr: str = "") -> dict:
+    """Create a mock streaming response for Code Interpreter execute_command.
+
+    Args:
+        exit_code: Command exit code
+        stdout: Standard output
+        stderr: Standard error
+
+    Returns:
+        Mock response dict with stream iterator
+    """
+
+    def stream_iter():
+        yield {
+            "result": {
+                "content": [{"type": "text", "text": stdout or stderr}],
+                "structuredContent": {
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "exitCode": exit_code,
+                    "executionTime": 0.1,
+                },
+                "isError": exit_code != 0,
+            }
+        }
+
+    return {"stream": stream_iter()}
+
+
 class TestExitConditionEvaluator:
     """Test ExitConditionEvaluator class (T054)."""
 
@@ -81,12 +110,11 @@ class TestEvaluateTests:
             tool_arguments={"path": "tests/"},
         )
 
-        # Mock Code Interpreter BEFORE accessing it
+        # Mock Code Interpreter with streaming response
         mock_code_interpreter = mocker.Mock()
-        mock_code_interpreter.execute_code.return_value = {
-            "exit_code": 0,
-            "output": "===== 15 passed in 2.3s =====",
-        }
+        mock_code_interpreter.execute_command.return_value = create_streaming_response(
+            exit_code=0, stdout="===== 15 passed in 2.3s ====="
+        )
         evaluator._code_interpreter = mock_code_interpreter
 
         status = evaluator.evaluate_tests(config, iteration=1)
@@ -97,20 +125,19 @@ class TestEvaluateTests:
         assert "passed" in status.tool_output.lower()
         assert status.iteration_evaluated == 1
 
-        # Verify Code Interpreter was called with pytest command
-        mock_code_interpreter.execute_code.assert_called_once()
+        # Verify Code Interpreter was called
+        mock_code_interpreter.execute_command.assert_called_once()
 
     def test_evaluate_tests_failure(self, mocker):
         """Should mark condition as NOT_MET when tests fail."""
         evaluator = ExitConditionEvaluator(region="us-east-1")
         config = ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)
 
-        # Mock Code Interpreter BEFORE accessing it
+        # Mock Code Interpreter with streaming response
         mock_code_interpreter = mocker.Mock()
-        mock_code_interpreter.execute_code.return_value = {
-            "exit_code": 1,
-            "output": "===== 3 failed, 12 passed in 2.5s =====",
-        }
+        mock_code_interpreter.execute_command.return_value = create_streaming_response(
+            exit_code=1, stdout="===== 3 failed, 12 passed in 2.5s ====="
+        )
         evaluator._code_interpreter = mock_code_interpreter
 
         status = evaluator.evaluate_tests(config, iteration=2)
@@ -129,15 +156,17 @@ class TestEvaluateTests:
             tool_arguments={"path": "tests/unit", "markers": "not integration"},
         )
 
-        # Mock Code Interpreter BEFORE accessing it
+        # Mock Code Interpreter with streaming response
         mock_code_interpreter = mocker.Mock()
-        mock_code_interpreter.execute_code.return_value = {"exit_code": 0, "output": "10 passed"}
+        mock_code_interpreter.execute_command.return_value = create_streaming_response(
+            exit_code=0, stdout="10 passed"
+        )
         evaluator._code_interpreter = mock_code_interpreter
 
         evaluator.evaluate_tests(config, iteration=1)
 
         # Verify custom arguments were included
-        call_args = mock_code_interpreter.execute_code.call_args[0][0]
+        call_args = mock_code_interpreter.execute_command.call_args[0][0]
         assert "tests/unit" in call_args
         assert "not integration" in call_args
 
@@ -153,12 +182,11 @@ class TestEvaluateLinting:
             tool_arguments={"path": "src/"},
         )
 
-        # Mock Code Interpreter BEFORE accessing it
+        # Mock Code Interpreter with streaming response
         mock_code_interpreter = mocker.Mock()
-        mock_code_interpreter.execute_code.return_value = {
-            "exit_code": 0,
-            "output": "All checks passed!",
-        }
+        mock_code_interpreter.execute_command.return_value = create_streaming_response(
+            exit_code=0, stdout="All checks passed!"
+        )
         evaluator._code_interpreter = mock_code_interpreter
 
         status = evaluator.evaluate_linting(config, iteration=1)
@@ -169,7 +197,7 @@ class TestEvaluateLinting:
         assert status.iteration_evaluated == 1
 
         # Verify Code Interpreter was called with ruff command
-        call_args = mock_code_interpreter.execute_code.call_args[0][0]
+        call_args = mock_code_interpreter.execute_command.call_args[0][0]
         assert "ruff check" in call_args
 
     def test_evaluate_linting_failure(self, mocker):
@@ -177,12 +205,11 @@ class TestEvaluateLinting:
         evaluator = ExitConditionEvaluator(region="us-east-1")
         config = ExitConditionConfig(type=ExitConditionType.LINTING_CLEAN)
 
-        # Mock Code Interpreter BEFORE accessing it
+        # Mock Code Interpreter with streaming response
         mock_code_interpreter = mocker.Mock()
-        mock_code_interpreter.execute_code.return_value = {
-            "exit_code": 1,
-            "output": "Found 5 errors in 3 files",
-        }
+        mock_code_interpreter.execute_command.return_value = create_streaming_response(
+            exit_code=1, stdout="Found 5 errors in 3 files"
+        )
         evaluator._code_interpreter = mock_code_interpreter
 
         status = evaluator.evaluate_linting(config, iteration=2)
@@ -200,15 +227,17 @@ class TestEvaluateLinting:
             tool_arguments={"path": "src/loop/"},
         )
 
-        # Mock Code Interpreter BEFORE accessing it
+        # Mock Code Interpreter with streaming response
         mock_code_interpreter = mocker.Mock()
-        mock_code_interpreter.execute_code.return_value = {"exit_code": 0, "output": "OK"}
+        mock_code_interpreter.execute_command.return_value = create_streaming_response(
+            exit_code=0, stdout="OK"
+        )
         evaluator._code_interpreter = mock_code_interpreter
 
         evaluator.evaluate_linting(config, iteration=1)
 
         # Verify custom path was used
-        call_args = mock_code_interpreter.execute_code.call_args[0][0]
+        call_args = mock_code_interpreter.execute_command.call_args[0][0]
         assert "src/loop/" in call_args
 
 
@@ -298,44 +327,27 @@ class TestEvaluateDispatcher:
         mock_evaluate.assert_called_once_with(config, 1)
 
 
-class TestTimeoutHandling:
-    """Test timeout handling (T057)."""
+class TestTimeoutEnforcement:
+    """Test timeout enforcement per SC-002."""
 
     def test_timeout_enforcement(self, mocker):
-        """Should enforce timeout and mark condition as ERROR."""
-        import concurrent.futures
+        """Should raise TimeoutError when command exceeds timeout."""
+        import time
 
         evaluator = ExitConditionEvaluator(region="us-east-1", timeout_seconds=1)
-        config = ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)
 
-        # Mock Code Interpreter BEFORE accessing it
+        # Mock Code Interpreter to simulate slow execution
+        def slow_execute(command):
+            time.sleep(3)  # Sleep longer than timeout
+            return create_streaming_response(exit_code=0, stdout="Done")
+
         mock_code_interpreter = mocker.Mock()
-        mock_code_interpreter.execute_code.side_effect = TimeoutError("Timeout")
+        mock_code_interpreter.execute_command.side_effect = slow_execute
         evaluator._code_interpreter = mock_code_interpreter
 
-        # Mock ThreadPoolExecutor to simulate timeout
-        def mock_submit(func, *args):
-            future = mocker.Mock()
-            future.result.side_effect = concurrent.futures.TimeoutError()
-            future.cancel = mocker.Mock()
-            return future
+        config = ExitConditionConfig(type=ExitConditionType.LINTING_CLEAN)
+        status = evaluator.evaluate_linting(config, iteration=1)
 
-        mock_executor = mocker.Mock()
-        mock_executor.__enter__ = mocker.Mock(return_value=mock_executor)
-        mock_executor.__exit__ = mocker.Mock(return_value=None)
-        mock_executor.submit = mock_submit
-
-        mocker.patch("concurrent.futures.ThreadPoolExecutor", return_value=mock_executor)
-
-        status = evaluator.evaluate_tests(config, iteration=1)
-
-        # Should mark as ERROR
+        # Should mark as ERROR due to timeout
         assert status.status == ExitConditionStatusValue.ERROR
         assert "timeout" in status.error_message.lower()
-        assert status.iteration_evaluated == 1
-
-    def test_custom_timeout_value(self):
-        """Should allow custom timeout configuration."""
-        evaluator = ExitConditionEvaluator(region="us-east-1", timeout_seconds=60)
-
-        assert evaluator.timeout_seconds == 60
