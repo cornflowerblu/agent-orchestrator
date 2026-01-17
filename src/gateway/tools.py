@@ -79,7 +79,7 @@ class GatewayClient:
             return tools
 
         except Exception as e:
-            logger.error(f"Failed to list tools from Gateway: {e}")
+            logger.exception(f"Failed to list tools from Gateway: {e}")
             raise ToolUnavailableError(
                 tool_name="list_tools", reason=f"Gateway unreachable: {e!s}"
             ) from e
@@ -115,7 +115,7 @@ class GatewayClient:
             return result
 
         except Exception as e:
-            logger.error(f"Tool '{tool_name}' execution failed: {e}")
+            logger.exception(f"Tool '{tool_name}' execution failed: {e}")
             raise ToolUnavailableError(tool_name=tool_name, reason=str(e)) from e
 
     def search_tools_semantic(self, query: str) -> list[dict[str, Any]]:
@@ -152,7 +152,7 @@ class GatewayClient:
             return relevant_tools
 
         except Exception as e:
-            logger.error(f"Semantic tool search failed: {e}")
+            logger.exception(f"Semantic tool search failed: {e}")
             raise ToolUnavailableError(
                 tool_name="semantic_search", reason=f"Search failed: {e!s}"
             ) from e

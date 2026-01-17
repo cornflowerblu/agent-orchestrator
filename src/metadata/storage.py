@@ -69,7 +69,7 @@ class MetadataStorage:
             return item
 
         except ClientError as e:
-            logger.error(f"Failed to store metadata: {e}")
+            logger.exception(f"Failed to store metadata: {e}")
             raise ValidationError(
                 f"Failed to store metadata for '{metadata.agent_name}'",
                 details={"error": str(e)},
@@ -103,7 +103,7 @@ class MetadataStorage:
             return metadata
 
         except ClientError as e:
-            logger.error(f"Failed to retrieve metadata: {e}")
+            logger.exception(f"Failed to retrieve metadata: {e}")
             raise ValidationError(
                 f"Failed to retrieve metadata for '{agent_name}'", details={"error": str(e)}
             ) from e
@@ -126,7 +126,7 @@ class MetadataStorage:
             logger.info(f"Deleted metadata for agent '{agent_name}'")
 
         except ClientError as e:
-            logger.error(f"Failed to delete metadata: {e}")
+            logger.exception(f"Failed to delete metadata: {e}")
             raise ValidationError(
                 f"Failed to delete metadata for '{agent_name}'", details={"error": str(e)}
             ) from e
@@ -159,7 +159,7 @@ class MetadataStorage:
             return metadata_list
 
         except ClientError as e:
-            logger.error(f"Failed to list metadata: {e}")
+            logger.exception(f"Failed to list metadata: {e}")
             raise ValidationError("Failed to list agent metadata", details={"error": str(e)}) from e
 
     def update_consultation_requirements(
@@ -200,7 +200,7 @@ class MetadataStorage:
         except AgentNotFoundError:
             raise
         except ClientError as e:
-            logger.error(f"Failed to update consultation requirements: {e}")
+            logger.exception(f"Failed to update consultation requirements: {e}")
             raise ValidationError(
                 f"Failed to update consultation requirements for '{agent_name}'",
                 details={"error": str(e)},
