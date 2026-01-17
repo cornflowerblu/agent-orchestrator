@@ -13,10 +13,10 @@ Example:
     result = await framework.run(work_function=do_work, initial_state={})
 """
 
-import asyncio
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any, Callable
+from typing import Any
 
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -414,4 +414,3 @@ class LoopFramework:
             custom_data: Optional custom data to include in checkpoint
         """
         # TODO: Implement in Phase 5 (User Story 2)
-        pass

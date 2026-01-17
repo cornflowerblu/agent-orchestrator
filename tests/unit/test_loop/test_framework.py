@@ -7,7 +7,6 @@ T040: Tests for re-entry prevention
 """
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -21,7 +20,6 @@ from src.loop.models import (
     LoopPhase,
     LoopState,
 )
-
 
 # =============================================================================
 # T037: LoopFramework Initialization Tests

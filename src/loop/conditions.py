@@ -11,19 +11,14 @@ Maps to FR-004: Support standard exit conditions (tests, build, linting, securit
 Maps to SC-002: Verification timeout of 30 seconds per tool.
 """
 
-import asyncio
 import logging
-from typing import Any
 
 from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
 
-from src.exceptions import ExitConditionEvaluationError
 from src.gateway.tools import GatewayClient
 from src.loop.models import (
     ExitConditionConfig,
     ExitConditionStatus,
-    ExitConditionStatusValue,
-    ExitConditionType,
 )
 
 logger = logging.getLogger(__name__)
