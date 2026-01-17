@@ -81,8 +81,8 @@ class GatewayClient:
         except Exception as e:
             logger.error(f"Failed to list tools from Gateway: {e}")
             raise ToolUnavailableError(
-                tool_name="list_tools", reason=f"Gateway unreachable: {str(e)}"
-            )
+                tool_name="list_tools", reason=f"Gateway unreachable: {e!s}"
+            ) from e
 
     def call_tool_sync(
         self, tool_name: str, arguments: dict[str, Any], tool_use_id: str | None = None
@@ -116,7 +116,7 @@ class GatewayClient:
 
         except Exception as e:
             logger.error(f"Tool '{tool_name}' execution failed: {e}")
-            raise ToolUnavailableError(tool_name=tool_name, reason=str(e))
+            raise ToolUnavailableError(tool_name=tool_name, reason=str(e)) from e
 
     def search_tools_semantic(self, query: str) -> list[dict[str, Any]]:
         """
@@ -154,8 +154,8 @@ class GatewayClient:
         except Exception as e:
             logger.error(f"Semantic tool search failed: {e}")
             raise ToolUnavailableError(
-                tool_name="semantic_search", reason=f"Search failed: {str(e)}"
-            )
+                tool_name="semantic_search", reason=f"Search failed: {e!s}"
+            ) from e
 
     def handle_tool_error(self, tool_name: str, error: Exception) -> dict[str, Any]:
         """

@@ -1,13 +1,10 @@
 """Unit tests for semantic type validation."""
 
 import pytest
-from src.metadata.validation import (
-    get_compatibility_matrix,
-    validate_input_compatibility,
-    validate_output_compatibility,
-)
-from src.metadata.models import SemanticType, InputSchema, OutputSchema
+
 from src.exceptions import IncompatibleTypeError
+from src.metadata.models import InputSchema, OutputSchema, SemanticType
+from src.metadata.validation import get_compatibility_matrix, validate_input_compatibility
 
 
 class TestSemanticTypeCompatibility:

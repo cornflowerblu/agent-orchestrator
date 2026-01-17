@@ -73,7 +73,7 @@ class MetadataStorage:
             raise ValidationError(
                 f"Failed to store metadata for '{metadata.agent_name}'",
                 details={"error": str(e)},
-            )
+            ) from e
 
     def get_metadata(self, agent_name: str) -> CustomAgentMetadata:
         """
@@ -106,7 +106,7 @@ class MetadataStorage:
             logger.error(f"Failed to retrieve metadata: {e}")
             raise ValidationError(
                 f"Failed to retrieve metadata for '{agent_name}'", details={"error": str(e)}
-            )
+            ) from e
 
     def delete_metadata(self, agent_name: str) -> None:
         """
@@ -129,7 +129,7 @@ class MetadataStorage:
             logger.error(f"Failed to delete metadata: {e}")
             raise ValidationError(
                 f"Failed to delete metadata for '{agent_name}'", details={"error": str(e)}
-            )
+            ) from e
 
     def list_all_metadata(self) -> list[CustomAgentMetadata]:
         """
@@ -160,7 +160,7 @@ class MetadataStorage:
 
         except ClientError as e:
             logger.error(f"Failed to list metadata: {e}")
-            raise ValidationError("Failed to list agent metadata", details={"error": str(e)})
+            raise ValidationError("Failed to list agent metadata", details={"error": str(e)}) from e
 
     def update_consultation_requirements(
         self, agent_name: str, requirements: list[ConsultationRequirement]
@@ -204,7 +204,7 @@ class MetadataStorage:
             raise ValidationError(
                 f"Failed to update consultation requirements for '{agent_name}'",
                 details={"error": str(e)},
-            )
+            ) from e
 
     def get_consultation_requirements(self, agent_name: str) -> list[ConsultationRequirement]:
         """

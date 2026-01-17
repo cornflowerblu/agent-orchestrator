@@ -4,8 +4,6 @@
 class AgentFrameworkError(Exception):
     """Base exception for all agent framework errors."""
 
-    pass
-
 
 class AgentNotFoundError(AgentFrameworkError):
     """Raised when an agent is not found in the registry."""

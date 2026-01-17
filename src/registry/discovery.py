@@ -111,23 +111,23 @@ class AgentDiscovery:
 
         except httpx.ConnectError as e:
             logger.warning(f"Connection error fetching agent card from {endpoint}: {e}")
-            raise DiscoveryError(f"Connection refused: {e}", endpoint=endpoint)
+            raise DiscoveryError(f"Connection refused: {e}", endpoint=endpoint) from e
 
         except httpx.TimeoutException as e:
             logger.warning(f"Timeout fetching agent card from {endpoint}: {e}")
-            raise DiscoveryError(f"Request timed out: {e}", endpoint=endpoint)
+            raise DiscoveryError(f"Request timed out: {e}", endpoint=endpoint) from e
 
         except httpx.HTTPStatusError as e:
             logger.warning(f"HTTP error fetching agent card from {endpoint}: {e}")
-            raise DiscoveryError(f"HTTP error: {e.response.status_code}", endpoint=endpoint)
+            raise DiscoveryError(f"HTTP error: {e.response.status_code}", endpoint=endpoint) from e
 
         except ValueError as e:
             logger.warning(f"Invalid JSON from {endpoint}: {e}")
-            raise DiscoveryError(f"Invalid JSON response: {e}", endpoint=endpoint)
+            raise DiscoveryError(f"Invalid JSON response: {e}", endpoint=endpoint) from e
 
         except Exception as e:
             logger.error(f"Unexpected error fetching agent card from {endpoint}: {e}")
-            raise DiscoveryError(f"Discovery failed: {e}", endpoint=endpoint)
+            raise DiscoveryError(f"Discovery failed: {e}", endpoint=endpoint) from e
 
     async def discover_all_agents(
         self,
