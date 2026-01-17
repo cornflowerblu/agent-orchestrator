@@ -14,8 +14,18 @@ class MetadataStack(cdk.Stack):
     - AgentStatus: Tracks agent runtime status for scheduling decisions
     """
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(
+        self, scope: Construct, construct_id: str, environment: str = "development", **kwargs
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        # Determine removal policy based on environment
+        # RETAIN for production (prevent accidental data loss)
+        # DESTROY for non-prod (enable full cleanup in CI/CD)
+        is_production = environment.lower() == "production"
+        metadata_removal_policy = (
+            cdk.RemovalPolicy.RETAIN if is_production else cdk.RemovalPolicy.DESTROY
+        )
 
         # AgentMetadata Table
         self.metadata_table = dynamodb.Table(
@@ -26,7 +36,7 @@ class MetadataStack(cdk.Stack):
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.AWS_MANAGED,
             point_in_time_recovery=True,
-            removal_policy=cdk.RemovalPolicy.RETAIN,
+            removal_policy=metadata_removal_policy,
             stream=dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
         )
 
