@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Import Memory at module level for easier mocking in tests
 try:
-    from bedrock_agentcore import Memory
+    from bedrock_agentcore import Memory  # type: ignore[attr-defined]
 except ImportError:
     Memory = None  # type: ignore[assignment,misc]
 
