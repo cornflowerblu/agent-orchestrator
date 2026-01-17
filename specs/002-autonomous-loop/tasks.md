@@ -197,7 +197,7 @@
 - [x] T092 [P] [US4] Write unit tests for PolicyEnforcer in tests/unit/test_orchestrator/test_policy.py
 - [x] T093 [P] [US4] Write unit tests for AlertManager in tests/unit/test_orchestrator/test_alerts.py
 - [x] T094 [US4] Write unit tests for ObservabilityMonitor in tests/unit/test_orchestrator/test_monitor.py
-- [ ] T095 [US4] Write integration test for Policy service in tests/integration/test_orchestrator/test_policy.py
+- [x] T095 [US4] Write integration test for Policy service in tests/integration/test_orchestrator/test_policy.py
 
 **Checkpoint**: User Story 4 complete - iteration limits enforced via Policy
 
