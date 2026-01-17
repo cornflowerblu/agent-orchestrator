@@ -188,7 +188,7 @@ class TestCleanup:
                 if "test" in stack_name.lower() and "AgentFramework" in stack_name:
                     creation_time = stack["CreationTime"]
                     age_hours = (
-                        datetime.now(UTC) - creation_time.replace(tzinfo=UTC)
+                        datetime.now(UTC) - creation_time.astimezone(UTC)
                     ).total_seconds() / 3600
 
                     if age_hours > max_age_hours:

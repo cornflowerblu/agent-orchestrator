@@ -118,11 +118,6 @@ class StatusStorage:
             ValidationError: If update fails due to DynamoDB error
         """
         try:
-            # Verify agent exists before updating (prevents creating orphan records)
-            response = self.table.get_item(Key={"agent_name": agent_name})
-            if "Item" not in response:
-                raise AgentNotFoundError(agent_name)
-
             now = datetime.now(UTC).isoformat()
 
             # Build update expression dynamically
@@ -170,22 +165,25 @@ class StatusStorage:
 
             logger.debug(f"Updating status for agent '{agent_name}'")
 
+            # Use conditional expression to ensure item exists before updating
             self.table.update_item(
                 Key={"agent_name": agent_name},
                 UpdateExpression=update_expression,
                 ExpressionAttributeNames=expression_names,
                 ExpressionAttributeValues=expression_values,
+                ConditionExpression="attribute_exists(agent_name)",
             )
 
             # Return the updated status
             return self.get_status(agent_name)
 
-        except AgentNotFoundError:
-            # Re-raise AgentNotFoundError without wrapping
-            raise
-
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code", "Unknown")
+
+            # Handle conditional check failure (item doesn't exist)
+            if error_code == "ConditionalCheckFailedException":
+                raise AgentNotFoundError(agent_name) from e
+
             logger.exception(f"DynamoDB error updating status for '{agent_name}': {error_code}")
             raise ValidationError(
                 f"Failed to update status for '{agent_name}'",

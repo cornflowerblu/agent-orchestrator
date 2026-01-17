@@ -7,6 +7,7 @@ import json
 import pytest
 from unittest.mock import MagicMock, patch
 
+from botocore.exceptions import ClientError
 from src.agents.models import AgentCard, AgentCapabilities, Skill
 from src.consultation.rules import ConsultationRequirement, ConsultationPhase
 from src.exceptions import AgentNotFoundError
@@ -89,6 +90,23 @@ class TestListAgentsHandler:
 
             assert response["statusCode"] == 500
 
+    def test_list_agents_client_error(self, mock_context):
+        """Test ClientError handling in list_agents."""
+        from src.registry.handlers import list_agents_handler
+
+        with patch('src.registry.handlers.get_registry') as mock_get:
+            mock_registry = MagicMock()
+            # Mock boto3 ClientError
+            error_response = {'Error': {'Code': 'ServiceUnavailable', 'Message': 'Service unavailable'}}
+            mock_registry.list_all_agents.side_effect = ClientError(error_response, 'Scan')
+            mock_get.return_value = mock_registry
+
+            response = list_agents_handler({}, mock_context)
+
+            assert response["statusCode"] == 503
+            body = json.loads(response["body"])
+            assert "Service temporarily unavailable" in body["error"]
+
 
 class TestGetAgentHandler:
     """Tests for get_agent_handler (T077)."""
@@ -134,6 +152,24 @@ class TestGetAgentHandler:
         response = get_agent_handler(event, mock_context)
 
         assert response["statusCode"] == 400
+
+    def test_get_agent_client_error(self, mock_context):
+        """Test ClientError handling in get_agent."""
+        from src.registry.handlers import get_agent_handler
+
+        event = {"pathParameters": {"agent_name": "test-agent"}}
+
+        with patch('src.registry.handlers.get_registry') as mock_get:
+            mock_registry = MagicMock()
+            error_response = {'Error': {'Code': 'ServiceUnavailable', 'Message': 'Service unavailable'}}
+            mock_registry.get_agent_card.side_effect = ClientError(error_response, 'GetItem')
+            mock_get.return_value = mock_registry
+
+            response = get_agent_handler(event, mock_context)
+
+            assert response["statusCode"] == 503
+            body = json.loads(response["body"])
+            assert "Service temporarily unavailable" in body["error"]
 
 
 class TestUpdateAgentMetadataHandler:
@@ -187,6 +223,31 @@ class TestUpdateAgentMetadataHandler:
 
         assert response["statusCode"] == 400
 
+    def test_update_metadata_client_error(self, mock_context):
+        """Test ClientError handling in update_agent_metadata."""
+        from src.registry.handlers import update_agent_metadata_handler
+
+        event = {
+            "pathParameters": {"agent_name": "test-agent"},
+            "body": json.dumps({
+                "version": "2.0.0",
+                "input_schemas": [],
+                "output_schemas": []
+            })
+        }
+
+        with patch('src.registry.handlers.get_metadata_storage') as mock_get:
+            mock_storage = MagicMock()
+            error_response = {'Error': {'Code': 'ServiceUnavailable', 'Message': 'Service unavailable'}}
+            mock_storage.put_metadata.side_effect = ClientError(error_response, 'PutItem')
+            mock_get.return_value = mock_storage
+
+            response = update_agent_metadata_handler(event, mock_context)
+
+            assert response["statusCode"] == 503
+            body = json.loads(response["body"])
+            assert "Service temporarily unavailable" in body["error"]
+
 
 class TestGetConsultationRequirementsHandler:
     """Tests for get_consultation_requirements_handler (T079)."""
@@ -223,6 +284,24 @@ class TestGetConsultationRequirementsHandler:
         response = get_consultation_requirements_handler(event, mock_context)
 
         assert response["statusCode"] == 400
+
+    def test_get_requirements_client_error(self, mock_context):
+        """Test ClientError handling in get_consultation_requirements."""
+        from src.registry.handlers import get_consultation_requirements_handler
+
+        event = {"pathParameters": {"agent_name": "test-agent"}}
+
+        with patch('src.registry.handlers.get_registry') as mock_get:
+            mock_registry = MagicMock()
+            error_response = {'Error': {'Code': 'ServiceUnavailable', 'Message': 'Service unavailable'}}
+            mock_registry.get_consultation_requirements.side_effect = ClientError(error_response, 'GetItem')
+            mock_get.return_value = mock_registry
+
+            response = get_consultation_requirements_handler(event, mock_context)
+
+            assert response["statusCode"] == 503
+            body = json.loads(response["body"])
+            assert "Service temporarily unavailable" in body["error"]
 
 
 class TestCheckCompatibilityHandler:
@@ -285,6 +364,29 @@ class TestCheckCompatibilityHandler:
 
             assert response["statusCode"] == 404
 
+    def test_check_compatibility_client_error(self, mock_context):
+        """Test ClientError handling in check_compatibility."""
+        from src.registry.handlers import check_compatibility_handler
+
+        event = {
+            "body": json.dumps({
+                "source_agent": "agent-a",
+                "target_agent": "agent-b"
+            })
+        }
+
+        with patch('src.registry.handlers.get_registry') as mock_get:
+            mock_registry = MagicMock()
+            error_response = {'Error': {'Code': 'ServiceUnavailable', 'Message': 'Service unavailable'}}
+            mock_registry.check_compatibility.side_effect = ClientError(error_response, 'GetItem')
+            mock_get.return_value = mock_registry
+
+            response = check_compatibility_handler(event, mock_context)
+
+            assert response["statusCode"] == 503
+            body = json.loads(response["body"])
+            assert "Service temporarily unavailable" in body["error"]
+
 
 class TestFindCompatibleAgentsHandler:
     """Tests for find_compatible_agents_handler (T081)."""
@@ -325,6 +427,24 @@ class TestFindCompatibleAgentsHandler:
         response = find_compatible_agents_handler(event, mock_context)
 
         assert response["statusCode"] == 400
+
+    def test_find_compatible_client_error(self, mock_context):
+        """Test ClientError handling in find_compatible_agents."""
+        from src.registry.handlers import find_compatible_agents_handler
+
+        event = {"body": json.dumps({"input_type": "artifact"})}
+
+        with patch('src.registry.handlers.get_registry') as mock_get:
+            mock_registry = MagicMock()
+            error_response = {'Error': {'Code': 'ServiceUnavailable', 'Message': 'Service unavailable'}}
+            mock_registry.find_by_input_compatibility.side_effect = ClientError(error_response, 'Scan')
+            mock_get.return_value = mock_registry
+
+            response = find_compatible_agents_handler(event, mock_context)
+
+            assert response["statusCode"] == 503
+            body = json.loads(response["body"])
+            assert "Service temporarily unavailable" in body["error"]
 
 
 class TestGetAgentStatusHandler:
@@ -375,6 +495,24 @@ class TestGetAgentStatusHandler:
         response = get_agent_status_handler(event, mock_context)
 
         assert response["statusCode"] == 400
+
+    def test_get_status_client_error(self, mock_context):
+        """Test ClientError handling in get_agent_status."""
+        from src.registry.handlers import get_agent_status_handler
+
+        event = {"pathParameters": {"agent_name": "test-agent"}}
+
+        with patch('src.registry.handlers.get_status_storage') as mock_get:
+            mock_storage = MagicMock()
+            error_response = {'Error': {'Code': 'ServiceUnavailable', 'Message': 'Service unavailable'}}
+            mock_storage.get_status.side_effect = ClientError(error_response, 'GetItem')
+            mock_get.return_value = mock_storage
+
+            response = get_agent_status_handler(event, mock_context)
+
+            assert response["statusCode"] == 503
+            body = json.loads(response["body"])
+            assert "Service temporarily unavailable" in body["error"]
 
 
 class TestUpdateAgentStatusHandler:
@@ -430,6 +568,30 @@ class TestUpdateAgentStatusHandler:
         response = update_agent_status_handler(event, mock_context)
 
         assert response["statusCode"] == 400
+
+    def test_update_status_client_error(self, mock_context):
+        """Test ClientError handling in update_agent_status."""
+        from src.registry.handlers import update_agent_status_handler
+
+        event = {
+            "pathParameters": {"agent_name": "test-agent"},
+            "body": json.dumps({
+                "status": "active",
+                "health_check": "passing"
+            })
+        }
+
+        with patch('src.registry.handlers.get_status_storage') as mock_get:
+            mock_storage = MagicMock()
+            error_response = {'Error': {'Code': 'ServiceUnavailable', 'Message': 'Service unavailable'}}
+            mock_storage.update_status.side_effect = ClientError(error_response, 'UpdateItem')
+            mock_get.return_value = mock_storage
+
+            response = update_agent_status_handler(event, mock_context)
+
+            assert response["statusCode"] == 503
+            body = json.loads(response["body"])
+            assert "Service temporarily unavailable" in body["error"]
 
 
 class TestHelperFunctions:
