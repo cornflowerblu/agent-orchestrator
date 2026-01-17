@@ -14,8 +14,8 @@ from src.metadata.validation import (
     validate_output_compatibility,
 )
 
-# Mark all tests in this module as local integration tests
-pytestmark = pytest.mark.integration_local
+# Mark all tests in this module as integration tests
+pytestmark = pytest.mark.integration
 
 
 class TestMetadataValidationLocal:

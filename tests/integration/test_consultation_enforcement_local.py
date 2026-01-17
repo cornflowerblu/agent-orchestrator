@@ -13,8 +13,8 @@ from src.consultation.rules import (
     ConsultationRequirement,
 )
 
-# Mark all tests in this module as local integration tests
-pytestmark = pytest.mark.integration_local
+# Mark all tests in this module as integration tests
+pytestmark = pytest.mark.integration
 
 
 @pytest.fixture
