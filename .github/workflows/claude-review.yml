@@ -9,6 +9,7 @@ jobs:
   claude-review:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write  # Required for Claude Code action OIDC
       contents: read
       pull-requests: write
 
@@ -18,8 +19,8 @@ jobs:
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
         with:
-          # Task for Claude to perform
-          task: |
+          # Instructions for Claude to perform
+          prompt: |
             Review this PR for:
             1. Code quality and adherence to CLAUDE.md guidelines
             2. Security vulnerabilities
@@ -27,8 +28,3 @@ jobs:
             4. Test coverage gaps
 
             Provide a summary of findings in the PR comments.
-
-          # Optional: Specify files to focus on
-          # files: "src/**/*.py"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
