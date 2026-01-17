@@ -119,8 +119,8 @@
 - [x] T049 [US3] Implement Gateway tool discovery for MCP tools in src/loop/conditions.py
 - [x] T050 [US3] Implement Gateway tool invocation wrapper in src/loop/conditions.py
 - [x] T051 [US3] Add timeout handling (30s per tool per SC-002) in src/loop/conditions.py
-- [ ] T052 [US3] Integrate ExitConditionEvaluator with LoopFramework in src/loop/framework.py
-- [ ] T053 [US3] Implement LoopFramework.evaluate_all_conditions() in src/loop/framework.py
+- [x] T052 [US3] Integrate ExitConditionEvaluator with LoopFramework in src/loop/framework.py
+- [x] T053 [US3] Implement LoopFramework.evaluate_all_conditions() in src/loop/framework.py
 
 ### Unit Tests for User Story 3
 
@@ -160,8 +160,8 @@
 
 - [x] T072 [P] [US2] Write unit tests for Checkpoint model in tests/unit/test_loop/test_models.py
 - [x] T073 [P] [US2] Write unit tests for CheckpointManager in tests/unit/test_loop/test_checkpoint.py
-- [ ] T074 [US2] Write unit tests for checkpoint interval logic in tests/unit/test_loop/test_framework.py
-- [ ] T075 [US2] Write integration test for Memory service in tests/integration/test_loop/test_checkpoint.py
+- [x] T074 [US2] Write unit tests for checkpoint interval logic in tests/unit/test_loop/test_framework.py
+- [x] T075 [US2] Write integration test for Memory service in tests/integration/test_loop/test_checkpoint.py
 
 **Checkpoint**: User Story 2 complete - agents can save/recover checkpoints
 
@@ -218,7 +218,7 @@
 - [x] T100 [US5] Implement ObservabilityQueries.list_checkpoints() in src/dashboard/queries.py
 - [x] T101 [US5] Implement ObservabilityQueries.get_exit_condition_history() in src/dashboard/queries.py
 - [x] T102 [US5] Create LoopProgress response model in src/dashboard/models.py
-- [ ] T103 [US5] Implement streaming/subscription logic in src/dashboard/queries.py
+- [x] T103 [US5] Implement streaming/subscription logic in src/dashboard/queries.py
 - [x] T104 [US5] Create API handlers skeleton in src/dashboard/handlers.py
 - [x] T105 [US5] Implement /progress/{session_id} handler in src/dashboard/handlers.py
 - [x] T106 [US5] Implement /events/{session_id} handler in src/dashboard/handlers.py
