@@ -29,9 +29,7 @@ class TestConsultationEngineInit:
         """Test initialization with requirements list."""
         requirements = [
             ConsultationRequirement(
-                agent_name="security-agent",
-                phase=ConsultationPhase.PRE_COMPLETION,
-                mandatory=True
+                agent_name="security-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=True
             )
         ]
         engine = ConsultationEngine(requirements=requirements)
@@ -52,55 +50,38 @@ class TestGetRequirements:
         """Create engine with mixed requirements."""
         requirements = [
             ConsultationRequirement(
-                agent_name="security-agent",
-                phase=ConsultationPhase.PRE_COMPLETION,
-                mandatory=True
+                agent_name="security-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=True
             ),
             ConsultationRequirement(
-                agent_name="testing-agent",
-                phase=ConsultationPhase.PRE_COMPLETION,
-                mandatory=False
+                agent_name="testing-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=False
             ),
             ConsultationRequirement(
-                agent_name="architect-agent",
-                phase=ConsultationPhase.DESIGN_REVIEW,
-                mandatory=True
+                agent_name="architect-agent", phase=ConsultationPhase.DESIGN_REVIEW, mandatory=True
             ),
             ConsultationRequirement(
-                agent_name="error-handler",
-                phase=ConsultationPhase.ON_ERROR,
-                mandatory=True
-            )
+                agent_name="error-handler", phase=ConsultationPhase.ON_ERROR, mandatory=True
+            ),
         ]
         return ConsultationEngine(requirements=requirements)
 
     def test_get_requirements_all_phases(self, engine_with_requirements):
         """Test getting requirements for all phases."""
-        pre_completion = engine_with_requirements.get_requirements(
-            ConsultationPhase.PRE_COMPLETION
-        )
+        pre_completion = engine_with_requirements.get_requirements(ConsultationPhase.PRE_COMPLETION)
         assert len(pre_completion) == 2
 
-        design_review = engine_with_requirements.get_requirements(
-            ConsultationPhase.DESIGN_REVIEW
-        )
+        design_review = engine_with_requirements.get_requirements(ConsultationPhase.DESIGN_REVIEW)
         assert len(design_review) == 1
 
-        on_error = engine_with_requirements.get_requirements(
-            ConsultationPhase.ON_ERROR
-        )
+        on_error = engine_with_requirements.get_requirements(ConsultationPhase.ON_ERROR)
         assert len(on_error) == 1
 
-        pre_execution = engine_with_requirements.get_requirements(
-            ConsultationPhase.PRE_EXECUTION
-        )
+        pre_execution = engine_with_requirements.get_requirements(ConsultationPhase.PRE_EXECUTION)
         assert len(pre_execution) == 0
 
     def test_get_requirements_mandatory_only(self, engine_with_requirements):
         """Test filtering for mandatory requirements only."""
         mandatory = engine_with_requirements.get_requirements(
-            ConsultationPhase.PRE_COMPLETION,
-            mandatory_only=True
+            ConsultationPhase.PRE_COMPLETION, mandatory_only=True
         )
         assert len(mandatory) == 1
         assert mandatory[0].agent_name == "security-agent"
@@ -115,90 +96,58 @@ class TestEvaluateCondition:
 
     def test_equals_operator_true(self, engine):
         """Test equals operator when condition is met."""
-        condition = ConsultationCondition(
-            field="task.type",
-            operator="equals",
-            value="security"
-        )
+        condition = ConsultationCondition(field="task.type", operator="equals", value="security")
         context = {"task": {"type": "security"}}
         assert engine.evaluate_condition(condition, context) is True
 
     def test_equals_operator_false(self, engine):
         """Test equals operator when condition is not met."""
-        condition = ConsultationCondition(
-            field="task.type",
-            operator="equals",
-            value="security"
-        )
+        condition = ConsultationCondition(field="task.type", operator="equals", value="security")
         context = {"task": {"type": "feature"}}
         assert engine.evaluate_condition(condition, context) is False
 
     def test_not_equals_operator_true(self, engine):
         """Test not_equals operator when values differ."""
-        condition = ConsultationCondition(
-            field="task.priority",
-            operator="not_equals",
-            value="low"
-        )
+        condition = ConsultationCondition(field="task.priority", operator="not_equals", value="low")
         context = {"task": {"priority": "high"}}
         assert engine.evaluate_condition(condition, context) is True
 
     def test_not_equals_operator_false(self, engine):
         """Test not_equals operator when values are same."""
-        condition = ConsultationCondition(
-            field="task.priority",
-            operator="not_equals",
-            value="low"
-        )
+        condition = ConsultationCondition(field="task.priority", operator="not_equals", value="low")
         context = {"task": {"priority": "low"}}
         assert engine.evaluate_condition(condition, context) is False
 
     def test_contains_operator_list(self, engine):
         """Test contains operator with list field."""
-        condition = ConsultationCondition(
-            field="task.tags",
-            operator="contains",
-            value="security"
-        )
+        condition = ConsultationCondition(field="task.tags", operator="contains", value="security")
         context = {"task": {"tags": ["security", "compliance"]}}
         assert engine.evaluate_condition(condition, context) is True
 
     def test_contains_operator_string(self, engine):
         """Test contains operator with string field."""
         condition = ConsultationCondition(
-            field="task.description",
-            operator="contains",
-            value="security"
+            field="task.description", operator="contains", value="security"
         )
         context = {"task": {"description": "This is a security review task"}}
         assert engine.evaluate_condition(condition, context) is True
 
     def test_contains_operator_not_found(self, engine):
         """Test contains operator when value not found."""
-        condition = ConsultationCondition(
-            field="task.tags",
-            operator="contains",
-            value="security"
-        )
+        condition = ConsultationCondition(field="task.tags", operator="contains", value="security")
         context = {"task": {"tags": ["feature", "enhancement"]}}
         assert engine.evaluate_condition(condition, context) is False
 
     def test_contains_operator_invalid_type(self, engine):
         """Test contains operator with invalid field type."""
-        condition = ConsultationCondition(
-            field="task.count",
-            operator="contains",
-            value="test"
-        )
+        condition = ConsultationCondition(field="task.count", operator="contains", value="test")
         context = {"task": {"count": 42}}
         assert engine.evaluate_condition(condition, context) is False
 
     def test_not_contains_operator_list(self, engine):
         """Test not_contains operator with list field."""
         condition = ConsultationCondition(
-            field="task.tags",
-            operator="not_contains",
-            value="security"
+            field="task.tags", operator="not_contains", value="security"
         )
         context = {"task": {"tags": ["feature", "enhancement"]}}
         assert engine.evaluate_condition(condition, context) is True
@@ -206,9 +155,7 @@ class TestEvaluateCondition:
     def test_not_contains_operator_string(self, engine):
         """Test not_contains operator with string field."""
         condition = ConsultationCondition(
-            field="task.description",
-            operator="not_contains",
-            value="security"
+            field="task.description", operator="not_contains", value="security"
         )
         context = {"task": {"description": "This is a feature task"}}
         assert engine.evaluate_condition(condition, context) is True
@@ -216,29 +163,21 @@ class TestEvaluateCondition:
     def test_not_contains_operator_found(self, engine):
         """Test not_contains operator when value is found."""
         condition = ConsultationCondition(
-            field="task.tags",
-            operator="not_contains",
-            value="security"
+            field="task.tags", operator="not_contains", value="security"
         )
         context = {"task": {"tags": ["security", "compliance"]}}
         assert engine.evaluate_condition(condition, context) is False
 
     def test_not_contains_operator_invalid_type(self, engine):
         """Test not_contains operator with invalid field type."""
-        condition = ConsultationCondition(
-            field="task.count",
-            operator="not_contains",
-            value="test"
-        )
+        condition = ConsultationCondition(field="task.count", operator="not_contains", value="test")
         context = {"task": {"count": 42}}
         assert engine.evaluate_condition(condition, context) is True
 
     def test_in_operator_true(self, engine):
         """Test in operator when value is in list."""
         condition = ConsultationCondition(
-            field="task.priority",
-            operator="in",
-            value=["high", "critical"]
+            field="task.priority", operator="in", value=["high", "critical"]
         )
         context = {"task": {"priority": "high"}}
         assert engine.evaluate_condition(condition, context) is True
@@ -246,9 +185,7 @@ class TestEvaluateCondition:
     def test_in_operator_false(self, engine):
         """Test in operator when value is not in list."""
         condition = ConsultationCondition(
-            field="task.priority",
-            operator="in",
-            value=["high", "critical"]
+            field="task.priority", operator="in", value=["high", "critical"]
         )
         context = {"task": {"priority": "low"}}
         assert engine.evaluate_condition(condition, context) is False
@@ -258,7 +195,7 @@ class TestEvaluateCondition:
         condition = ConsultationCondition(
             field="task.priority",
             operator="in",
-            value="high"  # Not a list
+            value="high",  # Not a list
         )
         context = {"task": {"priority": "high"}}
         assert engine.evaluate_condition(condition, context) is False
@@ -266,9 +203,7 @@ class TestEvaluateCondition:
     def test_not_in_operator_true(self, engine):
         """Test not_in operator when value is not in list."""
         condition = ConsultationCondition(
-            field="task.priority",
-            operator="not_in",
-            value=["high", "critical"]
+            field="task.priority", operator="not_in", value=["high", "critical"]
         )
         context = {"task": {"priority": "low"}}
         assert engine.evaluate_condition(condition, context) is True
@@ -276,9 +211,7 @@ class TestEvaluateCondition:
     def test_not_in_operator_false(self, engine):
         """Test not_in operator when value is in list."""
         condition = ConsultationCondition(
-            field="task.priority",
-            operator="not_in",
-            value=["high", "critical"]
+            field="task.priority", operator="not_in", value=["high", "critical"]
         )
         context = {"task": {"priority": "high"}}
         assert engine.evaluate_condition(condition, context) is False
@@ -288,7 +221,7 @@ class TestEvaluateCondition:
         condition = ConsultationCondition(
             field="task.priority",
             operator="not_in",
-            value="high"  # Not a list
+            value="high",  # Not a list
         )
         context = {"task": {"priority": "high"}}
         assert engine.evaluate_condition(condition, context) is True
@@ -296,27 +229,15 @@ class TestEvaluateCondition:
     def test_nested_field_access(self, engine):
         """Test accessing deeply nested fields."""
         condition = ConsultationCondition(
-            field="task.metadata.review.required",
-            operator="equals",
-            value=True
+            field="task.metadata.review.required", operator="equals", value=True
         )
-        context = {
-            "task": {
-                "metadata": {
-                    "review": {
-                        "required": True
-                    }
-                }
-            }
-        }
+        context = {"task": {"metadata": {"review": {"required": True}}}}
         assert engine.evaluate_condition(condition, context) is True
 
     def test_missing_field_returns_none(self, engine):
         """Test that missing field path returns None for comparison."""
         condition = ConsultationCondition(
-            field="task.missing.field",
-            operator="equals",
-            value="test"
+            field="task.missing.field", operator="equals", value="test"
         )
         context = {"task": {"type": "feature"}}
         assert engine.evaluate_condition(condition, context) is False
@@ -386,9 +307,7 @@ class TestQueryObservabilityTraces:
         result = engine.query_observability_traces("task-001", "security-agent")
 
         mock_client.query_traces.assert_called_once_with(
-            task_id="task-001",
-            action="consultation",
-            agent_name="security-agent"
+            task_id="task-001", action="consultation", agent_name="security-agent"
         )
         assert len(result) == 1
 
@@ -400,10 +319,7 @@ class TestQueryObservabilityTraces:
         engine = ConsultationEngine(observability_client=mock_client)
         engine.query_observability_traces("task-001")
 
-        mock_client.query_traces.assert_called_once_with(
-            task_id="task-001",
-            action="consultation"
-        )
+        mock_client.query_traces.assert_called_once_with(task_id="task-001", action="consultation")
 
 
 class TestValidateTaskCompletion:
@@ -413,30 +329,22 @@ class TestValidateTaskCompletion:
     def engine(self):
         requirements = [
             ConsultationRequirement(
-                agent_name="security-agent",
-                phase=ConsultationPhase.PRE_COMPLETION,
-                mandatory=True
+                agent_name="security-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=True
             ),
             ConsultationRequirement(
-                agent_name="testing-agent",
-                phase=ConsultationPhase.PRE_COMPLETION,
-                mandatory=True
+                agent_name="testing-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=True
             ),
             ConsultationRequirement(
-                agent_name="optional-agent",
-                phase=ConsultationPhase.PRE_COMPLETION,
-                mandatory=False
+                agent_name="optional-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=False
             ),
             ConsultationRequirement(
                 agent_name="architect-agent",
                 phase=ConsultationPhase.DESIGN_REVIEW,
                 mandatory=True,
                 condition=ConsultationCondition(
-                    field="task.impacts_infrastructure",
-                    operator="equals",
-                    value=True
-                )
-            )
+                    field="task.impacts_infrastructure", operator="equals", value=True
+                ),
+            ),
         ]
         return ConsultationEngine(requirements=requirements)
 
@@ -444,21 +352,15 @@ class TestValidateTaskCompletion:
         """Test validation passes when all mandatory consultations done."""
         outcomes = [
             ConsultationOutcome(
-                requirement_id="req-1",
-                agent_name="security-agent",
-                status="approved"
+                requirement_id="req-1", agent_name="security-agent", status="approved"
             ),
             ConsultationOutcome(
-                requirement_id="req-2",
-                agent_name="testing-agent",
-                status="approved"
-            )
+                requirement_id="req-2", agent_name="testing-agent", status="approved"
+            ),
         ]
 
         result = engine.validate_task_completion(
-            ConsultationPhase.PRE_COMPLETION,
-            outcomes,
-            {"task": {}}
+            ConsultationPhase.PRE_COMPLETION, outcomes, {"task": {}}
         )
 
         assert result.is_valid is True
@@ -469,16 +371,12 @@ class TestValidateTaskCompletion:
         """Test validation fails when mandatory consultation missing."""
         outcomes = [
             ConsultationOutcome(
-                requirement_id="req-1",
-                agent_name="security-agent",
-                status="approved"
+                requirement_id="req-1", agent_name="security-agent", status="approved"
             )
         ]
 
         result = engine.validate_task_completion(
-            ConsultationPhase.PRE_COMPLETION,
-            outcomes,
-            {"task": {}}
+            ConsultationPhase.PRE_COMPLETION, outcomes, {"task": {}}
         )
 
         assert result.is_valid is False
@@ -493,19 +391,15 @@ class TestValidateTaskCompletion:
                 requirement_id="req-1",
                 agent_name="security-agent",
                 status="rejected",
-                comments="Security issues found"
+                comments="Security issues found",
             ),
             ConsultationOutcome(
-                requirement_id="req-2",
-                agent_name="testing-agent",
-                status="approved"
-            )
+                requirement_id="req-2", agent_name="testing-agent", status="approved"
+            ),
         ]
 
         result = engine.validate_task_completion(
-            ConsultationPhase.PRE_COMPLETION,
-            outcomes,
-            {"task": {}}
+            ConsultationPhase.PRE_COMPLETION, outcomes, {"task": {}}
         )
 
         assert result.is_valid is False
@@ -517,21 +411,15 @@ class TestValidateTaskCompletion:
         """Test validation fails when consultation is pending."""
         outcomes = [
             ConsultationOutcome(
-                requirement_id="req-1",
-                agent_name="security-agent",
-                status="pending"
+                requirement_id="req-1", agent_name="security-agent", status="pending"
             ),
             ConsultationOutcome(
-                requirement_id="req-2",
-                agent_name="testing-agent",
-                status="approved"
-            )
+                requirement_id="req-2", agent_name="testing-agent", status="approved"
+            ),
         ]
 
         result = engine.validate_task_completion(
-            ConsultationPhase.PRE_COMPLETION,
-            outcomes,
-            {"task": {}}
+            ConsultationPhase.PRE_COMPLETION, outcomes, {"task": {}}
         )
 
         assert result.is_valid is False
@@ -542,9 +430,7 @@ class TestValidateTaskCompletion:
         outcomes = []
 
         result = engine.validate_task_completion(
-            ConsultationPhase.DESIGN_REVIEW,
-            outcomes,
-            {"task": {"impacts_infrastructure": True}}
+            ConsultationPhase.DESIGN_REVIEW, outcomes, {"task": {"impacts_infrastructure": True}}
         )
 
         assert result.is_valid is False
@@ -556,9 +442,7 @@ class TestValidateTaskCompletion:
         outcomes = []
 
         result = engine.validate_task_completion(
-            ConsultationPhase.DESIGN_REVIEW,
-            outcomes,
-            {"task": {"impacts_infrastructure": False}}
+            ConsultationPhase.DESIGN_REVIEW, outcomes, {"task": {"impacts_infrastructure": False}}
         )
 
         assert result.is_valid is True
@@ -568,22 +452,16 @@ class TestValidateTaskCompletion:
         """Test that optional consultations don't block completion."""
         outcomes = [
             ConsultationOutcome(
-                requirement_id="req-1",
-                agent_name="security-agent",
-                status="approved"
+                requirement_id="req-1", agent_name="security-agent", status="approved"
             ),
             ConsultationOutcome(
-                requirement_id="req-2",
-                agent_name="testing-agent",
-                status="approved"
-            )
+                requirement_id="req-2", agent_name="testing-agent", status="approved"
+            ),
             # Note: optional-agent outcome is missing
         ]
 
         result = engine.validate_task_completion(
-            ConsultationPhase.PRE_COMPLETION,
-            outcomes,
-            {"task": {}}
+            ConsultationPhase.PRE_COMPLETION, outcomes, {"task": {}}
         )
 
         assert result.is_valid is True
@@ -602,21 +480,17 @@ class TestValidationResult:
     def test_validation_result_with_all_fields(self):
         """Test ValidationResult with all fields populated."""
         missing = ConsultationRequirement(
-            agent_name="security-agent",
-            phase=ConsultationPhase.PRE_COMPLETION,
-            mandatory=True
+            agent_name="security-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=True
         )
         rejected = ConsultationOutcome(
-            requirement_id="req-1",
-            agent_name="testing-agent",
-            status="rejected"
+            requirement_id="req-1", agent_name="testing-agent", status="rejected"
         )
 
         result = ValidationResult(
             is_valid=False,
             missing_consultations=[missing],
             rejected_consultations=[rejected],
-            message="Validation failed"
+            message="Validation failed",
         )
 
         assert result.is_valid is False

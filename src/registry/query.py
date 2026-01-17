@@ -128,8 +128,9 @@ class AgentRegistry:
                 skill_identifier = skill.id if case_sensitive else skill.id.lower()
                 skill_name = skill.name if case_sensitive else skill.name.lower()
 
-                exact_match = (
-                    match_type == "exact" and search_term in (skill_identifier, skill_name)
+                exact_match = match_type == "exact" and search_term in (
+                    skill_identifier,
+                    skill_name,
                 )
                 partial_match = match_type == "partial" and (
                     search_term in skill_identifier or search_term in skill_name
@@ -205,7 +206,7 @@ class AgentRegistry:
             logger.error("Cannot check compatibility: no metadata storage configured")
             raise ValidationError(
                 "Agent registry is not configured with metadata storage",
-                details={"operation": "check_compatibility"}
+                details={"operation": "check_compatibility"},
             )
 
         # Fetch source metadata - preserve specific error types

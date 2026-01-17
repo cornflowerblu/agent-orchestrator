@@ -3,7 +3,6 @@
 Tests for the DynamoDB storage layer using moto mocks.
 """
 
-
 import boto3
 import pytest
 from moto import mock_aws
@@ -28,13 +27,9 @@ def dynamodb_table():
         dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
         table = dynamodb.create_table(
             TableName="TestAgentMetadata",
-            KeySchema=[
-                {"AttributeName": "agent_name", "KeyType": "HASH"}
-            ],
-            AttributeDefinitions=[
-                {"AttributeName": "agent_name", "AttributeType": "S"}
-            ],
-            BillingMode="PAY_PER_REQUEST"
+            KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
+            BillingMode="PAY_PER_REQUEST",
         )
         table.wait_until_exists()
         yield table
@@ -51,22 +46,15 @@ def storage(dynamodb_table):
         try:
             table = dynamodb.create_table(
                 TableName="TestAgentMetadata",
-                KeySchema=[
-                    {"AttributeName": "agent_name", "KeyType": "HASH"}
-                ],
-                AttributeDefinitions=[
-                    {"AttributeName": "agent_name", "AttributeType": "S"}
-                ],
-                BillingMode="PAY_PER_REQUEST"
+                KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
+                AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
         except Exception:
             pass  # Table may already exist
 
-        storage = MetadataStorage(
-            table_name="TestAgentMetadata",
-            region="us-east-1"
-        )
+        storage = MetadataStorage(table_name="TestAgentMetadata", region="us-east-1")
         yield storage
 
 
@@ -81,7 +69,7 @@ def sample_metadata():
                 name="source-code",
                 semantic_type=SemanticType.ARTIFACT,
                 description="Source code to review",
-                required=True
+                required=True,
             )
         ],
         output_schemas=[
@@ -89,9 +77,9 @@ def sample_metadata():
                 name="review-report",
                 semantic_type=SemanticType.DOCUMENT,
                 description="Code review findings",
-                guaranteed=True
+                guaranteed=True,
             )
-        ]
+        ],
     )
 
 
@@ -103,10 +91,7 @@ class TestMetadataStorageInit:
         with mock_aws():
             from src.metadata.storage import MetadataStorage
 
-            storage = MetadataStorage(
-                table_name="MyTable",
-                region="eu-west-1"
-            )
+            storage = MetadataStorage(table_name="MyTable", region="eu-west-1")
             assert storage.table_name == "MyTable"
             assert storage.region == "eu-west-1"
 
@@ -138,7 +123,7 @@ class TestPutMetadata:
                     TableName="TestAgentMetadata",
                     KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                     AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                    BillingMode="PAY_PER_REQUEST"
+                    BillingMode="PAY_PER_REQUEST",
                 )
                 table.wait_until_exists()
             except Exception:
@@ -161,7 +146,7 @@ class TestPutMetadata:
                 TableName="TestAgentMetadata",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
@@ -187,7 +172,7 @@ class TestGetMetadata:
                 TableName="TestAgentMetadata",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
@@ -213,7 +198,7 @@ class TestGetMetadata:
                 TableName="TestAgentMetadata",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
@@ -236,7 +221,7 @@ class TestDeleteMetadata:
                 TableName="TestAgentMetadata",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
@@ -266,7 +251,7 @@ class TestListAllMetadata:
                 TableName="TestAgentMetadata",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
@@ -285,7 +270,7 @@ class TestListAllMetadata:
                 TableName="TestAgentMetadata",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
@@ -293,10 +278,7 @@ class TestListAllMetadata:
 
             # Store multiple agents
             for i in range(3):
-                metadata = CustomAgentMetadata(
-                    agent_name=f"agent-{i}",
-                    version="1.0.0"
-                )
+                metadata = CustomAgentMetadata(agent_name=f"agent-{i}", version="1.0.0")
                 storage.put_metadata(metadata)
 
             result = storage.list_all_metadata()
@@ -320,17 +302,14 @@ class TestConsultationRequirementStorage:
                 TableName="TestAgentMetadata",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
             storage = MetadataStorage(table_name="TestAgentMetadata", region="us-east-1")
 
             # Create initial metadata
-            metadata = CustomAgentMetadata(
-                agent_name="development-agent",
-                version="1.0.0"
-            )
+            metadata = CustomAgentMetadata(agent_name="development-agent", version="1.0.0")
             storage.put_metadata(metadata)
 
             # Create requirements
@@ -339,20 +318,17 @@ class TestConsultationRequirementStorage:
                     agent_name="security-agent",
                     phase=ConsultationPhase.PRE_COMPLETION,
                     mandatory=True,
-                    description="Security review"
+                    description="Security review",
                 ),
                 ConsultationRequirement(
                     agent_name="testing-agent",
                     phase=ConsultationPhase.PRE_COMPLETION,
-                    mandatory=True
-                )
+                    mandatory=True,
+                ),
             ]
 
             # Update requirements
-            result = storage.update_consultation_requirements(
-                "development-agent",
-                requirements
-            )
+            result = storage.update_consultation_requirements("development-agent", requirements)
 
             assert len(result.consultation_requirements) == 2
 
@@ -366,24 +342,21 @@ class TestConsultationRequirementStorage:
                 TableName="TestAgentMetadata",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
             storage = MetadataStorage(table_name="TestAgentMetadata", region="us-east-1")
 
             # Create metadata with requirements
-            metadata = CustomAgentMetadata(
-                agent_name="development-agent",
-                version="1.0.0"
-            )
+            metadata = CustomAgentMetadata(agent_name="development-agent", version="1.0.0")
             storage.put_metadata(metadata)
 
             requirements = [
                 ConsultationRequirement(
                     agent_name="security-agent",
                     phase=ConsultationPhase.PRE_COMPLETION,
-                    mandatory=True
+                    mandatory=True,
                 )
             ]
             storage.update_consultation_requirements("development-agent", requirements)
@@ -406,32 +379,25 @@ class TestConsultationRequirementStorage:
                 TableName="TestAgentMetadata",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
             storage = MetadataStorage(table_name="TestAgentMetadata", region="us-east-1")
 
             # Create metadata
-            metadata = CustomAgentMetadata(
-                agent_name="development-agent",
-                version="1.0.0"
-            )
+            metadata = CustomAgentMetadata(agent_name="development-agent", version="1.0.0")
             storage.put_metadata(metadata)
 
             # Add first requirement
             req1 = ConsultationRequirement(
-                agent_name="security-agent",
-                phase=ConsultationPhase.PRE_COMPLETION,
-                mandatory=True
+                agent_name="security-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=True
             )
             storage.add_consultation_requirement("development-agent", req1)
 
             # Add second requirement
             req2 = ConsultationRequirement(
-                agent_name="testing-agent",
-                phase=ConsultationPhase.PRE_COMPLETION,
-                mandatory=True
+                agent_name="testing-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=True
             )
             result = storage.add_consultation_requirement("development-agent", req2)
 
@@ -447,38 +413,32 @@ class TestConsultationRequirementStorage:
                 TableName="TestAgentMetadata",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
             storage = MetadataStorage(table_name="TestAgentMetadata", region="us-east-1")
 
             # Create metadata with multiple requirements
-            metadata = CustomAgentMetadata(
-                agent_name="development-agent",
-                version="1.0.0"
-            )
+            metadata = CustomAgentMetadata(agent_name="development-agent", version="1.0.0")
             storage.put_metadata(metadata)
 
             requirements = [
                 ConsultationRequirement(
                     agent_name="security-agent",
                     phase=ConsultationPhase.PRE_COMPLETION,
-                    mandatory=True
+                    mandatory=True,
                 ),
                 ConsultationRequirement(
                     agent_name="testing-agent",
                     phase=ConsultationPhase.PRE_COMPLETION,
-                    mandatory=True
-                )
+                    mandatory=True,
+                ),
             ]
             storage.update_consultation_requirements("development-agent", requirements)
 
             # Remove security-agent requirements
-            storage.remove_consultation_requirement(
-                "development-agent",
-                "security-agent"
-            )
+            storage.remove_consultation_requirement("development-agent", "security-agent")
 
             # Should only have testing-agent left
             remaining = storage.get_consultation_requirements("development-agent")
@@ -495,7 +455,7 @@ class TestConsultationRequirementStorage:
                 TableName="TestAgentMetadata",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
-                BillingMode="PAY_PER_REQUEST"
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
@@ -505,12 +465,9 @@ class TestConsultationRequirementStorage:
                 ConsultationRequirement(
                     agent_name="security-agent",
                     phase=ConsultationPhase.PRE_COMPLETION,
-                    mandatory=True
+                    mandatory=True,
                 )
             ]
 
             with pytest.raises(AgentNotFoundError):
-                storage.update_consultation_requirements(
-                    "non-existent-agent",
-                    requirements
-                )
+                storage.update_consultation_requirements("non-existent-agent", requirements)

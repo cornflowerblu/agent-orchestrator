@@ -35,7 +35,7 @@ def sample_event_list_agents():
         "path": "/agents",
         "queryStringParameters": None,
         "headers": {"Content-Type": "application/json"},
-        "body": None
+        "body": None,
     }
 
 
@@ -48,7 +48,7 @@ def sample_event_get_agent():
         "pathParameters": {"agent_name": "test-agent"},
         "queryStringParameters": None,
         "headers": {"Content-Type": "application/json"},
-        "body": None
+        "body": None,
     }
 
 
@@ -59,7 +59,7 @@ class TestListAgentsHandler:
         """Test listing agents when none exist."""
         from src.registry.handlers import list_agents_handler
 
-        with patch('src.registry.handlers.get_registry') as mock_get_registry:
+        with patch("src.registry.handlers.get_registry") as mock_get_registry:
             mock_registry = MagicMock()
             mock_registry.list_all_agents.return_value = []
             mock_get_registry.return_value = mock_registry
@@ -75,7 +75,7 @@ class TestListAgentsHandler:
         from src.agents.models import AgentCapabilities, AgentCard
         from src.registry.handlers import list_agents_handler
 
-        with patch('src.registry.handlers.get_registry') as mock_get_registry:
+        with patch("src.registry.handlers.get_registry") as mock_get_registry:
             mock_registry = MagicMock()
             caps = AgentCapabilities(streaming=True)
             cards = [
@@ -87,7 +87,7 @@ class TestListAgentsHandler:
                     capabilities=caps,
                     skills=[],
                     defaultInputModes=["text"],
-                    defaultOutputModes=["text"]
+                    defaultOutputModes=["text"],
                 ),
                 AgentCard(
                     name="agent-2",
@@ -97,8 +97,8 @@ class TestListAgentsHandler:
                     capabilities=caps,
                     skills=[],
                     defaultInputModes=["text"],
-                    defaultOutputModes=["text"]
-                )
+                    defaultOutputModes=["text"],
+                ),
             ]
             mock_registry.list_all_agents.return_value = cards
             mock_get_registry.return_value = mock_registry
@@ -118,7 +118,7 @@ class TestGetAgentHandler:
         from src.agents.models import AgentCapabilities, AgentCard
         from src.registry.handlers import get_agent_handler
 
-        with patch('src.registry.handlers.get_registry') as mock_get_registry:
+        with patch("src.registry.handlers.get_registry") as mock_get_registry:
             mock_registry = MagicMock()
             card = AgentCard(
                 name="test-agent",
@@ -128,7 +128,7 @@ class TestGetAgentHandler:
                 capabilities=AgentCapabilities(streaming=True),
                 skills=[],
                 defaultInputModes=["text"],
-                defaultOutputModes=["text"]
+                defaultOutputModes=["text"],
             )
             mock_registry.get_agent_card.return_value = card
             mock_get_registry.return_value = mock_registry
@@ -144,7 +144,7 @@ class TestGetAgentHandler:
         from src.exceptions import AgentNotFoundError
         from src.registry.handlers import get_agent_handler
 
-        with patch('src.registry.handlers.get_registry') as mock_get_registry:
+        with patch("src.registry.handlers.get_registry") as mock_get_registry:
             mock_registry = MagicMock()
             mock_registry.get_agent_card.side_effect = AgentNotFoundError("test-agent")
             mock_get_registry.return_value = mock_registry
@@ -165,14 +165,10 @@ class TestUpdateAgentMetadataHandler:
             "httpMethod": "PUT",
             "path": "/agents/test-agent/metadata",
             "pathParameters": {"agent_name": "test-agent"},
-            "body": json.dumps({
-                "version": "2.0.0",
-                "input_schemas": [],
-                "output_schemas": []
-            })
+            "body": json.dumps({"version": "2.0.0", "input_schemas": [], "output_schemas": []}),
         }
 
-        with patch('src.registry.handlers.get_metadata_storage') as mock_get_storage:
+        with patch("src.registry.handlers.get_metadata_storage") as mock_get_storage:
             mock_storage = MagicMock()
             mock_storage.put_metadata.return_value = {"agent_name": "test-agent"}
             mock_get_storage.return_value = mock_storage
@@ -193,16 +189,16 @@ class TestGetConsultationRequirementsHandler:
         event = {
             "httpMethod": "GET",
             "path": "/agents/test-agent/consultation-requirements",
-            "pathParameters": {"agent_name": "test-agent"}
+            "pathParameters": {"agent_name": "test-agent"},
         }
 
-        with patch('src.registry.handlers.get_registry') as mock_get_registry:
+        with patch("src.registry.handlers.get_registry") as mock_get_registry:
             mock_registry = MagicMock()
             requirements = [
                 ConsultationRequirement(
                     agent_name="security-agent",
                     phase=ConsultationPhase.PRE_COMPLETION,
-                    mandatory=True
+                    mandatory=True,
                 )
             ]
             mock_registry.get_consultation_requirements.return_value = requirements
@@ -226,19 +222,13 @@ class TestCheckCompatibilityHandler:
         event = {
             "httpMethod": "POST",
             "path": "/agents/compatibility",
-            "body": json.dumps({
-                "source_agent": "agent-a",
-                "target_agent": "agent-b"
-            })
+            "body": json.dumps({"source_agent": "agent-a", "target_agent": "agent-b"}),
         }
 
-        with patch('src.registry.handlers.get_registry') as mock_get_registry:
+        with patch("src.registry.handlers.get_registry") as mock_get_registry:
             mock_registry = MagicMock()
             result = CompatibilityResult(
-                is_compatible=True,
-                source_agent="agent-a",
-                target_agent="agent-b",
-                details={}
+                is_compatible=True, source_agent="agent-a", target_agent="agent-b", details={}
             )
             mock_registry.check_compatibility.return_value = result
             mock_get_registry.return_value = mock_registry
@@ -261,12 +251,10 @@ class TestFindCompatibleAgentsHandler:
         event = {
             "httpMethod": "POST",
             "path": "/agents/find-compatible",
-            "body": json.dumps({
-                "input_type": "artifact"
-            })
+            "body": json.dumps({"input_type": "artifact"}),
         }
 
-        with patch('src.registry.handlers.get_registry') as mock_get_registry:
+        with patch("src.registry.handlers.get_registry") as mock_get_registry:
             mock_registry = MagicMock()
             cards = [
                 AgentCard(
@@ -277,7 +265,7 @@ class TestFindCompatibleAgentsHandler:
                     capabilities=AgentCapabilities(streaming=True),
                     skills=[],
                     defaultInputModes=["text"],
-                    defaultOutputModes=["text"]
+                    defaultOutputModes=["text"],
                 )
             ]
             mock_registry.find_by_input_compatibility.return_value = cards
@@ -300,16 +288,16 @@ class TestGetAgentStatusHandler:
         event = {
             "httpMethod": "GET",
             "path": "/agents/test-agent/status",
-            "pathParameters": {"agent_name": "test-agent"}
+            "pathParameters": {"agent_name": "test-agent"},
         }
 
-        with patch('src.registry.handlers.get_status_storage') as mock_get_storage:
+        with patch("src.registry.handlers.get_status_storage") as mock_get_storage:
             mock_storage = MagicMock()
             mock_storage.get_status.return_value = AgentStatus(
                 agent_name="test-agent",
                 status=AgentStatusValue.ACTIVE,
                 health_check=HealthCheckStatus.PASSING,
-                last_seen="2024-01-01T00:00:00Z"
+                last_seen="2024-01-01T00:00:00Z",
             )
             mock_get_storage.return_value = mock_storage
 
@@ -331,19 +319,16 @@ class TestUpdateAgentStatusHandler:
             "httpMethod": "PUT",
             "path": "/agents/test-agent/status",
             "pathParameters": {"agent_name": "test-agent"},
-            "body": json.dumps({
-                "status": "active",
-                "health_check": "passing"
-            })
+            "body": json.dumps({"status": "active", "health_check": "passing"}),
         }
 
-        with patch('src.registry.handlers.get_status_storage') as mock_get_storage:
+        with patch("src.registry.handlers.get_status_storage") as mock_get_storage:
             mock_storage = MagicMock()
             mock_storage.update_status.return_value = AgentStatus(
                 agent_name="test-agent",
                 status=AgentStatusValue.ACTIVE,
                 health_check=HealthCheckStatus.PASSING,
-                last_seen="2024-01-01T00:00:00Z"
+                last_seen="2024-01-01T00:00:00Z",
             )
             mock_get_storage.return_value = mock_storage
 
@@ -363,7 +348,7 @@ class TestErrorHandling:
             "httpMethod": "PUT",
             "path": "/agents/test-agent/metadata",
             "pathParameters": {"agent_name": "test-agent"},
-            "body": "invalid json"
+            "body": "invalid json",
         }
 
         response = update_agent_metadata_handler(event, mock_lambda_context)
@@ -374,12 +359,9 @@ class TestErrorHandling:
         """Test handler returns 500 for internal errors."""
         from src.registry.handlers import list_agents_handler
 
-        event = {
-            "httpMethod": "GET",
-            "path": "/agents"
-        }
+        event = {"httpMethod": "GET", "path": "/agents"}
 
-        with patch('src.registry.handlers.get_registry') as mock_get_registry:
+        with patch("src.registry.handlers.get_registry") as mock_get_registry:
             mock_get_registry.side_effect = Exception("Internal error")
 
             response = list_agents_handler(event, mock_lambda_context)

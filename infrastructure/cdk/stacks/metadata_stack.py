@@ -22,9 +22,7 @@ class MetadataStack(cdk.Stack):
             self,
             "AgentMetadata",
             table_name="AgentMetadata",
-            partition_key=dynamodb.Attribute(
-                name="agent_name", type=dynamodb.AttributeType.STRING
-            ),
+            partition_key=dynamodb.Attribute(name="agent_name", type=dynamodb.AttributeType.STRING),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.AWS_MANAGED,
             point_in_time_recovery=True,
@@ -35,9 +33,7 @@ class MetadataStack(cdk.Stack):
         # GSI for skill-based lookups
         self.metadata_table.add_global_secondary_index(
             index_name="SkillIndex",
-            partition_key=dynamodb.Attribute(
-                name="skill_id", type=dynamodb.AttributeType.STRING
-            ),
+            partition_key=dynamodb.Attribute(name="skill_id", type=dynamodb.AttributeType.STRING),
             projection_type=dynamodb.ProjectionType.INCLUDE,
             non_key_attributes=["agent_name", "version"],
         )
@@ -47,9 +43,7 @@ class MetadataStack(cdk.Stack):
             self,
             "AgentStatus",
             table_name="AgentStatus",
-            partition_key=dynamodb.Attribute(
-                name="agent_name", type=dynamodb.AttributeType.STRING
-            ),
+            partition_key=dynamodb.Attribute(name="agent_name", type=dynamodb.AttributeType.STRING),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.AWS_MANAGED,
             time_to_live_attribute="ttl",  # Auto-cleanup stale status records

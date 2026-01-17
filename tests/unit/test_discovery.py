@@ -33,7 +33,7 @@ def sample_agent_card_data():
             }
         ],
         "defaultInputModes": ["text"],
-        "defaultOutputModes": ["text"]
+        "defaultOutputModes": ["text"],
     }
 
 
@@ -69,7 +69,7 @@ class TestFetchAgentCard:
     @pytest.mark.asyncio
     async def test_fetch_agent_card_success(self, discovery, sample_agent_card_data):
         """Test successful agent card fetch."""
-        with patch.object(discovery, '_http_get') as mock_get:
+        with patch.object(discovery, "_http_get") as mock_get:
             mock_get.return_value = sample_agent_card_data
 
             result = await discovery.fetch_agent_card("https://agent.example.com")
@@ -84,7 +84,7 @@ class TestFetchAgentCard:
     @pytest.mark.asyncio
     async def test_fetch_agent_card_with_trailing_slash(self, discovery, sample_agent_card_data):
         """Test fetch handles URL with trailing slash."""
-        with patch.object(discovery, '_http_get') as mock_get:
+        with patch.object(discovery, "_http_get") as mock_get:
             mock_get.return_value = sample_agent_card_data
 
             await discovery.fetch_agent_card("https://agent.example.com/")
@@ -96,7 +96,7 @@ class TestFetchAgentCard:
     @pytest.mark.asyncio
     async def test_fetch_agent_card_connection_error(self, discovery):
         """Test handling of connection errors."""
-        with patch.object(discovery, '_http_get') as mock_get:
+        with patch.object(discovery, "_http_get") as mock_get:
             mock_get.side_effect = httpx.ConnectError("Connection refused")
 
             with pytest.raises(DiscoveryError) as exc_info:
@@ -107,7 +107,7 @@ class TestFetchAgentCard:
     @pytest.mark.asyncio
     async def test_fetch_agent_card_timeout(self, discovery):
         """Test handling of timeout errors."""
-        with patch.object(discovery, '_http_get') as mock_get:
+        with patch.object(discovery, "_http_get") as mock_get:
             mock_get.side_effect = httpx.TimeoutException("Request timed out")
 
             with pytest.raises(DiscoveryError) as exc_info:
@@ -118,7 +118,7 @@ class TestFetchAgentCard:
     @pytest.mark.asyncio
     async def test_fetch_agent_card_invalid_json(self, discovery):
         """Test handling of invalid JSON response."""
-        with patch.object(discovery, '_http_get') as mock_get:
+        with patch.object(discovery, "_http_get") as mock_get:
             mock_get.side_effect = ValueError("Invalid JSON")
 
             with pytest.raises(DiscoveryError) as exc_info:
@@ -138,7 +138,7 @@ class TestDiscoverAllAgents:
             "https://agent2.example.com",
         ]
 
-        with patch.object(discovery, 'fetch_agent_card') as mock_fetch:
+        with patch.object(discovery, "fetch_agent_card") as mock_fetch:
             # Create different cards for each agent
             card1 = AgentCard(**sample_agent_card_data)
             card2_data = sample_agent_card_data.copy()
@@ -162,12 +162,9 @@ class TestDiscoverAllAgents:
             "https://bad.example.com",
         ]
 
-        with patch.object(discovery, 'fetch_agent_card') as mock_fetch:
+        with patch.object(discovery, "fetch_agent_card") as mock_fetch:
             card = AgentCard(**sample_agent_card_data)
-            mock_fetch.side_effect = [
-                card,
-                DiscoveryError("Connection refused")
-            ]
+            mock_fetch.side_effect = [card, DiscoveryError("Connection refused")]
 
             results = await discovery.discover_all_agents(endpoints)
 
@@ -188,7 +185,7 @@ class TestDiscoverAllAgents:
         """Test that discovery fetches agents concurrently."""
         endpoints = [f"https://agent{i}.example.com" for i in range(5)]
 
-        with patch.object(discovery, 'fetch_agent_card') as mock_fetch:
+        with patch.object(discovery, "fetch_agent_card") as mock_fetch:
             card = AgentCard(**sample_agent_card_data)
             mock_fetch.return_value = card
 
@@ -205,9 +202,7 @@ class TestDiscoveryResult:
         """Test successful discovery result."""
         card = AgentCard(**sample_agent_card_data)
         result = DiscoveryResult(
-            endpoint="https://agent.example.com",
-            agent_card=card,
-            success=True
+            endpoint="https://agent.example.com", agent_card=card, success=True
         )
 
         assert result.success is True
@@ -218,9 +213,7 @@ class TestDiscoveryResult:
     def test_discovery_result_failure(self):
         """Test failed discovery result."""
         result = DiscoveryResult(
-            endpoint="https://failed.example.com",
-            success=False,
-            error="Connection refused"
+            endpoint="https://failed.example.com", success=False, error="Connection refused"
         )
 
         assert result.success is False
@@ -248,22 +241,24 @@ class TestSyncMethods:
 
     def test_fetch_agent_card_sync(self, discovery, sample_agent_card_data):
         """Test synchronous fetch_agent_card_sync method."""
-        with patch.object(discovery, 'fetch_agent_card') as mock_fetch:
+        with patch.object(discovery, "fetch_agent_card") as mock_fetch:
             card = AgentCard(**sample_agent_card_data)
+
             # Create a coroutine that returns the card
             async def mock_coro(*args):
                 return card
+
             mock_fetch.return_value = mock_coro()
 
             # Use the sync method
-            with patch('asyncio.run') as mock_run:
+            with patch("asyncio.run") as mock_run:
                 mock_run.return_value = card
                 result = discovery.fetch_agent_card_sync("https://example.com")
                 assert result.name == "test-agent"
 
     def test_discover_all_agents_sync(self, discovery, sample_agent_card_data):
         """Test synchronous discover_all_agents_sync method."""
-        with patch('asyncio.run') as mock_run:
+        with patch("asyncio.run") as mock_run:
             card = AgentCard(**sample_agent_card_data)
             results = [
                 DiscoveryResult(endpoint="https://example.com", agent_card=card, success=True)

@@ -82,25 +82,24 @@ class BaseAgent:
             raise ValidationError(
                 f"Agent Card manifest contains invalid JSON at line {e.lineno}, "
                 f"column {e.colno}: {e.msg}",
-                details={"path": str(manifest_path), "line": e.lineno, "column": e.colno}
+                details={"path": str(manifest_path), "line": e.lineno, "column": e.colno},
             ) from e
         except PermissionError as e:
             logger.exception(f"Permission denied reading manifest {manifest_path}")
             raise ValidationError(
                 f"Cannot read Agent Card manifest - permission denied: {manifest_path}",
-                details={"path": str(manifest_path)}
+                details={"path": str(manifest_path)},
             ) from e
         except UnicodeDecodeError as e:
             logger.exception(f"Encoding error reading manifest {manifest_path}")
             raise ValidationError(
                 f"Agent Card manifest has invalid encoding (expected UTF-8): {manifest_path}",
-                details={"path": str(manifest_path), "encoding": e.encoding}
+                details={"path": str(manifest_path), "encoding": e.encoding},
             ) from e
         except Exception as e:
             logger.exception(f"Unexpected error reading manifest {manifest_path}")
             raise ValidationError(
-                f"Failed to read Agent Card manifest: {e}",
-                details={"path": str(manifest_path)}
+                f"Failed to read Agent Card manifest: {e}", details={"path": str(manifest_path)}
             ) from e
 
         # Validate Agent Card structure with Pydantic
@@ -109,8 +108,7 @@ class BaseAgent:
         except Exception as e:
             logger.exception(f"Agent Card validation failed for {manifest_path}")
             raise ValidationError(
-                f"Agent Card manifest has invalid schema: {e}",
-                details={"path": str(manifest_path)}
+                f"Agent Card manifest has invalid schema: {e}", details={"path": str(manifest_path)}
             ) from e
 
         return cls(agent_card=agent_card)

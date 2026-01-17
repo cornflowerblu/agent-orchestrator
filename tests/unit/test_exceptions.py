@@ -72,9 +72,7 @@ class TestConsultationRequiredError:
     def test_error_message_format(self):
         """Test error message includes all parameters."""
         error = ConsultationRequiredError(
-            agent_name="dev-agent",
-            required_consultation="security-agent",
-            phase="pre-completion"
+            agent_name="dev-agent", required_consultation="security-agent", phase="pre-completion"
         )
         message = str(error)
         assert "dev-agent" in message
@@ -84,9 +82,7 @@ class TestConsultationRequiredError:
     def test_attributes(self):
         """Test all attributes are set correctly."""
         error = ConsultationRequiredError(
-            agent_name="my-agent",
-            required_consultation="review-agent",
-            phase="design-review"
+            agent_name="my-agent", required_consultation="review-agent", phase="design-review"
         )
         assert error.agent_name == "my-agent"
         assert error.required_consultation == "review-agent"

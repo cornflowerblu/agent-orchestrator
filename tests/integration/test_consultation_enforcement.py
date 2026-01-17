@@ -31,25 +31,23 @@ class TestConsultationEnforcement:
                 agent_name="security-agent",
                 phase=ConsultationPhase.PRE_COMPLETION,
                 mandatory=True,
-                description="Security review before code completion"
+                description="Security review before code completion",
             ),
             ConsultationRequirement(
                 agent_name="testing-agent",
                 phase=ConsultationPhase.PRE_COMPLETION,
                 mandatory=True,
-                description="Test coverage verification"
+                description="Test coverage verification",
             ),
             ConsultationRequirement(
                 agent_name="architect-agent",
                 phase=ConsultationPhase.DESIGN_REVIEW,
                 mandatory=True,
                 condition=ConsultationCondition(
-                    field="task.impacts_infrastructure",
-                    operator="equals",
-                    value=True
+                    field="task.impacts_infrastructure", operator="equals", value=True
                 ),
-                description="Architecture review when infrastructure impacted"
-            )
+                description="Architecture review when infrastructure impacted",
+            ),
         ]
 
     @pytest.fixture
@@ -68,9 +66,7 @@ class TestConsultationEnforcement:
         )
         assert len(pre_completion) == 2
 
-        design_review = consultation_engine.get_requirements(
-            phase=ConsultationPhase.DESIGN_REVIEW
-        )
+        design_review = consultation_engine.get_requirements(phase=ConsultationPhase.DESIGN_REVIEW)
         assert len(design_review) == 1
 
     def test_get_requirements_mandatory_only(self, consultation_engine):
@@ -78,8 +74,7 @@ class TestConsultationEnforcement:
         from src.consultation.rules import ConsultationPhase
 
         mandatory = consultation_engine.get_requirements(
-            phase=ConsultationPhase.PRE_COMPLETION,
-            mandatory_only=True
+            phase=ConsultationPhase.PRE_COMPLETION, mandatory_only=True
         )
         assert all(r.mandatory for r in mandatory)
 
@@ -88,9 +83,7 @@ class TestConsultationEnforcement:
         from src.consultation.rules import ConsultationCondition
 
         condition = ConsultationCondition(
-            field="task.type",
-            operator="equals",
-            value="infrastructure"
+            field="task.type", operator="equals", value="infrastructure"
         )
         task_context = {"task": {"type": "infrastructure"}}
 
@@ -102,9 +95,7 @@ class TestConsultationEnforcement:
         from src.consultation.rules import ConsultationCondition
 
         condition = ConsultationCondition(
-            field="task.type",
-            operator="equals",
-            value="infrastructure"
+            field="task.type", operator="equals", value="infrastructure"
         )
         task_context = {"task": {"type": "feature"}}
 
@@ -115,11 +106,7 @@ class TestConsultationEnforcement:
         """Test condition evaluation with contains operator."""
         from src.consultation.rules import ConsultationCondition
 
-        condition = ConsultationCondition(
-            field="task.tags",
-            operator="contains",
-            value="security"
-        )
+        condition = ConsultationCondition(field="task.tags", operator="contains", value="security")
         task_context = {"task": {"tags": ["security", "compliance", "audit"]}}
 
         result = consultation_engine.evaluate_condition(condition, task_context)
@@ -130,9 +117,7 @@ class TestConsultationEnforcement:
         from src.consultation.rules import ConsultationCondition
 
         condition = ConsultationCondition(
-            field="task.priority",
-            operator="in",
-            value=["high", "critical"]
+            field="task.priority", operator="in", value=["high", "critical"]
         )
         task_context = {"task": {"priority": "high"}}
 
@@ -144,9 +129,7 @@ class TestConsultationEnforcement:
         from src.consultation.rules import ConsultationCondition
 
         condition = ConsultationCondition(
-            field="task.metadata.requires_review",
-            operator="equals",
-            value=True
+            field="task.metadata.requires_review", operator="equals", value=True
         )
         task_context = {"task": {"metadata": {"requires_review": True}}}
 
@@ -160,19 +143,18 @@ class TestConsultationEnforcement:
 
     def test_query_observability_traces_mocked(self, consultation_engine):
         """Test querying Observability traces with mocked response."""
-        with patch.object(consultation_engine, '_observability_client') as mock_client:
+        with patch.object(consultation_engine, "_observability_client") as mock_client:
             mock_client.query_traces.return_value = [
                 {
                     "trace_id": "trace-123",
                     "agent_name": "security-agent",
                     "action": "consultation",
-                    "status": "completed"
+                    "status": "completed",
                 }
             ]
 
             traces = consultation_engine.query_observability_traces(
-                task_id="task-001",
-                agent_name="security-agent"
+                task_id="task-001", agent_name="security-agent"
             )
 
             assert len(traces) == 1
@@ -188,22 +170,20 @@ class TestConsultationEnforcement:
                 requirement_id="req-1",
                 agent_name="security-agent",
                 status="approved",
-                trace_id="trace-001"
+                trace_id="trace-001",
             ),
             ConsultationOutcome(
                 requirement_id="req-2",
                 agent_name="testing-agent",
                 status="approved",
-                trace_id="trace-002"
-            )
+                trace_id="trace-002",
+            ),
         ]
 
         task_context = {"task": {"impacts_infrastructure": False}}
 
         result = consultation_engine.validate_task_completion(
-            phase=ConsultationPhase.PRE_COMPLETION,
-            outcomes=outcomes,
-            task_context=task_context
+            phase=ConsultationPhase.PRE_COMPLETION, outcomes=outcomes, task_context=task_context
         )
 
         assert result.is_valid is True
@@ -219,16 +199,14 @@ class TestConsultationEnforcement:
                 requirement_id="req-1",
                 agent_name="security-agent",
                 status="approved",
-                trace_id="trace-001"
+                trace_id="trace-001",
             )
         ]
 
         task_context = {"task": {"impacts_infrastructure": False}}
 
         result = consultation_engine.validate_task_completion(
-            phase=ConsultationPhase.PRE_COMPLETION,
-            outcomes=outcomes,
-            task_context=task_context
+            phase=ConsultationPhase.PRE_COMPLETION, outcomes=outcomes, task_context=task_context
         )
 
         assert result.is_valid is False
@@ -245,22 +223,20 @@ class TestConsultationEnforcement:
                 agent_name="security-agent",
                 status="rejected",
                 comments="Security vulnerabilities found",
-                trace_id="trace-001"
+                trace_id="trace-001",
             ),
             ConsultationOutcome(
                 requirement_id="req-2",
                 agent_name="testing-agent",
                 status="approved",
-                trace_id="trace-002"
-            )
+                trace_id="trace-002",
+            ),
         ]
 
         task_context = {"task": {"impacts_infrastructure": False}}
 
         result = consultation_engine.validate_task_completion(
-            phase=ConsultationPhase.PRE_COMPLETION,
-            outcomes=outcomes,
-            task_context=task_context
+            phase=ConsultationPhase.PRE_COMPLETION, outcomes=outcomes, task_context=task_context
         )
 
         assert result.is_valid is False
@@ -278,9 +254,7 @@ class TestConsultationEnforcement:
         outcomes = []
 
         result = consultation_engine.validate_task_completion(
-            phase=ConsultationPhase.DESIGN_REVIEW,
-            outcomes=outcomes,
-            task_context=task_context
+            phase=ConsultationPhase.DESIGN_REVIEW, outcomes=outcomes, task_context=task_context
         )
 
         assert result.is_valid is False
@@ -297,9 +271,7 @@ class TestConsultationEnforcement:
         outcomes = []
 
         result = consultation_engine.validate_task_completion(
-            phase=ConsultationPhase.DESIGN_REVIEW,
-            outcomes=outcomes,
-            task_context=task_context
+            phase=ConsultationPhase.DESIGN_REVIEW, outcomes=outcomes, task_context=task_context
         )
 
         # Should pass because condition is not met
@@ -317,7 +289,7 @@ class TestConsultationValidationResult:
             is_valid=True,
             missing_consultations=[],
             rejected_consultations=[],
-            message="All mandatory consultations completed successfully"
+            message="All mandatory consultations completed successfully",
         )
 
         assert result.is_valid is True
@@ -329,16 +301,14 @@ class TestConsultationValidationResult:
         from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 
         missing = ConsultationRequirement(
-            agent_name="security-agent",
-            phase=ConsultationPhase.PRE_COMPLETION,
-            mandatory=True
+            agent_name="security-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=True
         )
 
         result = ValidationResult(
             is_valid=False,
             missing_consultations=[missing],
             rejected_consultations=[],
-            message="Missing mandatory consultation with security-agent"
+            message="Missing mandatory consultation with security-agent",
         )
 
         assert result.is_valid is False

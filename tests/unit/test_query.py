@@ -50,7 +50,7 @@ def sample_agent_cards(sample_skills):
             capabilities=caps,
             skills=[sample_skills[0]],
             defaultInputModes=["text"],
-            defaultOutputModes=["text"]
+            defaultOutputModes=["text"],
         ),
         AgentCard(
             name="security-agent",
@@ -60,7 +60,7 @@ def sample_agent_cards(sample_skills):
             capabilities=caps,
             skills=[sample_skills[1]],
             defaultInputModes=["text"],
-            defaultOutputModes=["text"]
+            defaultOutputModes=["text"],
         ),
         AgentCard(
             name="full-agent",
@@ -70,7 +70,7 @@ def sample_agent_cards(sample_skills):
             capabilities=caps,
             skills=sample_skills,
             defaultInputModes=["text"],
-            defaultOutputModes=["text"]
+            defaultOutputModes=["text"],
         ),
     ]
 
@@ -87,7 +87,7 @@ def sample_metadata():
                     name="source-code",
                     semantic_type=SemanticType.ARTIFACT,
                     description="Source code to review",
-                    required=True
+                    required=True,
                 )
             ],
             output_schemas=[
@@ -95,9 +95,9 @@ def sample_metadata():
                     name="review-report",
                     semantic_type=SemanticType.DOCUMENT,
                     description="Code review findings",
-                    guaranteed=True
+                    guaranteed=True,
                 )
-            ]
+            ],
         ),
         CustomAgentMetadata(
             agent_name="security-agent",
@@ -107,7 +107,7 @@ def sample_metadata():
                     name="code-artifact",
                     semantic_type=SemanticType.ARTIFACT,
                     description="Code to scan",
-                    required=True
+                    required=True,
                 )
             ],
             output_schemas=[
@@ -115,9 +115,9 @@ def sample_metadata():
                     name="security-report",
                     semantic_type=SemanticType.DOCUMENT,
                     description="Security findings",
-                    guaranteed=True
+                    guaranteed=True,
                 )
-            ]
+            ],
         ),
     ]
 
@@ -142,10 +142,7 @@ def mock_discovery():
 @pytest.fixture
 def registry(mock_metadata_storage, mock_discovery, sample_agent_cards):
     """Create an AgentRegistry instance with mocks."""
-    reg = AgentRegistry(
-        metadata_storage=mock_metadata_storage,
-        discovery=mock_discovery
-    )
+    reg = AgentRegistry(metadata_storage=mock_metadata_storage, discovery=mock_discovery)
     # Pre-populate with agent cards
     for card in sample_agent_cards:
         reg._agent_cards[card.name] = card
@@ -157,10 +154,7 @@ class TestAgentRegistryInit:
 
     def test_registry_init(self, mock_metadata_storage, mock_discovery):
         """Test registry initialization."""
-        registry = AgentRegistry(
-            metadata_storage=mock_metadata_storage,
-            discovery=mock_discovery
-        )
+        registry = AgentRegistry(metadata_storage=mock_metadata_storage, discovery=mock_discovery)
         assert registry._metadata_storage == mock_metadata_storage
         assert registry._discovery == mock_discovery
 
@@ -225,10 +219,7 @@ class TestFindByInputCompatibility:
         """Test finding only agents with required inputs."""
         mock_metadata_storage.list_all_metadata.return_value = sample_metadata
 
-        results = registry.find_by_input_compatibility(
-            SemanticType.ARTIFACT,
-            required_only=True
-        )
+        results = registry.find_by_input_compatibility(SemanticType.ARTIFACT, required_only=True)
 
         # Should find agents with required ARTIFACT inputs
         assert len(results) >= 1
@@ -244,8 +235,7 @@ class TestCheckCompatibility:
         )
 
         result = registry.check_compatibility(
-            source_agent="code-reviewer",
-            target_agent="security-agent"
+            source_agent="code-reviewer", target_agent="security-agent"
         )
 
         # code-reviewer outputs DOCUMENT, security-agent needs ARTIFACT
@@ -260,8 +250,7 @@ class TestCheckCompatibility:
         )
 
         result = registry.check_compatibility(
-            source_agent="code-reviewer",
-            target_agent="code-reviewer"
+            source_agent="code-reviewer", target_agent="code-reviewer"
         )
 
         # Self-compatibility should work
@@ -272,11 +261,9 @@ class TestCheckCompatibility:
         mock_metadata_storage.get_metadata.return_value = None
 
         from src.exceptions import AgentNotFoundError
+
         with pytest.raises(AgentNotFoundError):
-            registry.check_compatibility(
-                source_agent="non-existent",
-                target_agent="code-reviewer"
-            )
+            registry.check_compatibility(source_agent="non-existent", target_agent="code-reviewer")
 
     def test_check_compatibility_missing_target(self, registry, mock_metadata_storage):
         """Test checking compatibility when target agent doesn't exist."""
@@ -291,9 +278,9 @@ class TestCheckCompatibility:
                     name="review",
                     semantic_type=SemanticType.DOCUMENT,
                     description="Code review output",
-                    guaranteed=True
+                    guaranteed=True,
                 )
-            ]
+            ],
         )
 
         def get_metadata_side_effect(agent_name):
@@ -304,11 +291,9 @@ class TestCheckCompatibility:
         mock_metadata_storage.get_metadata.side_effect = get_metadata_side_effect
 
         from src.exceptions import AgentNotFoundError
+
         with pytest.raises(AgentNotFoundError):
-            registry.check_compatibility(
-                source_agent="code-reviewer",
-                target_agent="non-existent"
-            )
+            registry.check_compatibility(source_agent="code-reviewer", target_agent="non-existent")
 
 
 class TestGetConsultationRequirements:
@@ -318,9 +303,7 @@ class TestGetConsultationRequirements:
         """Test getting consultation requirements for an agent."""
         requirements = [
             ConsultationRequirement(
-                agent_name="security-agent",
-                phase=ConsultationPhase.PRE_COMPLETION,
-                mandatory=True
+                agent_name="security-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=True
             )
         ]
         mock_metadata_storage.get_consultation_requirements.return_value = requirements
@@ -343,21 +326,16 @@ class TestGetConsultationRequirements:
         """Test filtering requirements by phase."""
         requirements = [
             ConsultationRequirement(
-                agent_name="security-agent",
-                phase=ConsultationPhase.PRE_COMPLETION,
-                mandatory=True
+                agent_name="security-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=True
             ),
             ConsultationRequirement(
-                agent_name="testing-agent",
-                phase=ConsultationPhase.DESIGN_REVIEW,
-                mandatory=False
-            )
+                agent_name="testing-agent", phase=ConsultationPhase.DESIGN_REVIEW, mandatory=False
+            ),
         ]
         mock_metadata_storage.get_consultation_requirements.return_value = requirements
 
         result = registry.get_consultation_requirements(
-            "code-reviewer",
-            phase=ConsultationPhase.PRE_COMPLETION
+            "code-reviewer", phase=ConsultationPhase.PRE_COMPLETION
         )
 
         assert len(result) == 1
@@ -379,7 +357,7 @@ class TestAgentCardManagement:
             capabilities=AgentCapabilities(streaming=True),
             skills=[],
             defaultInputModes=["text"],
-            defaultOutputModes=["text"]
+            defaultOutputModes=["text"],
         )
 
         registry.register_agent_card(new_card)
@@ -429,7 +407,7 @@ class TestCompatibilityResult:
             is_compatible=True,
             source_agent="agent-a",
             target_agent="agent-b",
-            details={"matching_types": ["ARTIFACT"]}
+            details={"matching_types": ["ARTIFACT"]},
         )
 
         assert result.is_compatible is True
@@ -443,7 +421,7 @@ class TestCompatibilityResult:
             is_compatible=False,
             source_agent="agent-a",
             target_agent="agent-b",
-            details={"reason": "No matching types"}
+            details={"reason": "No matching types"},
         )
 
         assert result.is_compatible is False

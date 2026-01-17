@@ -44,9 +44,7 @@ class TestConsultationCondition:
         from src.consultation.rules import ConsultationCondition
 
         condition = ConsultationCondition(
-            field="task.type",
-            operator="equals",
-            value="infrastructure"
+            field="task.type", operator="equals", value="infrastructure"
         )
         assert condition.field == "task.type"
         assert condition.operator == "equals"
@@ -58,11 +56,7 @@ class TestConsultationCondition:
 
         # Test various operators
         for op in ["equals", "not_equals", "contains", "not_contains", "in", "not_in"]:
-            condition = ConsultationCondition(
-                field="test.field",
-                operator=op,
-                value="test_value"
-            )
+            condition = ConsultationCondition(field="test.field", operator=op, value="test_value")
             assert condition.operator == op
 
     def test_condition_with_list_value(self):
@@ -70,9 +64,7 @@ class TestConsultationCondition:
         from src.consultation.rules import ConsultationCondition
 
         condition = ConsultationCondition(
-            field="task.tags",
-            operator="in",
-            value=["security", "compliance"]
+            field="task.tags", operator="in", value=["security", "compliance"]
         )
         assert condition.value == ["security", "compliance"]
 
@@ -81,11 +73,7 @@ class TestConsultationCondition:
         from src.consultation.rules import ConsultationCondition
 
         with pytest.raises(ValidationError):
-            ConsultationCondition(
-                field="test.field",
-                operator="invalid_op",
-                value="test"
-            )
+            ConsultationCondition(field="test.field", operator="invalid_op", value="test")
 
 
 class TestConsultationRequirement:
@@ -99,7 +87,7 @@ class TestConsultationRequirement:
             agent_name="security-agent",
             phase=ConsultationPhase.PRE_COMPLETION,
             mandatory=True,
-            description="Security review before code completion"
+            description="Security review before code completion",
         )
         assert requirement.agent_name == "security-agent"
         assert requirement.phase == ConsultationPhase.PRE_COMPLETION
@@ -115,16 +103,14 @@ class TestConsultationRequirement:
         )
 
         condition = ConsultationCondition(
-            field="task.impacts_infrastructure",
-            operator="equals",
-            value=True
+            field="task.impacts_infrastructure", operator="equals", value=True
         )
         requirement = ConsultationRequirement(
             agent_name="architect-agent",
             phase=ConsultationPhase.DESIGN_REVIEW,
             mandatory=True,
             condition=condition,
-            description="Architect review when infrastructure is impacted"
+            description="Architect review when infrastructure is impacted",
         )
         assert requirement.condition is not None
         assert requirement.condition.field == "task.impacts_infrastructure"
@@ -134,9 +120,7 @@ class TestConsultationRequirement:
         from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 
         requirement = ConsultationRequirement(
-            agent_name="review-agent",
-            phase=ConsultationPhase.PRE_COMPLETION,
-            mandatory=True
+            agent_name="review-agent", phase=ConsultationPhase.PRE_COMPLETION, mandatory=True
         )
         assert requirement.condition is None
 
@@ -145,8 +129,7 @@ class TestConsultationRequirement:
         from src.consultation.rules import ConsultationPhase, ConsultationRequirement
 
         requirement = ConsultationRequirement(
-            agent_name="testing-agent",
-            phase=ConsultationPhase.PRE_COMPLETION
+            agent_name="testing-agent", phase=ConsultationPhase.PRE_COMPLETION
         )
         assert requirement.mandatory is False
 
@@ -157,10 +140,7 @@ class TestConsultationRequirement:
         # Valid names
         valid_names = ["security-agent", "code-review", "my_agent", "Agent1"]
         for name in valid_names:
-            req = ConsultationRequirement(
-                agent_name=name,
-                phase=ConsultationPhase.PRE_COMPLETION
-            )
+            req = ConsultationRequirement(agent_name=name, phase=ConsultationPhase.PRE_COMPLETION)
             assert req.agent_name == name
 
 
@@ -176,7 +156,7 @@ class TestConsultationOutcome:
             agent_name="security-agent",
             status="approved",
             comments="Security review passed, no issues found",
-            trace_id="trace-abc123"
+            trace_id="trace-abc123",
         )
         assert outcome.requirement_id == "req-001"
         assert outcome.agent_name == "security-agent"
@@ -192,7 +172,7 @@ class TestConsultationOutcome:
             requirement_id="req-002",
             agent_name="architect-agent",
             status="rejected",
-            comments="Design violates scalability requirements"
+            comments="Design violates scalability requirements",
         )
         assert outcome.status == "rejected"
 
@@ -201,9 +181,7 @@ class TestConsultationOutcome:
         from src.consultation.rules import ConsultationOutcome
 
         outcome = ConsultationOutcome(
-            requirement_id="req-003",
-            agent_name="testing-agent",
-            status="pending"
+            requirement_id="req-003", agent_name="testing-agent", status="pending"
         )
         assert outcome.status == "pending"
 
@@ -214,9 +192,7 @@ class TestConsultationOutcome:
         valid_statuses = ["pending", "approved", "rejected", "skipped"]
         for status in valid_statuses:
             outcome = ConsultationOutcome(
-                requirement_id="req-test",
-                agent_name="test-agent",
-                status=status
+                requirement_id="req-test", agent_name="test-agent", status=status
             )
             assert outcome.status == status
 
@@ -226,9 +202,7 @@ class TestConsultationOutcome:
 
         with pytest.raises(ValidationError):
             ConsultationOutcome(
-                requirement_id="req-test",
-                agent_name="test-agent",
-                status="invalid-status"
+                requirement_id="req-test", agent_name="test-agent", status="invalid-status"
             )
 
     def test_outcome_optional_fields(self):
@@ -236,9 +210,7 @@ class TestConsultationOutcome:
         from src.consultation.rules import ConsultationOutcome
 
         outcome = ConsultationOutcome(
-            requirement_id="req-minimal",
-            agent_name="test-agent",
-            status="pending"
+            requirement_id="req-minimal", agent_name="test-agent", status="pending"
         )
         assert outcome.comments is None
         assert outcome.trace_id is None
@@ -250,9 +222,7 @@ class TestConsultationOutcome:
         from src.consultation.rules import ConsultationOutcome
 
         outcome = ConsultationOutcome(
-            requirement_id="req-time",
-            agent_name="test-agent",
-            status="approved"
+            requirement_id="req-time", agent_name="test-agent", status="approved"
         )
         assert outcome.timestamp is not None
         assert isinstance(outcome.timestamp, datetime)
@@ -270,20 +240,20 @@ class TestConsultationRequirementList:
                 agent_name="security-agent",
                 phase=ConsultationPhase.PRE_COMPLETION,
                 mandatory=True,
-                description="Security review"
+                description="Security review",
             ),
             ConsultationRequirement(
                 agent_name="testing-agent",
                 phase=ConsultationPhase.PRE_COMPLETION,
                 mandatory=True,
-                description="Test coverage verification"
+                description="Test coverage verification",
             ),
             ConsultationRequirement(
                 agent_name="architect-agent",
                 phase=ConsultationPhase.DESIGN_REVIEW,
                 mandatory=False,
-                description="Optional architecture review"
-            )
+                description="Optional architecture review",
+            ),
         ]
         assert len(requirements) == 3
         mandatory = [r for r in requirements if r.mandatory]
@@ -295,17 +265,14 @@ class TestConsultationRequirementList:
 
         requirements = [
             ConsultationRequirement(
-                agent_name="security-agent",
-                phase=ConsultationPhase.PRE_COMPLETION
+                agent_name="security-agent", phase=ConsultationPhase.PRE_COMPLETION
             ),
             ConsultationRequirement(
-                agent_name="architect-agent",
-                phase=ConsultationPhase.DESIGN_REVIEW
+                agent_name="architect-agent", phase=ConsultationPhase.DESIGN_REVIEW
             ),
             ConsultationRequirement(
-                agent_name="review-agent",
-                phase=ConsultationPhase.PRE_COMPLETION
-            )
+                agent_name="review-agent", phase=ConsultationPhase.PRE_COMPLETION
+            ),
         ]
 
         pre_completion = [r for r in requirements if r.phase == ConsultationPhase.PRE_COMPLETION]

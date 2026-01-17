@@ -127,10 +127,7 @@ class AgentDiscovery:
         except Exception as e:
             # Pydantic validation or other parsing errors
             logger.exception(f"Agent card validation failed for {endpoint}")
-            raise DiscoveryError(
-                f"Invalid agent card format: {e}",
-                endpoint=endpoint
-            ) from e
+            raise DiscoveryError(f"Invalid agent card format: {e}", endpoint=endpoint) from e
 
         logger.info(f"Discovered agent '{card.name}' at {endpoint}")
         return card

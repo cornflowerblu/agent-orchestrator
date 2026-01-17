@@ -327,4 +327,3 @@ class StatusStorage:
             healthy_count=sum(1 for s in statuses if s.is_healthy()),
             unhealthy_count=sum(1 for s in statuses if not s.is_healthy()),
         )
-

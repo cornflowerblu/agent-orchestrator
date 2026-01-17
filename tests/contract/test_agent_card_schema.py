@@ -92,12 +92,14 @@ class TestAgentCardSchema:
     def test_multiple_skills(self, agent_card_schema, valid_agent_card):
         """Agent Card with multiple skills should pass."""
         card_with_multiple_skills = valid_agent_card.copy()
-        card_with_multiple_skills["skills"].append({
-            "id": "another-skill",
-            "name": "Another Skill",
-            "description": "A second skill for testing",
-            "tags": ["additional"],
-        })
+        card_with_multiple_skills["skills"].append(
+            {
+                "id": "another-skill",
+                "name": "Another Skill",
+                "description": "A second skill for testing",
+                "tags": ["additional"],
+            }
+        )
 
         validate(instance=card_with_multiple_skills, schema=agent_card_schema)
 

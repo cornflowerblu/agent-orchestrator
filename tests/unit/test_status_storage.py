@@ -3,7 +3,6 @@
 Tests for T073-T074: AgentStatus model and status tracking storage
 """
 
-
 import boto3
 import pytest
 from moto import mock_aws
@@ -37,7 +36,7 @@ class TestAgentStatusModel:
             endpoint="https://example.com",
             version="1.0.0",
             metrics={"requests": 100},
-            error_message=None
+            error_message=None,
         )
 
         assert status.agent_name == "test-agent"
@@ -52,7 +51,7 @@ class TestAgentStatusModel:
         status = AgentStatus(
             agent_name="test-agent",
             status=AgentStatusValue.ACTIVE,
-            health_check=HealthCheckStatus.PASSING
+            health_check=HealthCheckStatus.PASSING,
         )
 
         assert status.is_healthy() is True
@@ -62,7 +61,7 @@ class TestAgentStatusModel:
         status = AgentStatus(
             agent_name="test-agent",
             status=AgentStatusValue.INACTIVE,
-            health_check=HealthCheckStatus.PASSING
+            health_check=HealthCheckStatus.PASSING,
         )
 
         assert status.is_healthy() is False
@@ -72,17 +71,14 @@ class TestAgentStatusModel:
         status = AgentStatus(
             agent_name="test-agent",
             status=AgentStatusValue.ACTIVE,
-            health_check=HealthCheckStatus.FAILING
+            health_check=HealthCheckStatus.FAILING,
         )
 
         assert status.is_healthy() is False
 
     def test_mark_active(self):
         """Test mark_active updates status."""
-        status = AgentStatus(
-            agent_name="test-agent",
-            status=AgentStatusValue.INACTIVE
-        )
+        status = AgentStatus(agent_name="test-agent", status=AgentStatusValue.INACTIVE)
 
         original_time = status.last_seen
         status.mark_active()
@@ -93,10 +89,7 @@ class TestAgentStatusModel:
 
     def test_mark_inactive(self):
         """Test mark_inactive updates status."""
-        status = AgentStatus(
-            agent_name="test-agent",
-            status=AgentStatusValue.ACTIVE
-        )
+        status = AgentStatus(agent_name="test-agent", status=AgentStatusValue.ACTIVE)
 
         status.mark_inactive("Connection lost")
 
@@ -133,7 +126,7 @@ class TestAgentStatusSummary:
             inactive_count=2,
             degraded_count=0,
             healthy_count=7,
-            unhealthy_count=3
+            unhealthy_count=3,
         )
 
         assert summary.total_agents == 10
@@ -151,28 +144,22 @@ class TestStatusStorage:
             table = dynamodb.create_table(
                 TableName="TestAgentStatus",
                 KeySchema=[{"AttributeName": "agent_name", "KeyType": "HASH"}],
-                AttributeDefinitions=[
-                    {"AttributeName": "agent_name", "AttributeType": "S"}
-                ],
-                BillingMode="PAY_PER_REQUEST"
+                AttributeDefinitions=[{"AttributeName": "agent_name", "AttributeType": "S"}],
+                BillingMode="PAY_PER_REQUEST",
             )
             table.wait_until_exists()
 
             from src.registry.status import StatusStorage
-            storage = StatusStorage(
-                table_name="TestAgentStatus",
-                region="us-east-1"
-            )
+
+            storage = StatusStorage(table_name="TestAgentStatus", region="us-east-1")
             yield storage
 
     def test_storage_init(self):
         """Test StatusStorage initialization."""
         with mock_aws():
             from src.registry.status import StatusStorage
-            storage = StatusStorage(
-                table_name="TestTable",
-                region="eu-west-1"
-            )
+
+            storage = StatusStorage(table_name="TestTable", region="eu-west-1")
             assert storage.table_name == "TestTable"
             assert storage.region == "eu-west-1"
 
@@ -181,7 +168,7 @@ class TestStatusStorage:
         status = AgentStatus(
             agent_name="test-agent",
             status=AgentStatusValue.ACTIVE,
-            health_check=HealthCheckStatus.PASSING
+            health_check=HealthCheckStatus.PASSING,
         )
 
         status_storage.put_status(status)
@@ -200,17 +187,12 @@ class TestStatusStorage:
     def test_update_status(self, status_storage):
         """Test updating status."""
         # First create
-        status = AgentStatus(
-            agent_name="test-agent",
-            status=AgentStatusValue.ACTIVE
-        )
+        status = AgentStatus(agent_name="test-agent", status=AgentStatusValue.ACTIVE)
         status_storage.put_status(status)
 
         # Then update
         updated = status_storage.update_status(
-            agent_name="test-agent",
-            status=AgentStatusValue.DEGRADED,
-            error_message="High latency"
+            agent_name="test-agent", status=AgentStatusValue.DEGRADED, error_message="High latency"
         )
 
         assert updated.status == AgentStatusValue.DEGRADED
@@ -235,10 +217,7 @@ class TestStatusStorage:
         """Test listing all statuses."""
         # Create multiple
         for i in range(3):
-            status = AgentStatus(
-                agent_name=f"agent-{i}",
-                status=AgentStatusValue.ACTIVE
-            )
+            status = AgentStatus(agent_name=f"agent-{i}", status=AgentStatusValue.ACTIVE)
             status_storage.put_status(status)
 
         # List
@@ -258,20 +237,23 @@ class TestStatusStorage:
     def test_get_status_summary(self, status_storage):
         """Test getting status summary."""
         # Create mixed statuses
-        status_storage.put_status(AgentStatus(
-            agent_name="active-1",
-            status=AgentStatusValue.ACTIVE,
-            health_check=HealthCheckStatus.PASSING
-        ))
-        status_storage.put_status(AgentStatus(
-            agent_name="active-2",
-            status=AgentStatusValue.ACTIVE,
-            health_check=HealthCheckStatus.FAILING
-        ))
-        status_storage.put_status(AgentStatus(
-            agent_name="inactive-1",
-            status=AgentStatusValue.INACTIVE
-        ))
+        status_storage.put_status(
+            AgentStatus(
+                agent_name="active-1",
+                status=AgentStatusValue.ACTIVE,
+                health_check=HealthCheckStatus.PASSING,
+            )
+        )
+        status_storage.put_status(
+            AgentStatus(
+                agent_name="active-2",
+                status=AgentStatusValue.ACTIVE,
+                health_check=HealthCheckStatus.FAILING,
+            )
+        )
+        status_storage.put_status(
+            AgentStatus(agent_name="inactive-1", status=AgentStatusValue.INACTIVE)
+        )
 
         summary = status_storage.get_status_summary()
 
@@ -294,7 +276,7 @@ class TestStatusStorage:
             endpoint="https://example.com",
             version="2.0.0",
             metrics={"count": 100},
-            error_message=None
+            error_message=None,
         )
 
         assert updated.status == AgentStatusValue.ACTIVE
