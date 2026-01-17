@@ -127,6 +127,7 @@ class TestPutMetadata:
                 )
                 table.wait_until_exists()
             except Exception:
+                # Table creation is async in moto, ignore timing/existence errors in tests
                 pass
 
             storage = MetadataStorage(table_name="TestAgentMetadata", region="us-east-1")
