@@ -70,3 +70,80 @@ class TestExitConditionEvaluator:
         assert gateway_client is not None
         assert evaluator._gateway_client is not None
         assert isinstance(evaluator._gateway_client, GatewayClient)
+
+
+class TestEvaluateTests:
+    """Test evaluate_tests() method (T055)."""
+
+    def test_evaluate_tests_success(self, mocker):
+        """Should mark condition as MET when tests pass."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+        config = ExitConditionConfig(
+            type=ExitConditionType.ALL_TESTS_PASS,
+            tool_arguments={"path": "tests/"},
+        )
+
+        # Mock Code Interpreter to simulate successful pytest run
+        mock_execute = mocker.patch.object(
+            evaluator.code_interpreter,
+            "execute_code",
+            return_value={
+                "exit_code": 0,
+                "output": "===== 15 passed in 2.3s =====",
+            },
+        )
+
+        status = evaluator.evaluate_tests(config, iteration=1)
+
+        # Verify status is MET
+        assert status.status == ExitConditionStatusValue.MET
+        assert status.tool_exit_code == 0
+        assert "passed" in status.tool_output.lower()
+        assert status.iteration_evaluated == 1
+
+        # Verify Code Interpreter was called with pytest command
+        mock_execute.assert_called_once()
+
+    def test_evaluate_tests_failure(self, mocker):
+        """Should mark condition as NOT_MET when tests fail."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+        config = ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)
+
+        # Mock Code Interpreter to simulate failed pytest run
+        mock_execute = mocker.patch.object(
+            evaluator.code_interpreter,
+            "execute_code",
+            return_value={
+                "exit_code": 1,
+                "output": "===== 3 failed, 12 passed in 2.5s =====",
+            },
+        )
+
+        status = evaluator.evaluate_tests(config, iteration=2)
+
+        # Verify status is NOT_MET
+        assert status.status == ExitConditionStatusValue.NOT_MET
+        assert status.tool_exit_code == 1
+        assert "failed" in status.tool_output.lower()
+        assert status.iteration_evaluated == 2
+
+    def test_evaluate_tests_with_custom_arguments(self, mocker):
+        """Should pass custom arguments to pytest."""
+        evaluator = ExitConditionEvaluator(region="us-east-1")
+        config = ExitConditionConfig(
+            type=ExitConditionType.ALL_TESTS_PASS,
+            tool_arguments={"path": "tests/unit", "markers": "not integration"},
+        )
+
+        mock_execute = mocker.patch.object(
+            evaluator.code_interpreter,
+            "execute_code",
+            return_value={"exit_code": 0, "output": "10 passed"},
+        )
+
+        status = evaluator.evaluate_tests(config, iteration=1)
+
+        # Verify custom arguments were included
+        call_args = mock_execute.call_args[0][0]
+        assert "tests/unit" in call_args
+        assert "not integration" in call_args

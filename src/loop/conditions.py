@@ -109,3 +109,66 @@ class ExitConditionEvaluator:
             logger.debug(f"Creating Gateway client for {self.gateway_url}")
             self._gateway_client = GatewayClient(gateway_url=self.gateway_url)
         return self._gateway_client
+
+    def evaluate_tests(
+        self, config: ExitConditionConfig, iteration: int
+    ) -> ExitConditionStatus:
+        """Evaluate ALL_TESTS_PASS exit condition (T043).
+
+        Executes pytest via Code Interpreter and checks exit code.
+
+        Args:
+            config: Exit condition configuration
+            iteration: Current iteration number
+
+        Returns:
+            ExitConditionStatus with evaluation result
+
+        Raises:
+            ExitConditionEvaluationError: If tool execution fails
+        """
+        status = ExitConditionStatus(type=config.type)
+
+        try:
+            # Build pytest command
+            path = config.tool_arguments.get("path", "tests/")
+            markers = config.tool_arguments.get("markers", "")
+
+            cmd_parts = ["pytest", path]
+            if markers:
+                cmd_parts.extend(["-m", f'"{markers}"'])
+
+            pytest_cmd = " ".join(cmd_parts)
+
+            logger.debug(f"Evaluating tests with command: {pytest_cmd}")
+
+            # Execute via Code Interpreter
+            result = self.code_interpreter.execute_code(pytest_cmd)
+
+            exit_code = result.get("exit_code", 1)
+            output = result.get("output", "")
+
+            # Mark status based on exit code
+            if exit_code == 0:
+                status.mark_met(
+                    tool_name="pytest",
+                    exit_code=exit_code,
+                    output=output,
+                    iteration=iteration,
+                )
+                logger.info(f"Tests passed at iteration {iteration}")
+            else:
+                status.mark_not_met(
+                    tool_name="pytest",
+                    exit_code=exit_code,
+                    output=output,
+                    iteration=iteration,
+                )
+                logger.warning(f"Tests failed at iteration {iteration}: exit code {exit_code}")
+
+        except Exception as e:
+            error_msg = f"Failed to execute pytest: {e}"
+            logger.exception(error_msg)
+            status.mark_error(error=error_msg, iteration=iteration)
+
+        return status

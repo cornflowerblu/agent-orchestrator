@@ -781,3 +781,94 @@ class LoopState(BaseModel):
             True if progress >= threshold percentage
         """
         return self.progress_percentage() >= (threshold * 100)
+
+
+# =============================================================================
+# T059-T061: Checkpoint Model (User Story 2)
+# =============================================================================
+
+
+class Checkpoint(BaseModel):
+    """Checkpoint for saving/restoring loop state to/from Memory service.
+
+    Maps to FR-005: Framework MUST provide checkpoint save helpers.
+    Maps to FR-006: Checkpoint MUST include iteration number, state, timestamp.
+    Maps to FR-012: Support loading state from Memory for recovery.
+    Maps to SC-006: Recovery within one iteration of checkpoint.
+
+    Example:
+        # Save checkpoint
+        checkpoint = Checkpoint.from_loop_state(loop_state)
+        checkpoint_data = checkpoint.model_dump()
+        memory.put(key=f"checkpoint/{session_id}/{iteration}", value=checkpoint_data)
+
+        # Load checkpoint
+        checkpoint_data = memory.get(key=f"checkpoint/{session_id}/{iteration}")
+        checkpoint = Checkpoint(**checkpoint_data)
+        loop_state = checkpoint.to_loop_state()
+    """
+
+    checkpoint_id: str = Field(
+        default_factory=lambda: f"checkpoint-{uuid4().hex[:16]}",
+        description="Unique identifier for this checkpoint",
+    )
+
+    session_id: str = Field(
+        ...,
+        description="Loop session ID this checkpoint belongs to",
+    )
+
+    iteration: int = Field(
+        ...,
+        description="Iteration number when checkpoint was created (FR-006)",
+        ge=0,
+    )
+
+    loop_state_snapshot: dict[str, Any] = Field(
+        ...,
+        description="Serialized LoopState at time of checkpoint",
+    )
+
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(UTC).isoformat(),
+        description="ISO timestamp when checkpoint was created (FR-006)",
+    )
+
+    agent_name: str = Field(
+        ...,
+        description="Name of agent that created this checkpoint",
+    )
+
+    @classmethod
+    def from_loop_state(cls, loop_state: LoopState) -> "Checkpoint":
+        """Create a checkpoint from current LoopState.
+
+        Maps to T060: Implement Checkpoint.from_loop_state() class method.
+
+        Args:
+            loop_state: Current loop state to checkpoint
+
+        Returns:
+            Checkpoint containing snapshot of loop state
+        """
+        return cls(
+            session_id=loop_state.session_id,
+            iteration=loop_state.current_iteration,
+            loop_state_snapshot=loop_state.model_dump(),
+            agent_name=loop_state.agent_name,
+        )
+
+    def to_loop_state(self) -> LoopState:
+        """Reconstruct LoopState from checkpoint.
+
+        Maps to T061: Implement Checkpoint.to_loop_state() method.
+        Maps to FR-012: Support loading state from Memory for recovery.
+        Maps to SC-006: Recovery within one iteration of checkpoint.
+
+        Returns:
+            LoopState reconstructed from checkpoint snapshot
+
+        Raises:
+            ValidationError: If checkpoint data is invalid
+        """
+        return LoopState(**self.loop_state_snapshot)
