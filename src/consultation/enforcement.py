@@ -111,7 +111,7 @@ class ConsultationEngine:
         operators = {
             "equals": lambda f, e: f == e,
             "not_equals": lambda f, e: f != e,
-            "contains": lambda f, e: self._check_contains(f, e),
+            "contains": self._check_contains,
             # _check_contains returns False for invalid types, so negation returns True (correct)
             "not_contains": lambda f, e: not self._check_contains(f, e),
             "in": lambda f, e: f in e if isinstance(e, (list, tuple, set)) else False,
