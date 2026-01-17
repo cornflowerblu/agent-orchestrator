@@ -172,7 +172,9 @@ class TestAgentRegistryLocal:
         registry.register_agent_card(sample_agent_card)
 
         # Case insensitive search
-        results = registry.find_by_skill("DOCUMENT PROCESSING", match_type="exact", case_sensitive=False)
+        results = registry.find_by_skill(
+            "DOCUMENT PROCESSING", match_type="exact", case_sensitive=False
+        )
         assert len(results) == 1
         assert results[0].name == "test-agent"
 
@@ -205,9 +207,7 @@ class TestAgentRegistryLocal:
         metadata_storage.put_metadata(sample_metadata)
 
         # Find agents with required DOCUMENT input
-        results = registry.find_by_input_compatibility(
-            SemanticType.DOCUMENT, required_only=True
-        )
+        results = registry.find_by_input_compatibility(SemanticType.DOCUMENT, required_only=True)
         assert len(results) == 1
         assert results[0].name == "test-agent"
 
@@ -383,9 +383,7 @@ class TestAgentRegistryLocal:
         with pytest.raises(ValidationError, match="not configured with metadata storage"):
             registry.check_compatibility("test-agent", "another-agent")
 
-    def test_get_consultation_requirements(
-        self, registry, metadata_storage, sample_metadata
-    ):
+    def test_get_consultation_requirements(self, registry, metadata_storage, sample_metadata):
         """Test getting consultation requirements for an agent."""
         # Store metadata
         metadata_storage.put_metadata(sample_metadata)

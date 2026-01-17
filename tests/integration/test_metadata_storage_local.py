@@ -129,9 +129,7 @@ class TestMetadataStorageLocal:
             ),
         ]
 
-        metadata_storage.update_consultation_requirements(
-            sample_metadata.agent_name, requirements
-        )
+        metadata_storage.update_consultation_requirements(sample_metadata.agent_name, requirements)
 
         # Retrieve requirements
         retrieved_reqs = metadata_storage.get_consultation_requirements(sample_metadata.agent_name)
@@ -190,9 +188,7 @@ class TestMetadataStorageLocal:
                 mandatory=True,
             ),
         ]
-        metadata_storage.update_consultation_requirements(
-            sample_metadata.agent_name, requirements
-        )
+        metadata_storage.update_consultation_requirements(sample_metadata.agent_name, requirements)
 
         # Remove one requirement
         metadata_storage.remove_consultation_requirement(sample_metadata.agent_name, "agent-1")

@@ -70,9 +70,7 @@ class TestConsultationEngineLocal:
     def test_get_requirements_mandatory_only(self, engine):
         """Test getting only mandatory requirements."""
         # Pre-completion phase, mandatory only
-        mandatory = engine.get_requirements(
-            ConsultationPhase.PRE_COMPLETION, mandatory_only=True
-        )
+        mandatory = engine.get_requirements(ConsultationPhase.PRE_COMPLETION, mandatory_only=True)
         assert len(mandatory) == 2
         agent_names = [r.agent_name for r in mandatory]
         assert "code-reviewer" in agent_names
@@ -81,9 +79,7 @@ class TestConsultationEngineLocal:
 
     def test_evaluate_condition_equals(self, engine):
         """Test evaluating equals condition."""
-        condition = ConsultationCondition(
-            field="result.status", operator="equals", value="success"
-        )
+        condition = ConsultationCondition(field="result.status", operator="equals", value="success")
 
         # Condition met
         context = {"result": {"status": "success"}}
@@ -95,9 +91,7 @@ class TestConsultationEngineLocal:
 
     def test_evaluate_condition_not_equals(self, engine):
         """Test evaluating not_equals condition."""
-        condition = ConsultationCondition(
-            field="result.code", operator="not_equals", value=0
-        )
+        condition = ConsultationCondition(field="result.code", operator="not_equals", value=0)
 
         # Condition met (not equal)
         context = {"result": {"code": 1}}
@@ -109,9 +103,7 @@ class TestConsultationEngineLocal:
 
     def test_evaluate_condition_contains(self, engine):
         """Test evaluating contains condition."""
-        condition = ConsultationCondition(
-            field="tags", operator="contains", value="security"
-        )
+        condition = ConsultationCondition(field="tags", operator="contains", value="security")
 
         # List contains value
         context = {"tags": ["security", "compliance", "audit"]}
@@ -122,17 +114,13 @@ class TestConsultationEngineLocal:
         assert engine.evaluate_condition(condition, context) is False
 
         # String contains value
-        condition_str = ConsultationCondition(
-            field="message", operator="contains", value="error"
-        )
+        condition_str = ConsultationCondition(field="message", operator="contains", value="error")
         context = {"message": "An error occurred"}
         assert engine.evaluate_condition(condition_str, context) is True
 
     def test_evaluate_condition_not_contains(self, engine):
         """Test evaluating not_contains condition."""
-        condition = ConsultationCondition(
-            field="tags", operator="not_contains", value="deprecated"
-        )
+        condition = ConsultationCondition(field="tags", operator="not_contains", value="deprecated")
 
         # List doesn't contain value (condition met)
         context = {"tags": ["new", "experimental"]}
@@ -400,9 +388,7 @@ class TestConsultationEngineLocal:
         context = {"result": {"status": "failure"}}
 
         # Use PRE_EXECUTION phase where security-reviewer is mandatory
-        result = engine.validate_task_completion(
-            ConsultationPhase.PRE_EXECUTION, outcomes, context
-        )
+        result = engine.validate_task_completion(ConsultationPhase.PRE_EXECUTION, outcomes, context)
 
         assert result.is_valid is False
         assert len(result.missing_consultations) == 0  # No missing in this phase
@@ -414,9 +400,7 @@ class TestConsultationEngineLocal:
         engine = ConsultationEngine(requirements=[])
 
         # Should return valid for any phase with no outcomes
-        result = engine.validate_task_completion(
-            ConsultationPhase.PRE_EXECUTION, [], {}
-        )
+        result = engine.validate_task_completion(ConsultationPhase.PRE_EXECUTION, [], {})
 
         assert result.is_valid is True
         assert len(result.missing_consultations) == 0
