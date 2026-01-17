@@ -179,7 +179,8 @@ class CheckpointManager:
                 description="Loop checkpoint storage for agent orchestrator",
                 event_expiry_days=7,
             )
-            return result.get("memoryId") or result.get("memory_id")
+            memory_id: str | None = result.get("memoryId") or result.get("memory_id")
+            return memory_id
 
         try:
             # Use ThreadPoolExecutor to add timeout to the blocking call

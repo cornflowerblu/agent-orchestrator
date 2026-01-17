@@ -275,3 +275,47 @@ class TestPolicyEnforcer:
         # Verify result
         assert result["policyId"] == "policy-456"
         assert result["name"] == "iteration-limit-test-agent"
+
+
+class TestPolicyEnforcerNoneClient:
+    """Tests for PolicyEnforcer when policy_client is None."""
+
+    @patch("src.orchestrator.policy.PolicyClient", None)
+    def test_get_or_create_policy_engine_raises_when_client_none(self):
+        """Test that _get_or_create_policy_engine raises when policy_client is None."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+
+        enforcer = PolicyEnforcer(config=config)
+
+        with pytest.raises(PolicyViolationError):
+            enforcer._get_or_create_policy_engine()
+
+    @patch("src.orchestrator.policy.PolicyClient", None)
+    def test_update_policy_raises_when_client_none(self):
+        """Test that update_policy raises when policy_client is None."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+
+        enforcer = PolicyEnforcer(config=config)
+        new_config = PolicyConfig(agent_name="test-agent", max_iterations=200)
+
+        with pytest.raises(PolicyViolationError):
+            enforcer.update_policy(new_config=new_config, policy_id="policy-456")
+
+    @patch("src.orchestrator.policy.PolicyClient", None)
+    def test_get_policy_raises_when_client_none(self):
+        """Test that get_policy raises when policy_client is None."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+
+        enforcer = PolicyEnforcer(config=config)
+
+        with pytest.raises(PolicyViolationError):
+            enforcer.get_policy(policy_id="policy-456")

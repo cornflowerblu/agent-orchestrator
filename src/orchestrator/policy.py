@@ -117,6 +117,12 @@ class PolicyEnforcer:
             return cached_result
 
         # Create or get policy engine using AgentCore Policy service
+        if self.policy_client is None:
+            raise PolicyViolationError(
+                agent_name=self.config.agent_name,
+                current_iteration=0,
+                max_iterations=self.config.max_iterations,
+            )
         result: dict[str, Any] = self.policy_client.create_or_get_policy_engine(
             name=engine_name,
             description=f"Enforces iteration limits for {self.config.agent_name}",
@@ -262,6 +268,12 @@ class PolicyEnforcer:
         cedar_statement = new_config.generate_cedar_statement()
 
         # Update policy using AgentCore Policy service
+        if self.policy_client is None:
+            raise PolicyViolationError(
+                agent_name=new_config.agent_name,
+                current_iteration=0,
+                max_iterations=new_config.max_iterations,
+            )
         result = self.policy_client.update_policy(
             policy_id=policy_id,
             definition={
@@ -294,5 +306,11 @@ class PolicyEnforcer:
             print(policy["name"])  # "iteration-limit-test-agent"
         """
         # Get policy using AgentCore Policy service
+        if self.policy_client is None:
+            raise PolicyViolationError(
+                agent_name=self.config.agent_name,
+                current_iteration=0,
+                max_iterations=self.config.max_iterations,
+            )
         result: dict[str, Any] = self.policy_client.get_policy(policy_id=policy_id)
         return result

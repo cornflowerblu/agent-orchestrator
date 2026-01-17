@@ -22,7 +22,11 @@ from typing import Any
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+    SpanExporter,
+)
 
 from src.exceptions import LoopFrameworkError, PolicyViolationError
 from src.loop.checkpoint import CheckpointManager
@@ -242,6 +246,7 @@ class LoopFramework:
 
         # Select exporter based on environment configuration
         exporter_type = os.getenv("OTEL_EXPORTER_TYPE", "console").lower()
+        exporter: SpanExporter
 
         if exporter_type == "otlp":
             # Use OTLP exporter for AWS X-Ray/CloudWatch integration
