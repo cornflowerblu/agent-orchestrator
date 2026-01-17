@@ -184,3 +184,60 @@ class PolicyEnforcer:
             )
 
         return True
+
+    def update_policy(
+        self,
+        new_config: PolicyConfig,
+        policy_id: str,
+    ) -> str:
+        """Update an existing policy with new configuration.
+
+        Args:
+            new_config: New PolicyConfig with updated iteration limits
+            policy_id: ID of the policy to update
+
+        Returns:
+            Updated policy ARN
+
+        Example:
+            enforcer = PolicyEnforcer(config)
+            new_config = PolicyConfig(agent_name="test-agent", max_iterations=200)
+            policy_arn = enforcer.update_policy(new_config=new_config, policy_id="policy-456")
+        """
+        # Generate new Cedar statement with updated config
+        cedar_statement = new_config.generate_cedar_statement()
+
+        # Update policy using AgentCore Policy service
+        result = self.policy_client.update_policy(
+            policy_id=policy_id,
+            definition={
+                "cedar": {
+                    "statement": cedar_statement,
+                }
+            },
+        )
+
+        # Update cache
+        policy_name = f"{new_config.policy_name_prefix}-{new_config.agent_name}"
+        if new_config.session_id:
+            policy_name += f"-{new_config.session_id}"
+        self._policy_cache[policy_name] = result
+
+        return result["policyArn"]
+
+    def get_policy(self, policy_id: str) -> dict[str, Any]:
+        """Retrieve an existing policy by ID.
+
+        Args:
+            policy_id: ID of the policy to retrieve
+
+        Returns:
+            Policy details including ID, ARN, name, and definition
+
+        Example:
+            enforcer = PolicyEnforcer(config)
+            policy = enforcer.get_policy(policy_id="policy-456")
+            print(policy["name"])  # "iteration-limit-test-agent"
+        """
+        # Get policy using AgentCore Policy service
+        return self.policy_client.get_policy(policy_id=policy_id)
