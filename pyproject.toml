@@ -10,6 +10,9 @@ dependencies = [
     "bedrock-agentcore[strands-agents]>=1.0.5",
     "boto3>=1.34.0",
     "pydantic>=2.12.0,<2.41.3",  # Restricted per AgentCore SDK compatibility
+    # OpenTelemetry for Observability integration (002-autonomous-loop)
+    "opentelemetry-api>=1.30.0",
+    "opentelemetry-sdk>=1.30.0",
 ]
 
 [project.optional-dependencies]
