@@ -29,22 +29,15 @@ class ValidationResult(BaseModel):
     Used to communicate whether all mandatory consultations have been
     completed and any issues that block task completion.
     """
-    is_valid: bool = Field(
-        ...,
-        description="Whether all consultation requirements are satisfied"
-    )
+
+    is_valid: bool = Field(..., description="Whether all consultation requirements are satisfied")
     missing_consultations: list[ConsultationRequirement] = Field(
-        default_factory=list,
-        description="Mandatory consultations that haven't been completed"
+        default_factory=list, description="Mandatory consultations that haven't been completed"
     )
     rejected_consultations: list[ConsultationOutcome] = Field(
-        default_factory=list,
-        description="Consultations that were rejected by the consulted agent"
+        default_factory=list, description="Consultations that were rejected by the consulted agent"
     )
-    message: str = Field(
-        default="",
-        description="Human-readable summary of validation result"
-    )
+    message: str = Field(default="", description="Human-readable summary of validation result")
 
 
 class ConsultationEngine:
@@ -62,7 +55,7 @@ class ConsultationEngine:
     def __init__(
         self,
         requirements: list[ConsultationRequirement] | None = None,
-        observability_client: Any | None = None
+        observability_client: Any | None = None,
     ):
         """Initialize the consultation engine.
 
@@ -74,9 +67,7 @@ class ConsultationEngine:
         self._observability_client = observability_client
 
     def get_requirements(
-        self,
-        phase: ConsultationPhase,
-        mandatory_only: bool = False
+        self, phase: ConsultationPhase, mandatory_only: bool = False
     ) -> list[ConsultationRequirement]:
         """Get consultation requirements for a specific phase.
 
@@ -97,9 +88,7 @@ class ConsultationEngine:
         return filtered
 
     def evaluate_condition(
-        self,
-        condition: ConsultationCondition,
-        task_context: dict[str, Any]
+        self, condition: ConsultationCondition, task_context: dict[str, Any]
     ) -> bool:
         """Evaluate whether a consultation condition is met.
 
@@ -115,41 +104,29 @@ class ConsultationEngine:
         # Get the field value from task context using dot notation
         field_value = self._get_nested_value(task_context, condition.field)
 
-        # Apply the operator
+        # Apply the operator using a dispatch table
         operator = condition.operator
         expected_value = condition.value
 
-        if operator == "equals":
-            return field_value == expected_value
+        operators = {
+            "equals": lambda f, e: f == e,
+            "not_equals": lambda f, e: f != e,
+            "contains": lambda f, e: self._check_contains(f, e),
+            "not_contains": lambda f, e: not self._check_contains(f, e, default=False),
+            "in": lambda f, e: f in e if isinstance(e, (list, tuple, set)) else False,
+            "not_in": lambda f, e: f not in e if isinstance(e, (list, tuple, set)) else True,
+        }
 
-        elif operator == "not_equals":
-            return field_value != expected_value
-
-        elif operator == "contains":
-            if isinstance(field_value, (list, tuple, set)):
-                return expected_value in field_value
-            elif isinstance(field_value, str):
-                return expected_value in field_value
+        handler = operators.get(operator)
+        if handler is None:
             return False
+        return handler(field_value, expected_value)
 
-        elif operator == "not_contains":
-            if isinstance(field_value, (list, tuple, set)):
-                return expected_value not in field_value
-            elif isinstance(field_value, str):
-                return expected_value not in field_value
-            return True
-
-        elif operator == "in":
-            if isinstance(expected_value, (list, tuple, set)):
-                return field_value in expected_value
-            return False
-
-        elif operator == "not_in":
-            if isinstance(expected_value, (list, tuple, set)):
-                return field_value not in expected_value
-            return True
-
-        return False
+    def _check_contains(self, field_value: Any, expected_value: Any, default: bool = False) -> bool:
+        """Check if field_value contains expected_value."""
+        if isinstance(field_value, (list, tuple, set, str)):
+            return expected_value in field_value
+        return default
 
     def _get_nested_value(self, data: dict[str, Any], field_path: str) -> Any:
         """Get a nested value from a dictionary using dot notation.
@@ -173,9 +150,7 @@ class ConsultationEngine:
         return current
 
     def query_observability_traces(
-        self,
-        task_id: str,
-        agent_name: str | None = None
+        self, task_id: str, agent_name: str | None = None
     ) -> list[dict[str, Any]]:
         """Query AgentCore Observability traces for A2A consultation verification.
 
@@ -193,10 +168,7 @@ class ConsultationEngine:
             return []
 
         # Query traces from Observability service
-        query_params = {
-            "task_id": task_id,
-            "action": "consultation"
-        }
+        query_params = {"task_id": task_id, "action": "consultation"}
 
         if agent_name:
             query_params["agent_name"] = agent_name
@@ -207,7 +179,7 @@ class ConsultationEngine:
         self,
         phase: ConsultationPhase,
         outcomes: list[ConsultationOutcome],
-        task_context: dict[str, Any]
+        task_context: dict[str, Any],
     ) -> ValidationResult:
         """Validate that all required consultations are complete before task completion.
 
@@ -238,10 +210,7 @@ class ConsultationEngine:
         for requirement in requirements:
             # Check if this requirement is applicable (evaluate condition if present)
             if requirement.condition is not None:
-                condition_met = self.evaluate_condition(
-                    requirement.condition,
-                    task_context
-                )
+                condition_met = self.evaluate_condition(requirement.condition, task_context)
                 if not condition_met:
                     # Condition not met, this requirement doesn't apply
                     continue
@@ -280,5 +249,5 @@ class ConsultationEngine:
             is_valid=is_valid,
             missing_consultations=missing_consultations,
             rejected_consultations=rejected_consultations,
-            message=message
+            message=message,
         )
