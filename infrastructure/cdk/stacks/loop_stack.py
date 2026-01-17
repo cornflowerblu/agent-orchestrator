@@ -118,6 +118,7 @@ class LoopStack(Stack):
             role=loop_execution_role,
             timeout=Duration.seconds(60),
             memory_size=256,
+            tracing=lambda_.Tracing.ACTIVE,  # Enable X-Ray tracing
             environment={
                 "LOG_GROUP_NAME": loop_log_group.log_group_name,
                 "POLICY_ENGINE_NAME": "LoopIterationPolicyEngine",
