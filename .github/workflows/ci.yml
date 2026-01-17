@@ -262,6 +262,14 @@ jobs:
           path: coverage.xml
           retention-days: 30
 
+      - name: Cleanup test data (main branch only)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          pip install boto3
+          python scripts/cleanup_test_data.py
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+
   cdk-destroy:
     name: CDK Destroy (Cleanup)
     runs-on: ubuntu-latest

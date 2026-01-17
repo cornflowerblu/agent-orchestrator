@@ -1,0 +1,44 @@
+name: Cleanup Test Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type CLEANUP to confirm deletion'
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  cleanup:
+    name: Delete Test Data from DynamoDB
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'CLEANUP'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-Cleanup
+          aws-region: us-east-1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install boto3
+
+      - name: Run cleanup script
+        run: python scripts/cleanup_test_data.py
+
+      - name: Cleanup summary
+        run: |
+          echo "✅ Test data cleanup completed"
+          echo "All items with 'test-' prefix have been deleted from DynamoDB tables"
