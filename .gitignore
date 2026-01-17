@@ -56,6 +56,7 @@ Thumbs.db
 # CDK
 cdk.out/
 .cdk.staging/
+infrastructure/cdk/outputs.json
 
 # AWS
 .aws-sam/
