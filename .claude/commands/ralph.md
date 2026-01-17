@@ -61,7 +61,7 @@ LOOP_ACTIVE = true
 
 4. **Run test validation**:
    ```bash
-   source .venv/bin/activate && pytest --cov=src --cov-report=term-missing -m "not integration"
+   source .venv/bin/activate && pytest --cov=src --cov-report=term-missing -m "not integration and not sam_local"
    ```
 
 5. **Check test results**:

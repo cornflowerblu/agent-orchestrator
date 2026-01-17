@@ -16,12 +16,14 @@ Run `git status --porcelain` to check for uncommitted changes.
 Execute the following command to run tests with coverage:
 
 ```bash
-source .venv/bin/activate && pytest --cov=src --cov-report=term-missing -m "not integration"
+source .venv/bin/activate && pytest --cov=src --cov-report=term-missing -m "not integration and not sam_local"
 ```
 
 **Important Notes**:
 - Virtual environment MUST be activated before running pytest
-- The `-m "not integration"` flag excludes integration tests (they require AWS deployment and are expected to be skipped)
+- The `-m "not integration and not sam_local"` flag excludes:
+  - `integration` tests (require AWS deployment)
+  - `sam_local` tests (require LocalStack + Docker, run in CI parallel job)
 - Coverage report shows missing lines for any files below threshold
 
 **Expected Behavior**:

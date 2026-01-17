@@ -18,12 +18,14 @@ Run `git status --porcelain` to check for uncommitted changes.
 Execute the following command to run unit tests with coverage:
 
 ```bash
-source .venv/bin/activate && pytest --cov=src --cov-report=term-missing -m "not integration"
+source .venv/bin/activate && pytest --cov=src --cov-report=term-missing -m "not integration and not sam_local"
 ```
 
 **Notes**:
 - Virtual environment MUST be activated before running pytest
-- The `-m "not integration"` flag excludes integration tests (they run in Step 3)
+- The `-m "not integration and not sam_local"` flag excludes:
+  - `integration` tests (require real AWS deployment)
+  - `sam_local` tests (require LocalStack + Docker, run in CI parallel job)
 - Pytest exit code 0 = PASS
 
 ## Step 3: Evaluate Unit Test Results
