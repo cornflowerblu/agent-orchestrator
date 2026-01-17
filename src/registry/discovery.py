@@ -126,10 +126,7 @@ class AgentDiscovery:
             card = AgentCard(**data)
         except Exception as e:
             # Pydantic validation or other parsing errors
-            logger.error(
-                f"Agent card validation failed for {endpoint}: {e}",
-                exc_info=True  # Include stack trace for debugging
-            )
+            logger.exception(f"Agent card validation failed for {endpoint}")
             raise DiscoveryError(
                 f"Invalid agent card format: {e}",
                 endpoint=endpoint

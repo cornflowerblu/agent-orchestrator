@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from src.agents.models import AgentCard
 from src.consultation.rules import ConsultationPhase, ConsultationRequirement
-from src.exceptions import AgentNotFoundError
+from src.exceptions import AgentNotFoundError, ValidationError
 from src.logging_config import get_logger
 from src.metadata.models import SemanticType
 from src.metadata.validation import is_type_compatible
@@ -128,14 +128,16 @@ class AgentRegistry:
                 skill_identifier = skill.id if case_sensitive else skill.id.lower()
                 skill_name = skill.name if case_sensitive else skill.name.lower()
 
-                if match_type == "exact":
-                    if skill_identifier == search_term or skill_name == search_term:
-                        results.append(card)
-                        break
-                elif match_type == "partial":
-                    if search_term in skill_identifier or search_term in skill_name:
-                        results.append(card)
-                        break
+                exact_match = (
+                    match_type == "exact" and search_term in (skill_identifier, skill_name)
+                )
+                partial_match = match_type == "partial" and (
+                    search_term in skill_identifier or search_term in skill_name
+                )
+
+                if exact_match or partial_match:
+                    results.append(card)
+                    break
 
         logger.debug(f"Found {len(results)} agents with skill '{skill_id}'")
         return results
@@ -214,7 +216,7 @@ class AgentRegistry:
             raise
         except ValidationError:
             # Storage layer error - log and re-raise
-            logger.error(f"Failed to fetch metadata for '{source_agent}'")
+            logger.exception(f"Failed to fetch metadata for '{source_agent}'")
             raise
 
         # Fetch target metadata - preserve specific error types
@@ -225,8 +227,14 @@ class AgentRegistry:
             raise
         except ValidationError:
             # Storage layer error - log and re-raise
-            logger.error(f"Failed to fetch metadata for '{target_agent}'")
+            logger.exception(f"Failed to fetch metadata for '{target_agent}'")
             raise
+
+        # Verify metadata was retrieved successfully
+        if source_metadata is None:
+            raise AgentNotFoundError(source_agent)
+        if target_metadata is None:
+            raise AgentNotFoundError(target_agent)
 
         # Check if any output from source is compatible with any input of target
         compatible_pairs = []

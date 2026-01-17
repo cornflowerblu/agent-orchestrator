@@ -78,25 +78,26 @@ class BaseAgent:
             with manifest_path.open() as f:
                 card_data = json.load(f)
         except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in manifest {manifest_path}: {e}")
+            logger.exception(f"Invalid JSON in manifest {manifest_path}")
             raise ValidationError(
-                f"Agent Card manifest contains invalid JSON at line {e.lineno}, column {e.colno}: {e.msg}",
+                f"Agent Card manifest contains invalid JSON at line {e.lineno}, "
+                f"column {e.colno}: {e.msg}",
                 details={"path": str(manifest_path), "line": e.lineno, "column": e.colno}
             ) from e
         except PermissionError as e:
-            logger.error(f"Permission denied reading manifest {manifest_path}: {e}")
+            logger.exception(f"Permission denied reading manifest {manifest_path}")
             raise ValidationError(
                 f"Cannot read Agent Card manifest - permission denied: {manifest_path}",
                 details={"path": str(manifest_path)}
             ) from e
         except UnicodeDecodeError as e:
-            logger.error(f"Encoding error reading manifest {manifest_path}: {e}")
+            logger.exception(f"Encoding error reading manifest {manifest_path}")
             raise ValidationError(
                 f"Agent Card manifest has invalid encoding (expected UTF-8): {manifest_path}",
                 details={"path": str(manifest_path), "encoding": e.encoding}
             ) from e
         except Exception as e:
-            logger.error(f"Unexpected error reading manifest {manifest_path}: {e}")
+            logger.exception(f"Unexpected error reading manifest {manifest_path}")
             raise ValidationError(
                 f"Failed to read Agent Card manifest: {e}",
                 details={"path": str(manifest_path)}
@@ -106,7 +107,7 @@ class BaseAgent:
         try:
             agent_card = AgentCard(**card_data)
         except Exception as e:
-            logger.error(f"Agent Card validation failed for {manifest_path}: {e}")
+            logger.exception(f"Agent Card validation failed for {manifest_path}")
             raise ValidationError(
                 f"Agent Card manifest has invalid schema: {e}",
                 details={"path": str(manifest_path)}
