@@ -46,7 +46,7 @@ class TestPolicyServiceIntegration:
 
     def test_policy_violation_error_attributes(self):
         """Test PolicyViolationError contains correct attributes."""
-        try:
+        with pytest.raises(PolicyViolationError) as exc_info:
             raise PolicyViolationError(
                 agent_name="test-agent",
                 current_iteration=100,
@@ -54,13 +54,14 @@ class TestPolicyServiceIntegration:
                 session_id="session-123",
                 policy_arn="arn:aws:policy:test",
             )
-        except PolicyViolationError as e:
-            assert e.agent_name == "test-agent"
-            assert e.current_iteration == 100
-            assert e.max_iterations == 100
-            assert e.session_id == "session-123"
-            assert e.policy_arn == "arn:aws:policy:test"
-            assert "iteration limit" in str(e).lower()
+
+        e = exc_info.value
+        assert e.agent_name == "test-agent"
+        assert e.current_iteration == 100
+        assert e.max_iterations == 100
+        assert e.session_id == "session-123"
+        assert e.policy_arn == "arn:aws:policy:test"
+        assert "iteration limit" in str(e).lower()
 
     def test_cedar_statement_syntax_variations(self):
         """Test Cedar statement generation with different actions."""
