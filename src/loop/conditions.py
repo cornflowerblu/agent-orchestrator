@@ -167,3 +167,60 @@ class ExitConditionEvaluator:
             status.mark_error(error=error_msg, iteration=iteration)
 
         return status
+
+    def evaluate_linting(
+        self, config: ExitConditionConfig, iteration: int
+    ) -> ExitConditionStatus:
+        """Evaluate LINTING_CLEAN exit condition (T044).
+
+        Executes ruff check via Code Interpreter and checks exit code.
+
+        Args:
+            config: Exit condition configuration
+            iteration: Current iteration number
+
+        Returns:
+            ExitConditionStatus with evaluation result
+
+        Raises:
+            ExitConditionEvaluationError: If tool execution fails
+        """
+        status = ExitConditionStatus(type=config.type)
+
+        try:
+            # Build ruff command
+            path = config.tool_arguments.get("path", ".")
+            ruff_cmd = f"ruff check {path}"
+
+            logger.debug(f"Evaluating linting with command: {ruff_cmd}")
+
+            # Execute via Code Interpreter
+            result = self.code_interpreter.execute_code(ruff_cmd)
+
+            exit_code = result.get("exit_code", 1)
+            output = result.get("output", "")
+
+            # Mark status based on exit code
+            if exit_code == 0:
+                status.mark_met(
+                    tool_name="ruff",
+                    exit_code=exit_code,
+                    output=output,
+                    iteration=iteration,
+                )
+                logger.info(f"Linting passed at iteration {iteration}")
+            else:
+                status.mark_not_met(
+                    tool_name="ruff",
+                    exit_code=exit_code,
+                    output=output,
+                    iteration=iteration,
+                )
+                logger.warning(f"Linting failed at iteration {iteration}: exit code {exit_code}")
+
+        except Exception as e:
+            error_msg = f"Failed to execute ruff: {e}"
+            logger.exception(error_msg)
+            status.mark_error(error=error_msg, iteration=iteration)
+
+        return status

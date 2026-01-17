@@ -51,3 +51,33 @@ class PolicyConfig(BaseModel):
         default="iteration-limit",
         description="Prefix for policy names",
     )
+
+    def generate_cedar_statement(self, action: str = "iterate") -> str:
+        """Generate Cedar policy statement for iteration limit enforcement.
+
+        Maps to FR-007: Policy uses Cedar syntax to enforce iteration limits.
+
+        Args:
+            action: The action to control (default: "iterate")
+
+        Returns:
+            Cedar policy statement as string
+
+        Example Cedar output:
+            permit(
+              principal,
+              action == Action::"iterate",
+              resource
+            ) when {
+              context.current_iteration < context.max_iterations
+            };
+        """
+        # Cedar policy statement following the research.md pattern
+        cedar_statement = f"""permit(
+  principal,
+  action == Action::"{action}",
+  resource
+) when {{
+  context.current_iteration < context.max_iterations
+}};"""
+        return cedar_statement
