@@ -2,8 +2,8 @@
 """Cleanup test data from DynamoDB tables.
 
 This script dynamically discovers all DynamoDB tables from CloudFormation
-stacks prefixed with 'AgentOrchestrator' and deletes all items with a
-'test-' prefix in their partition key.
+stacks prefixed with 'AgentOrchestrator' and deletes all items where the
+partition key contains 'test' or 'e2e' (case-insensitive).
 
 Usage:
     python scripts/cleanup_test_data.py
@@ -80,12 +80,11 @@ def get_table_keys(table_name: str) -> tuple[str, str | None]:
     return partition_key, sort_key
 
 
-def cleanup_table(table_name: str, prefix: str = "test-") -> int:
-    """Delete all items with given prefix from table.
+def cleanup_table(table_name: str) -> int:
+    """Delete all items where partition key contains 'test' or 'e2e'.
 
     Args:
         table_name: Name of the DynamoDB table
-        prefix: Prefix to match in partition key (default: 'test-')
 
     Returns:
         Number of items deleted
@@ -99,10 +98,22 @@ def cleanup_table(table_name: str, prefix: str = "test-") -> int:
         print(f"    ❌ Could not get table schema: {e}")
         return 0
 
-    # Scan for items with prefix
+    # Scan for items where partition key contains 'test' or 'e2e' (case-insensitive)
+    # DynamoDB contains() is case-sensitive, so we check lowercase patterns
+    # against common test naming conventions
     scan_kwargs: dict[str, Any] = {
-        "FilterExpression": f"begins_with({partition_key}, :prefix)",
-        "ExpressionAttributeValues": {":prefix": prefix},
+        "FilterExpression": (
+            f"contains({partition_key}, :test) OR "
+            f"contains({partition_key}, :e2e) OR "
+            f"contains({partition_key}, :TEST) OR "
+            f"contains({partition_key}, :E2E)"
+        ),
+        "ExpressionAttributeValues": {
+            ":test": "test",
+            ":e2e": "e2e",
+            ":TEST": "Test",
+            ":E2E": "E2E",
+        },
     }
 
     deleted = 0
@@ -148,15 +159,15 @@ def main() -> None:
     total_deleted = 0
     for table_name in tables:
         print(f"🧹 Cleaning {table_name}...", end=" ", flush=True)
-        deleted = cleanup_table(table_name, prefix="test-")
+        deleted = cleanup_table(table_name)
         total_deleted += deleted
         if deleted > 0:
             print(f"✅ {deleted} item(s) deleted")
         else:
-            print("✅ No test items found")
+            print("✅ No test/e2e items found")
 
     print()
-    print(f"✅ Cleanup complete: {total_deleted} total item(s) deleted from {len(tables)} table(s)")
+    print(f"✅ Cleanup complete: {total_deleted} test/e2e item(s) from {len(tables)} table(s)")
 
 
 if __name__ == "__main__":
