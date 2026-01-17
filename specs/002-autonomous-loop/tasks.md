@@ -214,7 +214,7 @@
 - [x] T096 [US5] Create ObservabilityQueries class skeleton in src/dashboard/queries.py
 - [x] T097 [US5] Implement CloudWatch/X-Ray client wrapper in src/dashboard/queries.py
 - [x] T098 [US5] Implement ObservabilityQueries.get_loop_progress() in src/dashboard/queries.py
-- [ ] T099 [US5] Implement ObservabilityQueries.get_recent_events() in src/dashboard/queries.py
+- [x] T099 [US5] Implement ObservabilityQueries.get_recent_events() in src/dashboard/queries.py
 - [ ] T100 [US5] Implement ObservabilityQueries.list_checkpoints() in src/dashboard/queries.py
 - [ ] T101 [US5] Implement ObservabilityQueries.get_exit_condition_history() in src/dashboard/queries.py
 - [x] T102 [US5] Create LoopProgress response model in src/dashboard/models.py

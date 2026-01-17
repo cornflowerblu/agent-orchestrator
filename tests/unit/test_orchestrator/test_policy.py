@@ -79,3 +79,70 @@ class TestPolicyEnforcer:
         # Verify result
         assert result["policyEngineId"] == "engine-123"
         assert result["policyEngineArn"] == "arn:aws:policy:engine-123"
+
+    @patch("src.orchestrator.policy.PolicyClient")
+    def test_create_iteration_policy(self, mock_policy_client):
+        """Test creating an iteration limit policy."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=100,
+        )
+
+        # Mock the policy client responses
+        mock_client_instance = mock_policy_client.return_value
+        mock_client_instance.create_or_get_policy_engine.return_value = {
+            "policyEngineId": "engine-123",
+            "policyEngineArn": "arn:aws:policy:engine-123",
+        }
+        mock_client_instance.create_or_get_policy.return_value = {
+            "policyId": "policy-456",
+            "policyArn": "arn:aws:policy:policy-456",
+        }
+
+        enforcer = PolicyEnforcer(config=config)
+        policy_arn = enforcer.create_iteration_policy()
+
+        # Verify policy engine was created
+        mock_client_instance.create_or_get_policy_engine.assert_called_once()
+
+        # Verify policy was created with Cedar statement
+        mock_client_instance.create_or_get_policy.assert_called_once()
+        call_kwargs = mock_client_instance.create_or_get_policy.call_args[1]
+        assert call_kwargs["policy_engine_id"] == "engine-123"
+        assert "iteration-limit" in call_kwargs["name"]
+        assert "cedar" in call_kwargs["definition"]
+
+        # Verify Cedar statement in policy
+        cedar_def = call_kwargs["definition"]["cedar"]
+        assert "permit(" in cedar_def["statement"]
+        assert "current_iteration" in cedar_def["statement"]
+
+        # Verify result
+        assert policy_arn == "arn:aws:policy:policy-456"
+
+    @patch("src.orchestrator.policy.PolicyClient")
+    def test_create_iteration_policy_with_session_id(self, mock_policy_client):
+        """Test creating policy with session ID in name."""
+        config = PolicyConfig(
+            agent_name="test-agent",
+            max_iterations=100,
+            session_id="session-abc",
+        )
+
+        # Mock responses
+        mock_client_instance = mock_policy_client.return_value
+        mock_client_instance.create_or_get_policy_engine.return_value = {
+            "policyEngineId": "engine-123",
+            "policyEngineArn": "arn:aws:policy:engine-123",
+        }
+        mock_client_instance.create_or_get_policy.return_value = {
+            "policyId": "policy-456",
+            "policyArn": "arn:aws:policy:policy-456",
+        }
+
+        enforcer = PolicyEnforcer(config=config)
+        enforcer.create_iteration_policy()
+
+        # Verify policy name includes session ID
+        call_kwargs = mock_client_instance.create_or_get_policy.call_args[1]
+        assert "session-abc" in call_kwargs["name"]
