@@ -82,6 +82,7 @@ Before starting the loop:
 
 ```bash
 cd infrastructure/cdk
+source ../../.venv/bin/activate
 cdk synth --all
 ```
 
@@ -97,6 +98,7 @@ cdk synth --all
 #### Step 2: CDK Deploy
 
 ```bash
+source ../../.venv/bin/activate
 cdk deploy --all --require-approval never --outputs-file outputs.json
 ```
 
@@ -187,6 +189,7 @@ If tests fail:
 
 ```bash
 cd infrastructure/cdk
+source ../../.venv/bin/activate
 cdk destroy --all --force
 ```
 
