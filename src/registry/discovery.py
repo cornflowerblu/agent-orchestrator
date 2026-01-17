@@ -6,7 +6,7 @@ Task T067: Implement discover_all_agents via A2A protocol
 """
 
 import asyncio
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from pydantic import BaseModel, Field
@@ -81,7 +81,7 @@ class AgentDiscovery:
         client = await self._get_client()
         response = await client.get(url)
         response.raise_for_status()
-        return response.json()
+        return cast(dict[str, Any], response.json())
 
     async def fetch_agent_card(self, endpoint: str) -> AgentCard:
         """Fetch an agent card from the well-known endpoint.

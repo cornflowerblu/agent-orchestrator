@@ -12,7 +12,7 @@ Task T083: Implement updateAgentStatus Lambda handler
 
 import json
 from functools import lru_cache
-from typing import Any
+from typing import Any, cast
 
 from botocore.exceptions import ClientError
 
@@ -112,8 +112,8 @@ def _get_body(event: dict[str, Any]) -> dict[str, Any]:
     if body is None:
         return {}
     if isinstance(body, str):
-        return json.loads(body)
-    return body
+        return cast(dict[str, Any], json.loads(body))
+    return cast(dict[str, Any], body)
 
 
 def list_agents_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:

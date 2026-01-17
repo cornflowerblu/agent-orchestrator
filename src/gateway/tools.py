@@ -1,7 +1,7 @@
 """Gateway tool discovery and access helpers for AgentCore MCP integration."""
 
 import os
-from typing import Any
+from typing import Any, cast
 
 from mcp.client.streamable_http import streamablehttp_client
 from strands.tools.mcp.mcp_client import MCPClient
@@ -48,14 +48,18 @@ class GatewayClient:
             gateway_url: Gateway endpoint URL (defaults to GATEWAY_URL env var)
             token: Optional authentication token
         """
-        self.gateway_url = gateway_url or os.getenv("GATEWAY_URL")
-        if not self.gateway_url:
+        url = gateway_url or os.getenv("GATEWAY_URL")
+        if not url:
             raise ValueError(
                 "Gateway URL must be provided or set via GATEWAY_URL environment variable"
             )
+        # After validation, we know url is str not None
+        self.gateway_url: str = url
 
         self.token = token
-        self.mcp_client = MCPClient(lambda: create_transport(self.gateway_url, self.token))
+        # create_transport expects str for token, use empty string if None
+        token_value: str = self.token if self.token is not None else ""
+        self.mcp_client = MCPClient(lambda: create_transport(self.gateway_url, token_value))
 
         logger.info(f"Initialized Gateway client for {self.gateway_url}")
 
@@ -112,7 +116,8 @@ class GatewayClient:
                 )
 
             logger.info(f"Tool '{tool_name}' executed successfully")
-            return result
+            # MCPToolResult needs to be converted to dict for type consistency
+            return cast(dict[str, Any], result)
 
         except Exception as e:
             logger.exception(f"Tool '{tool_name}' execution failed: {e}")

@@ -7,7 +7,7 @@ Task T071: Implement check_compatibility method
 Task T072: Implement get_consultation_requirements method
 """
 
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel, Field
 
@@ -284,7 +284,10 @@ class AgentRegistry:
             logger.warning("No metadata storage configured")
             return []
 
-        requirements = self._metadata_storage.get_consultation_requirements(agent_name)
+        requirements = cast(
+            list[ConsultationRequirement],
+            self._metadata_storage.get_consultation_requirements(agent_name),
+        )
 
         if phase is not None:
             requirements = [r for r in requirements if r.phase == phase]

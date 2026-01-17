@@ -11,7 +11,7 @@ Task T059: Implement query_observability_traces method
 Task T060: Implement validate_task_completion method
 """
 
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel, Field
 
@@ -121,7 +121,7 @@ class ConsultationEngine:
         handler = operators.get(operator)
         if handler is None:
             return False
-        return handler(field_value, expected_value)
+        return cast(bool, handler(field_value, expected_value))
 
     def _check_contains(self, field_value: Any, expected_value: Any, default: bool = False) -> bool:
         """Check if field_value contains expected_value."""
@@ -174,7 +174,7 @@ class ConsultationEngine:
         if agent_name:
             query_params["agent_name"] = agent_name
 
-        return self._observability_client.query_traces(**query_params)
+        return cast(list[dict[str, Any]], self._observability_client.query_traces(**query_params))
 
     def validate_task_completion(
         self,
