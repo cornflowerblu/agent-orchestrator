@@ -504,3 +504,152 @@ class TestReentryPrevention:
         assert framework.state.is_active is False
         # Should report error outcome
         assert result.outcome == LoopOutcome.ERROR
+
+
+# =============================================================================
+# T074: Checkpoint Interval Tests
+# =============================================================================
+
+
+class TestCheckpointInterval:
+    """Tests for checkpoint interval logic (T074)."""
+
+    @pytest.mark.asyncio
+    async def test_checkpoint_saves_at_correct_intervals(self) -> None:
+        """Test checkpoints saved at configured intervals."""
+        from unittest.mock import AsyncMock, Mock
+
+        config = LoopConfig(
+            agent_name="test-agent",
+            max_iterations=10,
+            checkpoint_interval=3,  # Save every 3 iterations
+            exit_conditions=[],
+        )
+        framework = await LoopFramework.initialize(config)
+
+        # Mock the checkpoint manager
+        framework.checkpoint_manager.save_checkpoint = Mock(
+            return_value="checkpoint-id"
+        )
+
+        async def work_func(iteration: int, state: dict, fw: LoopFramework) -> dict:
+            state["count"] = state.get("count", 0) + 1
+            return state
+
+        await framework.run(work_function=work_func, initial_state={})
+
+        # With max_iterations=10 and interval=3, should save at iterations 2, 5, 8
+        # (0-indexed, so after completing iterations 3, 6, 9)
+        assert framework.checkpoint_manager.save_checkpoint.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_checkpoint_interval_1_saves_every_iteration(self) -> None:
+        """Test checkpoint_interval=1 saves after every iteration."""
+        from unittest.mock import Mock
+
+        config = LoopConfig(
+            agent_name="test-agent",
+            max_iterations=5,
+            checkpoint_interval=1,  # Save every iteration
+            exit_conditions=[],
+        )
+        framework = await LoopFramework.initialize(config)
+
+        # Mock the checkpoint manager
+        framework.checkpoint_manager.save_checkpoint = Mock(
+            return_value="checkpoint-id"
+        )
+
+        async def work_func(iteration: int, state: dict, fw: LoopFramework) -> dict:
+            return state
+
+        await framework.run(work_function=work_func, initial_state={})
+
+        # Should save after each of the 5 iterations
+        assert framework.checkpoint_manager.save_checkpoint.call_count == 5
+
+    @pytest.mark.asyncio
+    async def test_checkpoint_not_saved_when_interval_not_reached(self) -> None:
+        """Test checkpoint NOT saved when interval not reached."""
+        from unittest.mock import Mock
+
+        config = LoopConfig(
+            agent_name="test-agent",
+            max_iterations=5,
+            checkpoint_interval=10,  # Interval larger than max_iterations
+            exit_conditions=[],
+        )
+        framework = await LoopFramework.initialize(config)
+
+        # Mock the checkpoint manager
+        framework.checkpoint_manager.save_checkpoint = Mock(
+            return_value="checkpoint-id"
+        )
+
+        async def work_func(iteration: int, state: dict, fw: LoopFramework) -> dict:
+            return state
+
+        await framework.run(work_function=work_func, initial_state={})
+
+        # Should never save since interval (10) > max_iterations (5)
+        assert framework.checkpoint_manager.save_checkpoint.call_count == 0
+
+    @pytest.mark.asyncio
+    async def test_checkpoint_interval_5_saves_correctly(self) -> None:
+        """Test checkpoint_interval=5 saves at correct iterations."""
+        from unittest.mock import Mock
+
+        config = LoopConfig(
+            agent_name="test-agent",
+            max_iterations=12,
+            checkpoint_interval=5,  # Save every 5 iterations
+            exit_conditions=[],
+        )
+        framework = await LoopFramework.initialize(config)
+
+        # Mock the checkpoint manager
+        framework.checkpoint_manager.save_checkpoint = Mock(
+            return_value="checkpoint-id"
+        )
+
+        async def work_func(iteration: int, state: dict, fw: LoopFramework) -> dict:
+            return state
+
+        await framework.run(work_function=work_func, initial_state={})
+
+        # Should save at iterations 4 and 9 (after completing iterations 5 and 10)
+        assert framework.checkpoint_manager.save_checkpoint.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_checkpoint_interval_with_early_termination(self) -> None:
+        """Test checkpoint saves correctly when loop terminates early."""
+        from unittest.mock import Mock
+
+        config = LoopConfig(
+            agent_name="test-agent",
+            max_iterations=20,
+            checkpoint_interval=3,
+            exit_conditions=[
+                ExitConditionConfig(type=ExitConditionType.ALL_TESTS_PASS)
+            ],
+        )
+        framework = await LoopFramework.initialize(config)
+
+        # Mock the checkpoint manager
+        framework.checkpoint_manager.save_checkpoint = Mock(
+            return_value="checkpoint-id"
+        )
+
+        async def work_func(iteration: int, state: dict, fw: LoopFramework) -> dict:
+            # Terminate after 7 iterations
+            if iteration >= 6:
+                # Mark all conditions as met to trigger termination
+                for condition in fw.state.exit_conditions:
+                    condition.status = ExitConditionStatusValue.MET
+            return state
+
+        await framework.run(work_function=work_func, initial_state={})
+
+        # Should save at iterations 2 and 5 (after completing iterations 3 and 6)
+        # before terminating at iteration 7
+        assert framework.checkpoint_manager.save_checkpoint.call_count == 2
