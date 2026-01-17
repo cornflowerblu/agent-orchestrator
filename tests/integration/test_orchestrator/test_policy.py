@@ -70,13 +70,13 @@ class TestPolicyServiceIntegration:
             max_iterations=100,
         )
 
-        # Test default action
+        # Test default action (uses Cedar namespaced types)
         default_cedar = config.generate_cedar_statement()
-        assert 'action == Action::"iterate"' in default_cedar
+        assert 'action == AgentCore::Action::"iterate"' in default_cedar
 
         # Test custom action
         custom_cedar = config.generate_cedar_statement(action="custom_action")
-        assert 'action == Action::"custom_action"' in custom_cedar
+        assert 'action == AgentCore::Action::"custom_action"' in custom_cedar
 
     @pytest.mark.skip(reason="Requires AWS credentials and Policy service setup")
     def test_create_policy_engine_real(self):
