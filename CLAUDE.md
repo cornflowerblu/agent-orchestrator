@@ -3,6 +3,8 @@
 Auto-generated from all feature plans. Last updated: 2026-01-16
 
 ## Active Technologies
+- Python 3.11+ (AgentCore SDK requirement) + bedrock-agentcore SDK (Memory, Observability, Policy, Gateway, Code Interpreter), boto3, pydantic (002-autonomous-loop)
+- AgentCore Memory (short-term for checkpoints), DynamoDB (existing from 001 for agent metadata/status) (002-autonomous-loop)
 
 - Python 3.11+ (AgentCore SDK requirement) + AWS Bedrock AgentCore SDK, boto3, pydantic (validation) (001-agent-framework)
 
@@ -22,6 +24,7 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.11+ (AgentCore SDK requirement): Follow standard conventions
 
 ## Recent Changes
+- 002-autonomous-loop: Added Python 3.11+ (AgentCore SDK requirement) + bedrock-agentcore SDK (Memory, Observability, Policy, Gateway, Code Interpreter), boto3, pydantic
 
 - 001-agent-framework: Added Python 3.11+ (AgentCore SDK requirement) + AWS Bedrock AgentCore SDK, boto3, pydantic (validation)
 
