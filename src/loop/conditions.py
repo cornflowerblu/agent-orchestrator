@@ -334,8 +334,8 @@ class ExitConditionEvaluator:
 
             logger.debug(f"Evaluating security with command: {scan_cmd}")
 
-            # Execute via Code Interpreter
-            result = self.code_interpreter.execute_code(scan_cmd)
+            # Execute via Code Interpreter with timeout
+            result = self._execute_code_with_timeout(scan_cmd)
 
             exit_code = result.get("exit_code", 1)
             output = result.get("output", "")
