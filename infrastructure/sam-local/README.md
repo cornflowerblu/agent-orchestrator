@@ -153,3 +153,8 @@ aws --endpoint-url=http://localhost:4566 logs describe-log-groups
 - CloudWatch logging works
 - API Gateway event parsing works
 - Response format is correct
+
+## Related Documentation
+
+- **[Testing Strategy](../../tests/README.md)** - Overview of unit, SAM local, and E2E integration testing
+- **[`/ralph-integration` skill](../../.claude/commands/ralph-integration.md)** - Autonomous deployment loop that uses SAM local as a pre-deploy gate

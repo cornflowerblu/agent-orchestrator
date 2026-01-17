@@ -286,4 +286,11 @@ If your feature needs a new DynamoDB table:
 
 ---
 
+## Related Documentation
+
+- **[SAM Local Setup](../infrastructure/sam-local/README.md)** - Detailed SAM local commands, debugging, event files
+- **[`/ralph-integration` skill](../.claude/commands/ralph-integration.md)** - Autonomous deployment loop for local development (runs SAM gate → CDK deploy → integration tests → cleanup)
+
+---
+
 **Last Updated**: 2026-01-17
