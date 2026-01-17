@@ -44,13 +44,23 @@ target-version = "py311"
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "DTZ", "T10", "ISC", "ICN", "PIE", "PYI", "PT", "RET", "SIM", "ARG", "PTH", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
 ignore = [
     "TRY003",  # Avoid specifying long messages outside exception class
+    "TRY300",  # Consider using else block (stylistic preference)
+    "TRY401",  # Redundant exception object in logging.exception (sometimes useful for context)
     "PLR2004", # Magic value used in comparison
     "PLC0415", # Import should be at top-level
+    "PTH123",  # Use pathlib for open() (we're fine with built-in open)
+    "ARG001",  # Unused function argument (intentional for Lambda context, test fixtures)
+    "ARG002",  # Unused method argument (intentional for test fixtures)
+    "PLR0911", # Too many return statements (normal for API handlers)
+    "PLR0913", # Too many arguments (sometimes unavoidable)
 ]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
 unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501"]  # Line length in tests (error messages can be long)
 
 [tool.ruff.format]
 quote-style = "double"
