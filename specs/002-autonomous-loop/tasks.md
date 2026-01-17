@@ -178,7 +178,7 @@
 - [x] T076 [US4] Create PolicyConfig model in src/orchestrator/models.py
 - [x] T077 [US4] Implement PolicyConfig.generate_cedar_statement() in src/orchestrator/models.py
 - [x] T078 [US4] Create PolicyEnforcer class skeleton in src/orchestrator/policy.py
-- [ ] T079 [US4] Implement Policy client wrapper in src/orchestrator/policy.py
+- [x] T079 [US4] Implement Policy client wrapper in src/orchestrator/policy.py
 - [ ] T080 [US4] Implement PolicyEnforcer.create_iteration_policy() in src/orchestrator/policy.py
 - [ ] T081 [US4] Implement PolicyEnforcer.check_iteration_allowed() in src/orchestrator/policy.py
 - [ ] T082 [US4] Implement PolicyEnforcer.update_policy() in src/orchestrator/policy.py
