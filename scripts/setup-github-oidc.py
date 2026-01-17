@@ -98,7 +98,7 @@ def setup_iam_role(iam_client, account_id: str, region: str, repo: str, oidc_arn
                 "Resource": "*",
             },
             {
-                # DynamoDB access is scoped to Agent* tables only.
+                # DynamoDB access is scoped to Agent* and Loop* tables only.
                 # This limits access to the specific tables used by this framework.
                 "Sid": "DynamoDBAccess",
                 "Effect": "Allow",
@@ -106,6 +106,7 @@ def setup_iam_role(iam_client, account_id: str, region: str, repo: str, oidc_arn
                 "Resource": [
                     f"arn:aws:dynamodb:{region}:{account_id}:table/AgentMetadata*",
                     f"arn:aws:dynamodb:{region}:{account_id}:table/AgentStatus*",
+                    f"arn:aws:dynamodb:{region}:{account_id}:table/LoopCheckpoints*",
                 ],
             },
             {
