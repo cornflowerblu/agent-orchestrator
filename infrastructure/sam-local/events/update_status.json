@@ -1,0 +1,17 @@
+{
+  "httpMethod": "PUT",
+  "path": "/agents/test-agent/status",
+  "pathParameters": {
+    "agent_name": "test-agent"
+  },
+  "queryStringParameters": null,
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": "{\"status\": \"active\", \"health_check\": \"healthy\", \"endpoint\": \"https://api.example.com/agent\"}",
+  "isBase64Encoded": false,
+  "requestContext": {
+    "requestId": "test-request-id",
+    "stage": "local"
+  }
+}

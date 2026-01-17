@@ -60,3 +60,4 @@ infrastructure/cdk/outputs.json
 
 # AWS
 .aws-sam/
+infrastructure/sam-local/.aws-sam/

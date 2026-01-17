@@ -1,0 +1,15 @@
+{
+  "httpMethod": "POST",
+  "path": "/agents/compatibility",
+  "pathParameters": null,
+  "queryStringParameters": null,
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": "{\"source_agent\": \"agent-a\", \"target_agent\": \"agent-b\"}",
+  "isBase64Encoded": false,
+  "requestContext": {
+    "requestId": "test-request-id",
+    "stage": "local"
+  }
+}
