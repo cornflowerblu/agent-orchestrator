@@ -8,9 +8,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: ['**']  # Run on all branches
   pull_request:
-    branches: [main, develop]
+    branches: [main]  # Only PRs to main
 
 env:
   PYTHON_VERSION: "3.11"
@@ -141,6 +141,8 @@ jobs:
     name: CDK Synth
     runs-on: ubuntu-latest
     needs: test
+    # Run on PRs or when commit message contains [deploy] or [integration]
+    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[deploy]') || contains(github.event.head_commit.message, '[integration]')
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'sandbox' }}
     steps:
       - uses: actions/checkout@v4
@@ -182,6 +184,8 @@ jobs:
     name: CDK Deploy
     runs-on: ubuntu-latest
     needs: [lint, test, type-check, cdk-synth]
+    # Run on PRs or when commit message contains [deploy] or [integration]
+    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[deploy]') || contains(github.event.head_commit.message, '[integration]')
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'sandbox' }}
     steps:
       - uses: actions/checkout@v4
@@ -223,6 +227,8 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: cdk-deploy
+    # Run on PRs or when commit message contains [deploy] or [integration]
+    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[deploy]') || contains(github.event.head_commit.message, '[integration]')
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'sandbox' }}
     steps:
       - uses: actions/checkout@v4
