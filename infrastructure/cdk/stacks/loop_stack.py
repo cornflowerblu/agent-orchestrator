@@ -3,7 +3,7 @@
 Task T122: Create infrastructure/cdk/stacks/loop_stack.py for Cedar policies
 """
 
-from aws_cdk import CfnOutput, Duration, Stack
+from aws_cdk import CfnOutput, Duration, RemovalPolicy, Stack
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_logs as logs
@@ -43,6 +43,7 @@ class LoopStack(Stack):
             "LoopObservabilityLogs",
             log_group_name="/aws/bedrock/agent-loops",
             retention=logs.RetentionDays.ONE_WEEK,
+            removal_policy=RemovalPolicy.DESTROY,  # Delete logs on stack destroy
         )
 
         # IAM role for loop framework execution
@@ -107,13 +108,13 @@ class LoopStack(Stack):
             )
         )
 
-        # Lambda function for Policy enforcer (optional monitoring component)
+        # Lambda function for Policy enforcer (monitoring component)
         policy_enforcer_lambda = lambda_.Function(
             self,
             "PolicyEnforcerFunction",
             runtime=lambda_.Runtime.PYTHON_3_11,
             handler="policy_enforcer.handler",
-            code=lambda_.Code.from_asset("src"),
+            code=lambda_.Code.from_asset("lambda"),
             role=loop_execution_role,
             timeout=Duration.seconds(60),
             memory_size=256,
