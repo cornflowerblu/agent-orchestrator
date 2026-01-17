@@ -77,9 +77,7 @@ def dynamodb_local(aws_credentials_moto) -> Iterator[boto3.resource]:
         # Wait for tables to be created
         metadata_table.meta.client.get_waiter("table_exists").wait(TableName="AgentMetadata")
         status_table.meta.client.get_waiter("table_exists").wait(TableName="AgentStatus")
-        checkpoints_table.meta.client.get_waiter("table_exists").wait(
-            TableName="LoopCheckpoints"
-        )
+        checkpoints_table.meta.client.get_waiter("table_exists").wait(TableName="LoopCheckpoints")
 
         yield dynamodb
 

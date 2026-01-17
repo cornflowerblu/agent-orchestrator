@@ -266,7 +266,9 @@ class TestAgentStatusEndpoint:
             assert data["status"] == "active"
             print(f"\n✅ Updated {agent_with_status} status to 'active'")
         else:
-            print(f"\n⚠️ Status update returned {put_response.status_code} - API may require pre-existing status")
+            print(
+                f"\n⚠️ Status update returned {put_response.status_code} - API may require pre-existing status"
+            )
 
 
 class TestConsultationRequirementsEndpoint:
@@ -297,7 +299,9 @@ class TestConsultationRequirementsEndpoint:
         data = response.json()
         assert "requirements" in data
 
-        print(f"\n✅ GET consultation-requirements returned {len(data['requirements'])} requirements")
+        print(
+            f"\n✅ GET consultation-requirements returned {len(data['requirements'])} requirements"
+        )
 
 
 class TestCompatibilityEndpoint:
@@ -404,6 +408,8 @@ class TestAPIErrorHandling:
             timeout=30,
         )
 
-        assert response.status_code == 400, f"Expected 400, got {response.status_code}: {response.text}"
+        assert response.status_code == 400, (
+            f"Expected 400, got {response.status_code}: {response.text}"
+        )
 
         print("\n✅ Invalid schema structure correctly returned 400")

@@ -97,12 +97,8 @@ class CheckpointManager:
         self.session_id = session_id
         self.agent_name = agent_name
         self.region = region or os.getenv("AWS_REGION", "us-east-1")
-        self.memory_name = memory_name or os.getenv(
-            "CHECKPOINT_MEMORY_NAME", "LoopCheckpoints"
-        )
-        self.table_name = table_name or os.getenv(
-            "CHECKPOINT_TABLE_NAME", "LoopCheckpoints"
-        )
+        self.memory_name = memory_name or os.getenv("CHECKPOINT_MEMORY_NAME", "LoopCheckpoints")
+        self.table_name = table_name or os.getenv("CHECKPOINT_TABLE_NAME", "LoopCheckpoints")
 
         # Lazy-initialized clients
         self._memory_client: Any | None = None

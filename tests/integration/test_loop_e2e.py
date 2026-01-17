@@ -115,9 +115,7 @@ class TestAutonomousLoopE2E:
         print(f"✅ Checkpoints saved: {len(checkpoints)}")
 
     @pytest.mark.asyncio
-    async def test_loop_terminates_when_exit_condition_met(
-        self, unique_session_id, aws_region
-    ):
+    async def test_loop_terminates_when_exit_condition_met(self, unique_session_id, aws_region):
         """
         Scenario: Agent implements loop with exit conditions that get met
 
@@ -173,8 +171,7 @@ class TestAutonomousLoopE2E:
         # Check that all exit conditions were marked MET
         assert len(result.final_exit_conditions) > 0
         all_met = all(
-            ec.status == ExitConditionStatusValue.MET
-            for ec in result.final_exit_conditions
+            ec.status == ExitConditionStatusValue.MET for ec in result.final_exit_conditions
         )
         assert all_met, "All exit conditions should be met"
 
@@ -183,9 +180,7 @@ class TestAutonomousLoopE2E:
         print(f"✅ Exit conditions met: {all_met}")
 
     @pytest.mark.asyncio
-    async def test_loop_with_real_exit_condition_evaluation(
-        self, unique_session_id, aws_region
-    ):
+    async def test_loop_with_real_exit_condition_evaluation(self, unique_session_id, aws_region):
         """
         Scenario: Agent uses framework to evaluate real exit conditions
 
@@ -224,11 +219,13 @@ class TestAutonomousLoopE2E:
                     # Use evaluator to run actual tests via Code Interpreter
                     status = fw.evaluator.evaluate_tests(condition_config, iteration)
                     fw.state.exit_conditions[i] = status
-                    evaluation_results.append({
-                        "iteration": iteration,
-                        "status": status.status,
-                        "exit_code": status.tool_exit_code,
-                    })
+                    evaluation_results.append(
+                        {
+                            "iteration": iteration,
+                            "status": status.status,
+                            "exit_code": status.tool_exit_code,
+                        }
+                    )
 
             return state
 
@@ -247,7 +244,9 @@ class TestAutonomousLoopE2E:
         print(f"✅ Outcome: {result.outcome}")
         print("✅ Exit condition evaluations:")
         for eval_result in evaluation_results:
-            print(f"   Iteration {eval_result['iteration']}: {eval_result['status']} (exit code: {eval_result['exit_code']})")
+            print(
+                f"   Iteration {eval_result['iteration']}: {eval_result['status']} (exit code: {eval_result['exit_code']})"
+            )
 
     @pytest.mark.asyncio
     async def test_checkpoint_recovery(self, unique_session_id, aws_region, monkeypatch):
@@ -410,9 +409,7 @@ class TestLoopEdgeCases:
         return os.getenv("AWS_REGION", "us-east-1")
 
     @pytest.mark.asyncio
-    async def test_loop_handles_work_function_exception(
-        self, unique_session_id, aws_region
-    ):
+    async def test_loop_handles_work_function_exception(self, unique_session_id, aws_region):
         """
         Scenario: Loop handles exceptions from work function gracefully
 
@@ -470,9 +467,7 @@ class TestLoopEdgeCases:
         reentry_attempted = False
         reentry_error = None
 
-        async def work_with_reentry_attempt(
-            iteration: int, state: dict, fw: LoopFramework
-        ) -> dict:
+        async def work_with_reentry_attempt(iteration: int, state: dict, fw: LoopFramework) -> dict:
             nonlocal reentry_attempted, reentry_error
 
             if iteration == 2 and not reentry_attempted:
