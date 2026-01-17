@@ -23,7 +23,7 @@ class TestPolicyConfig:
         assert config.max_iterations == 100
         assert config.session_id is None
         assert config.policy_engine_name == "LoopIterationPolicyEngine"
-        assert config.policy_name_prefix == "iteration-limit"
+        assert config.policy_name_prefix == "iteration_limit"
 
     def test_create_policy_config_with_session_id(self):
         """Test creating PolicyConfig with session ID."""

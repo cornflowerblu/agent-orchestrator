@@ -48,8 +48,8 @@ class PolicyConfig(BaseModel):
     )
 
     policy_name_prefix: str = Field(
-        default="iteration-limit",
-        description="Prefix for policy names",
+        default="iteration_limit",
+        description="Prefix for policy names (alphanumeric and underscore only)",
     )
 
     def generate_cedar_statement(self, action: str = "iterate") -> str:
@@ -66,17 +66,17 @@ class PolicyConfig(BaseModel):
         Example Cedar output:
             permit(
               principal,
-              action == Action::"iterate",
-              resource
+              action == AgentCore::Action::"iterate",
+              resource is AgentCore::Gateway
             ) when {
               context.current_iteration < context.max_iterations
             };
         """
-        # Cedar policy statement following the research.md pattern
+        # Cedar policy statement with AgentCore resource type constraint
         return f"""permit(
   principal,
-  action == Action::"{action}",
-  resource
+  action == AgentCore::Action::"{action}",
+  resource is AgentCore::Gateway
 ) when {{
   context.current_iteration < context.max_iterations
 }};"""
